@@ -589,6 +589,17 @@ html.dark-mode .forum-announcement {
     overflow-y: auto;
 }
 
+.forum-sidebar-left,
+.forum-sidebar-right {
+    scrollbar-width: none;
+}
+
+.forum-sidebar-left::-webkit-scrollbar,
+.forum-sidebar-right::-webkit-scrollbar {
+    width: 0;
+    display: none;
+}
+
 /* Sidebar Section Box */
 .forum-sidebar-box {
     background-color: var(--card);

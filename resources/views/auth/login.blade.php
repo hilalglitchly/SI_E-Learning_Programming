@@ -8,7 +8,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            min-height: 85vh;
+            padding: 40px 15px;
+            min-height: calc(100vh - 380px);
         }
         .login-box {
             width: 100%;
@@ -51,9 +52,6 @@
 @section('content')
     <div class="neo-container login-wrapper">
         <div class="login-box">
-            <!-- Hiasan Neo-Brutalism di pojok -->
-            <div style="width: 25px; height: 25px; background-color: var(--secondary); border: 3px solid var(--border); position: absolute; top: -12px; right: -12px; box-shadow: 3px 3px 0px var(--shadow-color);"></div>
-            
             <div class="login-title">Selamat Datang</div>
             <div class="login-subtitle">Silakan masuk ke akun E-Learning Anda</div>
 
