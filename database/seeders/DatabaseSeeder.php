@@ -244,7 +244,31 @@ class DatabaseSeeder extends Seeder
                 'views' => 89,
                 'is_pinned' => 1,
                 'is_announcement' => 1,
-                'tgl_post' => $now->copy()->subHours(6),
+                'tgl_post' => $now->copy()->subDays(2),
+            ],
+            [
+                'id_post' => 8,
+                'id_user' => 21,
+                'judul' => 'Bagaimana cara mencegah Memory Leak saat memakai Event Listener di React/Vue?',
+                'konten' => '<p>Halo semua, saya sedang membuat aplikasi dashboard real-time dengan chart. Setiap kali komponen di-unmount dan re-mount, penggunaan memori RAM browser terus naik. Apakah ada best practice cara cleanup event listener dan timer dengan benar?</p>',
+                'tipe' => 'pertanyaan',
+                'status' => 'open',
+                'views' => 145,
+                'is_pinned' => 0,
+                'is_announcement' => 0,
+                'tgl_post' => $now->copy()->subMinutes(35),
+            ],
+            [
+                'id_post' => 9,
+                'id_user' => 22,
+                'judul' => 'Solusi error CORS Policy saat memanggil API backend Laravel dari frontend Vite localhost?',
+                'konten' => '<p>Permisi mastah, saya dapat error: <code>Access to XMLHttpRequest at http://127.0.0.1:8000 from origin http://localhost:5173 has been blocked by CORS policy</code>. Header apa saja yang perlu saya tambahkan di Laravel middleware agar aman?</p>',
+                'tipe' => 'pertanyaan',
+                'status' => 'open',
+                'views' => 62,
+                'is_pinned' => 0,
+                'is_announcement' => 0,
+                'tgl_post' => $now->copy()->subHours(2),
             ]
         ]);
 
@@ -258,6 +282,11 @@ class DatabaseSeeder extends Seeder
             ['id_post' => 2, 'id_tag' => 14],
             ['id_post' => 6, 'id_tag' => 1],
             ['id_post' => 6, 'id_tag' => 17],
+            ['id_post' => 8, 'id_tag' => 1],
+            ['id_post' => 8, 'id_tag' => 4],
+            ['id_post' => 8, 'id_tag' => 14],
+            ['id_post' => 9, 'id_tag' => 3],
+            ['id_post' => 9, 'id_tag' => 10],
         ]);
 
         // 12. Jawaban Forum
@@ -285,6 +314,11 @@ class DatabaseSeeder extends Seeder
             ['id_vote' => 1, 'id_user' => 20, 'id_post' => 1, 'id_jawaban' => null, 'tipe_vote' => 'up', 'tgl_vote' => $now],
             ['id_vote' => 2, 'id_user' => 21, 'id_post' => 1, 'id_jawaban' => null, 'tipe_vote' => 'up', 'tgl_vote' => $now],
             ['id_vote' => 3, 'id_user' => 20, 'id_post' => 2, 'id_jawaban' => null, 'tipe_vote' => 'up', 'tgl_vote' => $now],
+            ['id_vote' => 4, 'id_user' => 13, 'id_post' => 8, 'id_jawaban' => null, 'tipe_vote' => 'up', 'tgl_vote' => $now],
+            ['id_vote' => 5, 'id_user' => 14, 'id_post' => 8, 'id_jawaban' => null, 'tipe_vote' => 'up', 'tgl_vote' => $now],
+            ['id_vote' => 6, 'id_user' => 15, 'id_post' => 8, 'id_jawaban' => null, 'tipe_vote' => 'up', 'tgl_vote' => $now],
+            ['id_vote' => 7, 'id_user' => 16, 'id_post' => 8, 'id_jawaban' => null, 'tipe_vote' => 'up', 'tgl_vote' => $now],
+            ['id_vote' => 8, 'id_user' => 17, 'id_post' => 8, 'id_jawaban' => null, 'tipe_vote' => 'up', 'tgl_vote' => $now],
         ]);
     }
 }

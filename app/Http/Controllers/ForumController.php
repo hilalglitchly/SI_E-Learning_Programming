@@ -54,18 +54,18 @@ class ForumController extends Controller
 
         switch ($sort) {
             case 'baru':
-                $order_sql = "ORDER BY p.is_pinned DESC, p.tgl_post DESC";
+                $order_sql = "ORDER BY p.tgl_post DESC";
                 break;
             case 'top':
-                $order_sql = "ORDER BY p.is_pinned DESC, vote_count DESC, p.tgl_post DESC";
+                $order_sql = "ORDER BY vote_count DESC, p.views DESC, p.tgl_post DESC";
                 break;
             case 'unsolved':
                 $where_clauses[] = "p.tipe = 'pertanyaan' AND p.status = 'open'";
                 $where_sql = 'WHERE ' . implode(' AND ', $where_clauses);
-                $order_sql = "ORDER BY p.is_pinned DESC, p.tgl_post DESC";
+                $order_sql = "ORDER BY p.tgl_post DESC";
                 break;
             default: // 'hot'
-                $order_sql = "ORDER BY p.is_pinned DESC, (vote_count * 2 + jawaban_count * 3) DESC, p.tgl_post DESC";
+                $order_sql = "ORDER BY p.is_pinned DESC, (vote_count * 2 + p.views * 0.05 + jawaban_count * 3) DESC, p.tgl_post DESC";
                 break;
         }
 
@@ -237,6 +237,7 @@ class ForumController extends Controller
                 'konten' => $konten,
                 'tipe' => $tipe,
                 'is_announcement' => $is_announcement,
+                'tgl_post' => now(),
             ]);
 
             foreach ($tags_selected as $tag_id) {
@@ -369,6 +370,7 @@ class ForumController extends Controller
                 'id_post' => $id_post,
                 'id_user' => $id_user,
                 'konten' => $konten,
+                'tgl_jawaban' => now(),
             ]);
 
             if ((int) $post->id_user !== (int) $id_user) {

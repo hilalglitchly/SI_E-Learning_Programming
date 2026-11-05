@@ -52,16 +52,27 @@ if (!function_exists('timeAgo')) {
         if (empty($datetime)) {
             return 'baru saja';
         }
-        $now = new \DateTime();
-        $ago = $datetime instanceof \DateTimeInterface ? $datetime : new \DateTime((string) $datetime);
-        $diff = $now->diff($ago);
+        try {
+            $tz = new \DateTimeZone(config('app.timezone', 'Asia/Jakarta'));
+            $now = new \DateTime('now', $tz);
+            $ago = $datetime instanceof \DateTimeInterface ? $datetime : new \DateTime((string) $datetime, $tz);
+            
+            // Jika tanggal di masa depan (karena selisih detik/clock drift), anggap baru saja
+            if ($ago > $now) {
+                return 'baru saja';
+            }
 
-        if ($diff->y > 0) return $diff->y . ' tahun lalu';
-        if ($diff->m > 0) return $diff->m . ' bulan lalu';
-        if ($diff->d > 0) return $diff->d . ' hari lalu';
-        if ($diff->h > 0) return $diff->h . ' jam lalu';
-        if ($diff->i > 0) return $diff->i . ' menit lalu';
-        return 'baru saja';
+            $diff = $now->diff($ago);
+
+            if ($diff->y > 0) return $diff->y . ' tahun lalu';
+            if ($diff->m > 0) return $diff->m . ' bulan lalu';
+            if ($diff->d > 0) return $diff->d . ' hari lalu';
+            if ($diff->h > 0) return $diff->h . ' jam lalu';
+            if ($diff->i > 0) return $diff->i . ' menit lalu';
+            return 'baru saja';
+        } catch (\Exception $e) {
+            return 'baru saja';
+        }
     }
 }
 
