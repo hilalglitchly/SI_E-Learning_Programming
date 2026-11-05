@@ -4,10 +4,12 @@
    LIGHT MODE (DEFAULT VARIABLES)
    ======================================== */
 :root {
+  color-scheme: light;
   --background: #F4F4F0;
   --foreground: #000000;
   --card: #ffffff;
   --card-foreground: #000000;
+  --input: #ffffff;
   --primary: #FF4C4C; /* Merah terang */
   --primary-foreground: #ffffff;
   --secondary: #FFD700; /* Kuning khas E-learning */
@@ -15,8 +17,8 @@
   --accent: #0066ff; /* Biru aksi */
   --accent-foreground: #ffffff;
   --border: #000000;
-  --muted: #e0e0e0;
-  --muted-foreground: #333333;
+  --muted: #e5e7eb;
+  --muted-foreground: #374151;
   
   --radius: 0px;
   --shadow-offset-x: 5px;
@@ -31,25 +33,27 @@
    DARK MODE VARIABLES
    ======================================== */
 html.dark-mode {
-  --background: #1a1a1a;
-  --foreground: #ffffff;
-  --card: #2d2d2d;
-  --card-foreground: #ffffff;
-  --primary: #ff6666;
-  --primary-foreground: #000000;
-  --secondary: #cccc00; /* Kuning diredupkan */
+  color-scheme: dark;
+  --background: #141417;
+  --foreground: #f9fafb;
+  --card: #222228;
+  --card-foreground: #f9fafb;
+  --input: #1b1b20;
+  --primary: #ef4444;
+  --primary-foreground: #ffffff;
+  --secondary: #facc15; /* Kuning kontras tinggi dengan teks hitam */
   --secondary-foreground: #000000;
-  --accent: #3399ff;
-  --accent-foreground: #000000;
-  --border: #ffffff;
-  --muted: #404040;
-  --muted-foreground: #cccccc;
+  --accent: #2563eb;
+  --accent-foreground: #ffffff;
+  --border: #e5e7eb;
+  --muted: #32323a;
+  --muted-foreground: #d1d5db;
   
-  --shadow-color: #ffffff;
+  --shadow-color: #000000;
 }
 
 /* ========================================
-   BASE RESETS
+   BASE RESETS & TYPOGRAPHY
    ======================================== */
 * {
     box-sizing: border-box;
@@ -59,6 +63,7 @@ html.dark-mode {
 
 html {
     scroll-behavior: smooth;
+    height: 100%;
 }
 
 body {
@@ -67,6 +72,28 @@ body {
     color: var(--foreground);
     position: relative;
     z-index: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.5;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 900;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    color: inherit;
+    margin-bottom: 0.75rem;
+}
+
+h1 { font-size: 2.2rem; }
+h2 { font-size: 1.65rem; text-transform: uppercase; }
+h3 { font-size: 1.3rem; }
+h4 { font-size: 1.1rem; }
+
+p {
+    line-height: 1.6;
+    color: inherit;
 }
 html.theme-transition body,
 html.theme-transition .neo-box,
@@ -123,10 +150,11 @@ body::before {
 }
 
 /* Penyesuaian grid untuk mode gelap */
+html.dark-mode body::before,
 body.dark-mode::before {
     background-image: 
-        linear-gradient(to right, rgba(255, 255, 255, 0.15) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(255, 255, 255, 0.15) 1px, transparent 1px);
+        linear-gradient(to right, rgba(255, 255, 255, 0.12) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.12) 1px, transparent 1px);
 }
 
 /* ========================================
@@ -144,22 +172,26 @@ body.dark-mode::before {
    TOP NAVIGATION (NAVBAR)
    ======================================== */
 .neo-navbar {
-    height: 70px;
+    min-height: 70px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 1rem;
+    padding: 0.5rem 1.25rem;
     box-sizing: border-box;
+    background-color: #FFD700;
+    color: #000000;
+    border: 3px solid #000000;
+    box-shadow: 8px 8px 0px #000000;
     transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .neo-navbar-brand {
-    font-size: 1.5rem;
-    font-weight: 800;
+    font-size: 1.35rem;
+    font-weight: 900;
     text-transform: uppercase;
-    color: var(--foreground);
+    color: #000000 !important;
     text-decoration: none;
-    padding: 8px 16px;
+    padding: 6px 12px;
     display: flex;
     align-items: center;
 }
@@ -167,57 +199,69 @@ body.dark-mode::before {
 .neo-navbar-menu {
     display: flex;
     list-style: none;
-    gap: 1rem;
+    gap: 0.5rem;
     align-items: center;
     height: 100%;
+    flex-wrap: wrap;
 }
 
 .neo-navbar-menu a {
     display: flex;
     align-items: center;
     text-decoration: none;
-    color: var(--foreground);
-    font-weight: 700;
+    color: #000000 !important;
+    font-weight: 800;
     text-transform: uppercase;
-    font-size: 1rem;
-    padding: 8px 16px;
-    border: var(--border-width) solid transparent;
-    transition: transform 0.1s ease-in-out, box-shadow 0.1s ease-in-out;
+    font-size: 0.95rem;
+    padding: 8px 14px;
+    border: 3px solid transparent;
+    transition: transform 0.12s ease-in-out, box-shadow 0.12s ease-in-out, background-color 0.12s ease-in-out;
 }
 
-.neo-navbar-menu a:hover, .neo-navbar-menu a.active {
-    background-color: var(--muted);
-    color: var(--foreground);
-    border: var(--border-width) solid var(--border);
-    box-shadow: var(--shadow-offset-x) var(--shadow-offset-y) var(--shadow-blur) var(--shadow-color);
-    transform: translate(-4px, -4px);
+.neo-navbar-menu a:hover,
+.neo-navbar-menu a.active {
+    background-color: #FFFFFF !important;
+    color: #000000 !important;
+    border: 3px solid #000000 !important;
+    box-shadow: 4px 4px 0px #000000 !important;
+    transform: translate(-3px, -3px);
 }
 
 .neo-navbar-menu a i {
-    margin-right: 8px;
-    font-size: 1.25em;
+    margin-right: 6px;
+    font-size: 1.2em;
     vertical-align: middle;
     transition: transform 0.2s ease;
+    color: #000000 !important;
 }
 
 .neo-navbar-menu a:hover i {
-    transform: scale(1.2) rotate(-8deg);
+    transform: scale(1.18) rotate(-8deg);
 }
 
 .neo-navbar-user {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 10px;
 }
 
 /* ========================================
-   MAIN LAYOUT
+   MAIN LAYOUT & CONTAINERS
    ======================================== */
-.neo-layout-container {
-    padding: 2.5rem;
+.neo-container {
+    width: 100%;
     max-width: 1400px;
     margin: 0 auto;
-    min-height: calc(100vh - 120px);
+    padding: 0 1.5rem;
+    flex: 1;
+}
+
+.neo-layout-container {
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 1.5rem 2rem 3.5rem 2rem;
+    flex: 1;
 }
 
 .neo-layout-grid {
@@ -230,13 +274,36 @@ body.dark-mode::before {
    NEO BRUTALISM BASE COMPONENTS
    ======================================== */
 .neo-box {
+    background-color: var(--card);
+    color: var(--card-foreground);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
     border: var(--border-width) solid var(--border);
     box-shadow: var(--shadow-offset-x) var(--shadow-offset-y) var(--shadow-blur) var(--shadow-color);
     transition: all 0.15s ease-in-out;
 }
 
+a.neo-box {
+    margin-bottom: 0;
+}
+
+.badge-kode {
+    display: inline-block;
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    background-color: var(--secondary);
+    color: #000000;
+    border: 2px solid var(--border);
+    box-shadow: 2px 2px 0px var(--shadow-color);
+    margin-bottom: 10px;
+    line-height: 1.25;
+}
+
 /* ========================================
-   FORM ELEMENTS
+   FORM ELEMENTS & BUTTONS
    ======================================== */
 .neo-form-group {
     margin-bottom: 1.5rem;
@@ -246,45 +313,67 @@ body.dark-mode::before {
     display: block;
     margin-bottom: 0.5rem;
     font-weight: 800;
-    font-size: 1rem;
-    color: var(--foreground);
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: inherit;
 }
 
-.neo-input {
+.neo-input,
+.neo-input.neo-box {
     width: 100%;
     padding: 0.75rem 1rem;
+    margin-bottom: 0;
     font-family: inherit;
     font-size: 1rem;
-    background-color: var(--card);
+    font-weight: 600;
+    background-color: var(--input);
     color: var(--foreground);
+    border: var(--border-width) solid var(--border);
+    box-shadow: 3px 3px 0px var(--shadow-color);
     outline: none;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
-.neo-input:focus {
+.neo-input::placeholder {
+    color: var(--muted-foreground);
+    opacity: 0.8;
+}
+
+.neo-input:focus,
+.neo-input.neo-box:focus {
     box-shadow: 4px 4px 0px var(--accent);
     border-color: var(--accent);
     transform: translate(-2px, -2px);
 }
 
 .neo-btn {
-    display: inline-block;
-    width: 100%;
-    padding: 0.8rem 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    width: auto;
+    padding: 0.75rem 1.35rem;
     font-family: inherit;
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 800;
     text-align: center;
+    text-decoration: none;
     background-color: var(--accent);
     color: var(--accent-foreground);
+    border: var(--border-width) solid var(--border);
+    box-shadow: var(--shadow-offset-x) var(--shadow-offset-y) var(--shadow-blur) var(--shadow-color);
     cursor: pointer;
     text-transform: uppercase;
+    line-height: 1.25;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease, color 0.12s ease;
 }
 
 .neo-btn:hover {
     background-color: var(--primary);
-    color: var(--primary-foreground);
-    transform: translate(-4px, -4px);
-    box-shadow: calc(var(--shadow-offset-x) + 4px) calc(var(--shadow-offset-y) + 4px) 0px var(--shadow-color);
+    color: var(--primary-foreground) !important;
+    transform: translate(-3px, -3px);
+    box-shadow: calc(var(--shadow-offset-x) + 3px) calc(var(--shadow-offset-y) + 3px) 0px var(--shadow-color);
 }
 
 .neo-btn:active {
@@ -495,8 +584,8 @@ a.neo-card:hover {
     }
     
     .neo-layout-container {
-        padding: 1.5rem 1rem;
-        margin-top: 140px;
+        padding: 1.25rem 1rem 2.5rem 1rem;
+        margin-top: 0;
     }
 
     .neo-tabs {
@@ -1212,9 +1301,13 @@ a.neo-card:active,
     margin-top: 1rem;
 }
 
+.neo-modal-footer .neo-btn {
+    flex: 1;
+}
+
 .neo-btn-cancel {
     background-color: var(--muted);
-    color: var(--muted-foreground);
+    color: var(--foreground);
 }
 
 .neo-btn-confirm {
@@ -1224,11 +1317,11 @@ a.neo-card:active,
 
 /* Dark mode overrides if necessary */
 .dark-mode .neo-toast-success {
-    background-color: #2e8b57;
+    background-color: #16a34a;
     color: #fff;
 }
 .dark-mode .neo-toast-error {
-    background-color: #cc0000;
+    background-color: #dc2626;
     color: #fff;
 }
 
@@ -1238,24 +1331,60 @@ a.neo-card:active,
 .ql-toolbar.ql-snow {
     border: 3px solid var(--border) !important;
     border-bottom: none !important;
-    background-color: var(--card);
+    background-color: var(--muted) !important;
     border-radius: 0 !important;
     font-family: inherit !important;
 }
 
 .ql-container.ql-snow {
     border: 3px solid var(--border) !important;
-    background-color: var(--card);
+    background-color: var(--input) !important;
+    color: var(--foreground) !important;
     border-radius: 0 !important;
     font-family: inherit !important;
     font-size: 1rem !important;
-    box-shadow: 4px 4px 0px var(--border);
+    box-shadow: 4px 4px 0px var(--shadow-color);
     transition: all 0.15s ease-in-out;
 }
 
 .ql-container.ql-snow:focus-within {
-    box-shadow: 0px 0px 0px var(--border);
+    box-shadow: 0px 0px 0px var(--shadow-color);
     transform: translate(4px, 4px);
+}
+
+html.dark-mode .ql-toolbar.ql-snow .ql-stroke {
+    stroke: var(--foreground) !important;
+}
+
+html.dark-mode .ql-toolbar.ql-snow .ql-fill,
+html.dark-mode .ql-toolbar.ql-snow .ql-stroke.ql-fill {
+    fill: var(--foreground) !important;
+}
+
+html.dark-mode .ql-toolbar.ql-snow .ql-picker {
+    color: var(--foreground) !important;
+}
+
+html.dark-mode .ql-toolbar.ql-snow .ql-picker-options {
+    background-color: var(--card) !important;
+    color: var(--foreground) !important;
+    border: 2px solid var(--border) !important;
+}
+
+html.dark-mode .ql-toolbar.ql-snow button:hover .ql-stroke,
+html.dark-mode .ql-toolbar.ql-snow button.ql-active .ql-stroke,
+html.dark-mode .ql-toolbar.ql-snow .ql-picker-label:hover .ql-stroke {
+    stroke: var(--secondary) !important;
+}
+
+html.dark-mode .ql-toolbar.ql-snow button:hover .ql-fill,
+html.dark-mode .ql-toolbar.ql-snow button.ql-active .ql-fill {
+    fill: var(--secondary) !important;
+}
+
+html.dark-mode .ql-editor.ql-blank::before {
+    color: var(--muted-foreground) !important;
+    opacity: 0.7;
 }
 
 /* ========================================
@@ -1271,7 +1400,7 @@ a.neo-card:active,
 .neo-summary-card {
     background-color: var(--card);
     border: 4px solid var(--border);
-    box-shadow: 6px 6px 0px var(--border);
+    box-shadow: 6px 6px 0px var(--shadow-color);
     padding: 1.5rem;
     display: flex;
     flex-direction: column;
@@ -1282,7 +1411,7 @@ a.neo-card:active,
 
 .neo-summary-card:hover {
     transform: translate(-3px, -3px);
-    box-shadow: 9px 9px 0px var(--border);
+    box-shadow: 9px 9px 0px var(--shadow-color);
 }
 
 .neo-summary-icon {
@@ -1315,20 +1444,20 @@ a.neo-card:active,
 .neo-table {
     width: 100%;
     border-collapse: collapse;
-    border: 4px solid var(--border);
+    border: 3px solid var(--border);
     background-color: var(--card);
-    box-shadow: 8px 8px 0px var(--border);
+    box-shadow: 5px 5px 0px var(--shadow-color);
 }
 
 .neo-table th {
-    padding: 1.2rem 1rem;
+    padding: 1rem;
     background-color: var(--secondary);
-    color: #000;
-    border-bottom: 4px solid var(--border);
-    border-right: 3px solid var(--border);
+    color: #000000 !important;
+    border-bottom: 3px solid var(--border);
+    border-right: 2px solid var(--border);
     text-transform: uppercase;
     font-weight: 900;
-    font-size: 1.1rem;
+    font-size: 0.95rem;
     text-align: left;
 }
 
@@ -1337,12 +1466,12 @@ a.neo-card:active,
 }
 
 .neo-table td {
-    padding: 1rem;
-    border-bottom: 3px solid var(--border);
-    border-right: 3px solid var(--border);
-    font-size: 1rem;
+    padding: 0.9rem 1rem;
+    border-bottom: 2px solid var(--border);
+    border-right: 2px solid var(--border);
+    font-size: 0.95rem;
     font-weight: 600;
-    color: var(--foreground);
+    color: var(--card-foreground);
 }
 
 .neo-table td:last-child {
@@ -1351,6 +1480,214 @@ a.neo-card:active,
 
 .neo-table tbody tr:hover {
     background-color: var(--muted);
+}
+
+/* ========================================
+   UNIFIED NEO-BRUTALISM SITE FOOTER
+   ======================================== */
+.neo-site-footer {
+    background-color: #18181B;
+    color: #F9FAFB;
+    border-top: 5px solid #000000;
+    margin-top: auto;
+    width: 100%;
+}
+
+html.dark-mode .neo-site-footer {
+    border-top-color: var(--border);
+}
+
+.neo-footer-marquee {
+    background-color: #111113;
+    color: #FFD700;
+    border-bottom: 3px solid #27272A;
+    padding: 10px 0;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.neo-footer-marquee-track {
+    display: inline-flex;
+    gap: 2.5rem;
+    animation: neoFooterTicker 28s linear infinite;
+    font-size: 0.8rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.neo-footer-marquee-track span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+@keyframes neoFooterTicker {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+
+.neo-footer-main {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 3.25rem 1.5rem 2.25rem 1.5rem;
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr 1.2fr;
+    gap: 2.5rem;
+}
+
+@media (max-width: 960px) {
+    .neo-footer-main {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 2rem;
+    }
+}
+
+@media (max-width: 600px) {
+    .neo-footer-main {
+        grid-template-columns: 1fr;
+        gap: 1.75rem;
+        padding: 2.5rem 1.25rem 1.75rem 1.25rem;
+    }
+}
+
+.neo-footer-brand-logo {
+    font-size: 1.65rem;
+    font-weight: 900;
+    color: #FFD700;
+    margin-bottom: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    line-height: 1.1;
+    text-decoration: none;
+}
+
+.neo-footer-brand-desc {
+    font-size: 0.95rem;
+    color: #D1D5DB;
+    line-height: 1.6;
+    font-weight: 500;
+    margin-bottom: 1.25rem;
+}
+
+.neo-footer-socials {
+    display: flex;
+    gap: 12px;
+}
+
+.neo-footer-social-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background-color: #FFFFFF;
+    color: #000000 !important;
+    border: 3px solid #000000;
+    font-size: 1.4rem;
+    text-decoration: none;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease;
+}
+
+.neo-footer-social-btn:hover {
+    transform: translate(-3px, -3px);
+    background-color: #FFD700;
+}
+
+.neo-footer-heading {
+    font-size: 1.1rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    margin-bottom: 1.15rem;
+    color: #FFFFFF !important;
+    display: inline-block;
+    padding-bottom: 5px;
+    letter-spacing: 0.04em;
+}
+
+.neo-footer-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+
+.neo-footer-list li {
+    color: #D1D5DB;
+}
+
+.neo-footer-link {
+    color: #D1D5DB !important;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.neo-footer-link:hover {
+    color: #FFD700 !important;
+    transform: translateX(4px);
+}
+
+.neo-footer-contact-item {
+    color: #D1D5DB;
+    font-weight: 600;
+    font-size: 0.92rem;
+    line-height: 1.55;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.neo-footer-contact-item i {
+    font-size: 1.2rem;
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.neo-footer-bottom {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 1.25rem 1.5rem 1.75rem 1.5rem;
+    border-top: 2px solid #27272A;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    font-weight: 700;
+    color: #9CA3AF;
+    font-size: 0.85rem;
+}
+
+.neo-footer-bottom-links {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+}
+
+.neo-footer-bottom-links a {
+    color: #9CA3AF !important;
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+.neo-footer-bottom-links a:hover {
+    color: #FFD700 !important;
+}
+
+@media print {
+    .neo-site-footer,
+    .no-print {
+        display: none !important;
+    }
 }
 
 /* Custom Cursor CSS (Global) - Only for devices with fine pointers (mouse) */

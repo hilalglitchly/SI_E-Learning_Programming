@@ -38,13 +38,14 @@
    TICKER / MARQUEE BAR
    ============================================ */
 .forum-ticker {
-    background-color: var(--foreground);
-    color: var(--background);
-    padding: 8px 0;
+    background-color: #18181B;
+    color: #F9FAFB;
+    padding: 9px 0;
     overflow: hidden;
     white-space: nowrap;
-    border-bottom: 3px solid var(--border);
-    font-weight: 700;
+    border-top: 3px solid #000000;
+    border-bottom: 3px solid #000000;
+    font-weight: 800;
     font-size: 0.85rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -63,8 +64,8 @@
 }
 
 .forum-ticker-inner span i {
-    color: var(--secondary);
-    font-size: 1em;
+    color: #FFD700;
+    font-size: 1.05em;
 }
 
 @keyframes tickerScroll {
@@ -206,11 +207,13 @@
 
 .forum-sort-tab:hover {
     background-color: var(--muted);
+    color: var(--foreground);
 }
 
-.forum-sort-tab.active {
+.forum-sort-tab.active,
+.forum-sort-tab.active:hover {
     background-color: var(--secondary);
-    color: #000;
+    color: #000000 !important;
 }
 
 /* ============================================
@@ -961,9 +964,9 @@ html.dark-mode .forum-announcement {
    FORUM FOOTER
    ============================================ */
 .forum-footer {
-    background-color: var(--foreground);
-    color: var(--background);
-    border-top: 4px solid var(--border);
+    background-color: #18181B;
+    color: #F9FAFB;
+    border-top: 4px solid #000000;
     margin-top: 2rem;
 }
 
@@ -971,12 +974,13 @@ html.dark-mode .forum-announcement {
     padding: 10px 0;
     overflow: hidden;
     white-space: nowrap;
-    border-bottom: 3px solid rgba(255, 255, 255, 0.2);
+    border-bottom: 3px solid #27272A;
     font-weight: 800;
     font-size: 0.8rem;
     text-transform: uppercase;
     letter-spacing: 1px;
-    color: var(--secondary);
+    color: #FFD700;
+    background-color: #111113;
 }
 
 .forum-footer-marquee-inner {
@@ -1009,13 +1013,14 @@ html.dark-mode .forum-announcement {
     display: flex;
     flex-direction: column;
     line-height: 1.1;
+    color: #FFD700;
 }
 
 .forum-footer-brand small {
-    font-size: 0.6rem;
+    font-size: 0.65rem;
     font-weight: 600;
     letter-spacing: 0.5px;
-    color: var(--muted-foreground);
+    color: #D1D5DB;
 }
 
 .forum-footer-links {
@@ -1025,7 +1030,7 @@ html.dark-mode .forum-announcement {
 }
 
 .forum-footer-links a {
-    color: var(--background);
+    color: #E5E7EB;
     text-decoration: none;
     font-size: 0.82rem;
     font-weight: 700;
@@ -1034,15 +1039,15 @@ html.dark-mode .forum-announcement {
 }
 
 .forum-footer-links a:hover {
-    color: var(--secondary);
+    color: #FFD700;
 }
 
 .forum-footer-copy {
     font-size: 0.75rem;
-    color: var(--muted-foreground);
+    color: #9CA3AF;
     text-align: center;
     padding: 12px 2rem;
-    border-top: 2px solid rgba(255, 255, 255, 0.1);
+    border-top: 2px solid #27272A;
 }
 
 /* ============================================

@@ -169,6 +169,11 @@
             background-color: #FEF9C3;
             color: #000;
         }
+        .lap-table tbody tr:hover td,
+        .lap-table tbody tr:hover td div,
+        .lap-table tbody tr:hover td span:not(.badge-aktif):not(.badge-kosong) {
+            color: #000 !important;
+        }
         .lap-table tfoot tr {
             background-color: #E5E7EB;
             color: #000;

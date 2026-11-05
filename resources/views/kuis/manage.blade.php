@@ -18,10 +18,10 @@
 
             <!-- Info Kuis -->
             <div class="neo-box" style="background-color: var(--secondary); color: var(--secondary-foreground);">
-                <span class="badge-kode" style="background-color: #fff;">{{ $kuis['nama_kelas'] }}</span>
-                <h2 style="margin-bottom: 8px;">{{ $kuis['judul_kuis'] }}</h2>
-                <p style="margin-bottom: 8px;">{{ $kuis['deskripsi'] }}</p>
-                <div style="font-weight: bold; font-size: 0.9em;">⏱ Durasi: {{ $kuis['durasi_menit'] }} Menit | Total Soal: {{ count($daftarSoal) }}</div>
+                <span class="badge-kode" style="background-color: #fff; color: #000;">{{ $kuis['nama_kelas'] }}</span>
+                <h2 style="margin-bottom: 8px; color: #000;">{{ $kuis['judul_kuis'] }}</h2>
+                <p style="margin-bottom: 8px; color: #000;">{{ $kuis['deskripsi'] }}</p>
+                <div style="font-weight: bold; font-size: 0.9em; color: #000;">⏱ Durasi: {{ $kuis['durasi_menit'] }} Menit | Total Soal: {{ count($daftarSoal) }}</div>
             </div>
 
             <!-- Form Tambah Soal -->

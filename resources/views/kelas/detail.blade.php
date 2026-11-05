@@ -151,7 +151,7 @@
         .btn-small {
             display: inline-block;
             background-color: var(--foreground);
-            color: var(--primary-foreground);
+            color: var(--background);
             padding: 0.5rem 1rem;
             text-decoration: none;
             font-weight: bold;
@@ -164,7 +164,7 @@
         
         .btn-small:hover {
             background-color: var(--classroom-accent);
-            color: var(--primary-foreground);
+            color: #ffffff;
         }
 
         /* INPUT SHARE */
@@ -191,12 +191,13 @@
         .share-icon {
             width: 40px;
             height: 40px;
-            background-color: var(--foreground);
+            background-color: var(--secondary);
+            border: 2px solid var(--border);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--primary-foreground);
+            color: #000000;
             font-weight: bold;
             flex-shrink: 0;
         }
@@ -360,12 +361,11 @@
 @section('content')
 <!-- MAIN CONTENT -->
 <main class="neo-layout-container" style="background-color: var(--classroom-bg);">
-    <!-- Page Header -->
-    <div style="margin-bottom: 2rem; margin-top: 1rem; padding-left: 2rem;">
-        <a href="{{ route('dashboard') }}" class="brutal-hover neo-box" style="background-color: var(--classroom-accent); padding: 0.5rem 1rem; text-decoration: none; color: var(--primary-foreground); font-weight: 800; font-size: 0.9rem; display: inline-block;">← KEMBALI</a>
-    </div>
-
-    <div class="neo-content-inner" style="max-width: 1200px; padding: 0 2rem 3rem 2rem;">
+    <div class="neo-content-inner" style="max-width: 1200px; margin: 0 auto; padding: 0.5rem 1rem 2rem 1rem;">
+        <!-- Page Header -->
+        <div style="margin-bottom: 1.5rem;">
+            <a href="{{ route('dashboard') }}" class="brutal-hover neo-box" style="background-color: var(--classroom-accent); padding: 0.55rem 1.15rem; text-decoration: none; color: #ffffff; font-weight: 800; font-size: 0.9rem; display: inline-block;">← KEMBALI KE DASHBOARD</a>
+        </div>
 
         @if (!empty($pesan))
             <div class="neo-alert-success brutal-hover">{{ $pesan }}</div>
@@ -375,10 +375,10 @@
         @if (strtolower($role) === 'murid')
         <div class="brutal-card" style="margin-bottom: 2rem; border-left: 10px solid #4CAF50;">
             <h3 style="font-size: 1.2rem; text-transform: uppercase; font-weight: 800; margin-bottom: 0.5rem;">Progress Belajar Anda</h3>
-            <div style="background-color: var(--background); border: 3px solid var(--border); height: 30px; position: relative; width: 100%; box-shadow: 3px 3px 0px var(--border);">
+            <div style="background-color: var(--background); border: 3px solid var(--border); height: 32px; position: relative; width: 100%; box-shadow: 3px 3px 0px var(--shadow-color);">
                 <div style="background-color: #4CAF50; height: 100%; width: {{ $progressValue }}%; transition: width 0.5s ease-in-out;"></div>
-                <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: 900; color: var(--foreground); mix-blend-mode: difference; text-shadow: 1px 1px 0px #fff;">
-                    {{ $progressValue }}%
+                <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+                    <span style="background-color: #000000; color: #ffffff; padding: 1px 10px; font-size: 0.8rem; font-weight: 900; letter-spacing: 0.04em;">{{ $progressValue }}%</span>
                 </div>
             </div>
         </div>
@@ -605,8 +605,8 @@
                             </div>
                         @endif
 
-                        <div style="display: inline-block; background-color: var(--foreground); padding: 0.4rem 0.8rem; font-weight: bold; color: var(--primary-foreground); font-size: 0.9rem; text-transform: uppercase;">
-                            Tenggat: {{ $tugas['deadline'] }}
+                        <div style="display: inline-block; background-color: var(--secondary); padding: 0.4rem 0.8rem; font-weight: 800; color: #000000; border: 2px solid var(--border); box-shadow: 2px 2px 0px var(--shadow-color); font-size: 0.9rem; text-transform: uppercase;">
+                            ⏰ Tenggat: {{ $tugas['deadline'] }}
                         </div>
                         @if (in_array($tugas['id_tugas'], $submittedTugasIds))
                             <div style="display: inline-block; margin-left: 1rem; background-color: #4CAF50; padding: 0.4rem 0.8rem; font-weight: bold; color: #fff; font-size: 0.9rem; text-transform: uppercase; border: 2px solid #000; box-shadow: 2px 2px 0px #000;">
@@ -669,7 +669,7 @@
                 <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
                     @foreach ($pesertaList as $p)
                         <div class="brutal-card" style="display: flex; align-items: center; gap: 1rem; padding: 1rem;">
-                            <div class="share-icon" style="background-color: var(--primary-foreground); color: var(--foreground); border: 3px solid var(--border); box-shadow: var(--shadow-offset-x) var(--shadow-offset-y) var(--shadow-blur) var(--shadow-color);">👤</div>
+                            <div class="share-icon" style="background-color: var(--secondary); color: #000000; border: 3px solid var(--border); box-shadow: var(--shadow-offset-x) var(--shadow-offset-y) var(--shadow-blur) var(--shadow-color);">👤</div>
                             <div>
                                 <div style="font-weight: bold; font-size: 1.1rem;">{{ $p['nama_murid'] }}</div>
                                 <div style="font-size: 0.85rem; color: var(--muted-foreground); font-weight: bold;">{{ $p['nim'] }}</div>

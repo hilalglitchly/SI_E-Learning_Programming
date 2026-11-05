@@ -104,3 +104,9 @@ function NeoConfirm(title, text, confirmCallback) {
         }
     });
 }
+
+function NeoAlert(title, message, type = 'success') {
+    const fullText = message ? `${title} — ${message}` : title;
+    NeoToast(fullText, type);
+}
+

@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'E-Learning Programming')</title>
     @yield('meta')
@@ -17,7 +18,11 @@
 
 @yield('content')
 
-@yield('footer')
+@hasSection('footer')
+    @yield('footer')
+@else
+    @include('partials.footer')
+@endif
 
 @include('partials.cursor')
 

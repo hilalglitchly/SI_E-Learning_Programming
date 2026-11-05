@@ -165,7 +165,7 @@
 
                 <style>
                     @media print {
-                        .neo-navbar, .pimpinan-no-print, #custom-cursor { display: none !important; }
+                        .neo-navbar, .neo-site-footer, .pimpinan-no-print, #custom-cursor { display: none !important; }
                         body, .neo-layout-container, .neo-content-inner { background: #fff !important; color: #000 !important; padding: 0 !important; margin: 0 !important; }
                         .neo-box { box-shadow: none !important; border: 2px solid #000 !important; page-break-inside: avoid; }
                         .pimpinan-stat-grid { grid-template-columns: repeat(4, 1fr) !important; }

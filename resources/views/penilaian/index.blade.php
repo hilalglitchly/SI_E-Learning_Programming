@@ -19,10 +19,10 @@
 
             <!-- Info Tugas -->
             <div class="neo-box" style="background-color: var(--secondary); color: var(--secondary-foreground);">
-                <span class="badge-kode" style="background-color: #fff;">{{ $infoTugas['nama_kelas'] }}</span>
-                <h2 style="margin-bottom: 8px;">{{ $infoTugas['judul_tugas'] }}</h2>
-                <p style="margin-bottom: 12px;">{!! sanitize_rich_text($infoTugas['deskripsi']) !!}</p>
-                <div style="font-size: 0.9em; font-weight: bold;">
+                <span class="badge-kode" style="background-color: #fff; color: #000;">{{ $infoTugas['nama_kelas'] }}</span>
+                <h2 style="margin-bottom: 8px; color: #000;">{{ $infoTugas['judul_tugas'] }}</h2>
+                <div style="margin-bottom: 12px; color: #000;">{!! sanitize_rich_text($infoTugas['deskripsi']) !!}</div>
+                <div style="font-size: 0.9em; font-weight: bold; color: #000;">
                     ⏰ Tenggat Waktu: {{ date('d M Y, H:i', strtotime($infoTugas['deadline'])) }}
                 </div>
             </div>
@@ -31,7 +31,7 @@
 
             @if (count($daftarSubmission) > 0)
                 <div class="neo-box" style="padding: 0; overflow-x: auto;">
-                    <table class="neo-table" style="margin-top: 0; border: none;">
+                    <table class="neo-table" style="margin-top: 0; border: none; box-shadow: none;">
                         <thead>
                             <tr>
                                 <th>NIM</th>

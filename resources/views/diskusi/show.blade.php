@@ -56,12 +56,11 @@
 @section('content')
 <!-- MAIN CONTENT -->
 <main class="neo-layout-container" style="background-color: var(--classroom-bg);">
-    <!-- Page Header -->
-    <div style="margin-bottom: 2rem; margin-top: 1rem; padding-left: 2rem;">
-        <a href="{{ route('kelas.show', ['id' => $diskusi['id_kelas']]) }}" class="brutal-hover neo-box" style="background-color: var(--classroom-accent); padding: 0.5rem 1rem; text-decoration: none; color: var(--primary-foreground); font-weight: 800; font-size: 0.9rem; display: inline-block;">← KEMBALI KE KELAS</a>
-    </div>
-
-    <div class="neo-content-inner" style="max-width: 900px; margin: 0 auto; padding: 0 2rem 3rem 2rem;">
+    <div class="neo-content-inner" style="max-width: 900px; margin: 0 auto; padding: 0.5rem 1rem 2rem 1rem;">
+        <!-- Page Header -->
+        <div style="margin-bottom: 1.5rem;">
+            <a href="{{ route('kelas.show', ['id' => $diskusi['id_kelas']]) }}" class="brutal-hover neo-box" style="background-color: var(--classroom-accent); padding: 0.55rem 1.15rem; text-decoration: none; color: #ffffff; font-weight: 800; font-size: 0.9rem; display: inline-block;">← KEMBALI KE KELAS</a>
+        </div>
         
         @if (!empty($pesan))
             <div class="brutal-card" style="background-color: #a8e6cf; color: black; font-weight: bold;">{{ $pesan }}</div>
