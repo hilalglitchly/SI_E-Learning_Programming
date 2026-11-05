@@ -276,6 +276,8 @@ body.dark-mode::before {
     margin: 0 auto;
     padding: 0 1.5rem;
     flex: 1;
+    box-shadow: none !important;
+    border: none !important;
 }
 
 .neo-layout-container {
@@ -284,6 +286,8 @@ body.dark-mode::before {
     margin: 0 auto;
     padding: 1.5rem 2rem 3.5rem 2rem;
     flex: 1;
+    box-shadow: none !important;
+    border: none !important;
 }
 
 .neo-layout-grid {
@@ -648,7 +652,6 @@ a.neo-card:hover {
 }
 
 /* Terapkan animasi saat halaman dimuat */
-.neo-container, 
 .neo-card, 
 .neo-summary-card, 
 .neo-alert-success,
