@@ -107,24 +107,36 @@ html.theme-transition .neo-navbar {
 /* ========================================
    CUSTOM SCROLLBAR
    ======================================== */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #a1a1aa transparent;
+}
+html.dark-mode * {
+    scrollbar-color: #52525b transparent;
+}
+
 ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
 }
 ::-webkit-scrollbar-track {
-    background: transparent;
-    border: none;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
 }
 ::-webkit-scrollbar-thumb {
-    background: var(--muted);
-    border: 2px solid transparent;
+    background: #a1a1aa;
+    border: none !important;
     border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
     background: var(--secondary);
 }
+::-webkit-scrollbar-corner {
+    background: transparent;
+}
 html.dark-mode ::-webkit-scrollbar-thumb {
-    background: #3f3f46;
+    background: #52525b;
 }
 html.dark-mode ::-webkit-scrollbar-thumb:hover {
     background: var(--secondary);
