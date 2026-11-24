@@ -66,17 +66,17 @@
                 
                 <div class="neo-form-group">
                     <label class="neo-label" for="username">Username</label>
-                    <input type="text" id="username" name="username" class="neo-input" placeholder="Pilih username unik..." value="{{ old('username') }}" required autocomplete="off">
+                    <input type="text" id="username" name="username" class="neo-input" placeholder="Pilih username unik (3–50 karakter)..." value="{{ old('username') }}" pattern="[a-zA-Z0-9_.-]{3,50}" minlength="3" maxlength="50" required autocomplete="off">
                 </div>
 
                 <div class="neo-form-group">
                     <label class="neo-label" for="password">Password</label>
-                    <input type="password" id="password" name="password" class="neo-input" placeholder="Buat password..." required>
+                    <input type="password" id="password" name="password" class="neo-input" placeholder="Buat password (min. 8 karakter)..." minlength="8" required autocomplete="new-password">
                 </div>
 
                 <div class="neo-form-group" style="margin-bottom: 30px;">
                     <label class="neo-label" for="konfirmasi_password">Konfirmasi Password</label>
-                    <input type="password" id="konfirmasi_password" name="konfirmasi_password" class="neo-input" placeholder="Ulangi password..." required>
+                    <input type="password" id="konfirmasi_password" name="konfirmasi_password" class="neo-input" placeholder="Ulangi password..." minlength="8" required autocomplete="new-password">
                 </div>
 
                 <button type="submit" name="register" class="neo-btn" style="width: 100%; font-size: 1.1rem; padding: 15px; background-color: var(--secondary); color: #000;">

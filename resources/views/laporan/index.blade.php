@@ -364,13 +364,13 @@
                 Laporan Rekapitulasi Akademik &amp; Aktivitas Kelas
             </div>
             <div style="font-size: 8.5pt; color: #444; margin-top: 2px;">
-                Gedung Inovasi Digital Lt. 4, Jl. Teknologi Raya No. 404, Jakarta Selatan &bull; support@elearning.local
+                {{ config('app.contact.address_line1') }}, {{ config('app.contact.address_line2') }} &bull; {{ config('app.contact.email') }}
             </div>
         </div>
         <div style="text-align: right; font-size: 8.5pt;">
             <div><strong>Tanggal Cetak:</strong> {{ date('d F Y, H:i') }} WIB</div>
             <div><strong>Dicetak oleh:</strong> {{ $username }} ({{ $role }})</div>
-            <div><strong>Semester:</strong> Genap 2025/2026</div>
+            <div><strong>Semester:</strong> {{ date('n') <= 6 ? 'Genap ' . (date('Y') - 1) . '/' . date('Y') : 'Ganjil ' . date('Y') . '/' . (date('Y') + 1) }}</div>
         </div>
     </div>
 
@@ -379,7 +379,7 @@
          ===================================================== -->
     <div class="lap-header">
         <div>
-            <div class="lap-header-tag">📊 Sistem Informasi E-Learning Programming &bull; Semester Genap 2025/2026</div>
+            <div class="lap-header-tag">📊 Sistem Informasi E-Learning Programming &bull; Semester {{ date('n') <= 6 ? 'Genap ' . (date('Y') - 1) . '/' . date('Y') : 'Ganjil ' . date('Y') . '/' . (date('Y') + 1) }}</div>
             <h1>
                 Laporan Rekapitulasi Sistem
             </h1>

@@ -18,6 +18,13 @@ return [
 
     'name' => env('APP_NAME', 'Laravel'),
 
+    'contact' => [
+        'email' => env('CONTACT_EMAIL', 'support@elearning.local'),
+        'phone' => env('CONTACT_PHONE', '+62 812-3456-7890'),
+        'address_line1' => env('CONTACT_ADDRESS_LINE1', 'Gedung Inovasi Digital Lt. 4'),
+        'address_line2' => env('CONTACT_ADDRESS_LINE2', 'Jl. Teknologi Raya No. 404, Jakarta Selatan'),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Application Environment

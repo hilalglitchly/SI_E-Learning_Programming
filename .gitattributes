@@ -9,3 +9,12 @@
 /.github export-ignore
 CHANGELOG.md export-ignore
 .styleci.yml export-ignore
+/database.sql export-ignore
+/database_forum.sql export-ignore
+/perancangan_database.* export-ignore
+/perancangan_database_final.pdf export-ignore
+/docs export-ignore
+/scripts export-ignore
+/SKILL.md export-ignore
+/tests export-ignore
+/phpunit.xml export-ignore

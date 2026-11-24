@@ -58,8 +58,8 @@
 
                     <div class="neo-form-group">
                         <label class="neo-label">Password</label>
-                        <input type="text" name="password" class="neo-input" value="{{ old('password', '12345') }}" required>
-                        <small style="color: var(--muted-foreground); font-weight: bold;">*Default password disarankan: 12345 (dapat diubah oleh user nanti)</small>
+                        <input type="password" name="password" class="neo-input" placeholder="Minimal 8 karakter..." minlength="8" required autocomplete="new-password">
+                        <small style="color: var(--muted-foreground); font-weight: bold;">*Minimal 8 karakter. Minta pengguna segera mengganti password setelah login pertama.</small>
                     </div>
 
                     <button type="submit" name="simpan_user" value="1" class="neo-btn" style="width: 100%; font-size: 1.1rem; padding: 14px;">+ Daftarkan Pengguna</button>

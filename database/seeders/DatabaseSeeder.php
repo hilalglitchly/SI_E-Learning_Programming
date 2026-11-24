@@ -11,25 +11,27 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        $driver = DB::getDriverName();
+        if ($driver === 'mysql') {
+            DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        } elseif ($driver === 'sqlite') {
+            DB::statement('PRAGMA foreign_keys = OFF;');
+        }
 
-        DB::table('tb_user')->truncate();
-        DB::table('tb_pengajar')->truncate();
-        DB::table('tb_murid')->truncate();
-        DB::table('tb_kelas')->truncate();
-        DB::table('tb_peserta_kelas')->truncate();
-        DB::table('tb_materi')->truncate();
-        DB::table('tb_tugas')->truncate();
-        DB::table('tb_kuis')->truncate();
-        DB::table('tb_soal_kuis')->truncate();
-        DB::table('tb_nilai_kuis')->truncate();
-        DB::table('tb_forum_tag')->truncate();
-        DB::table('tb_forum_post')->truncate();
-        DB::table('tb_forum_post_tag')->truncate();
-        DB::table('tb_forum_jawaban')->truncate();
-        DB::table('tb_forum_vote')->truncate();
+        $tables = [
+            'tb_user', 'tb_pengajar', 'tb_murid', 'tb_kelas', 'tb_peserta_kelas',
+            'tb_materi', 'tb_tugas', 'tb_kuis', 'tb_soal_kuis', 'tb_nilai_kuis',
+            'tb_forum_tag', 'tb_forum_post', 'tb_forum_post_tag', 'tb_forum_jawaban', 'tb_forum_vote',
+        ];
+        foreach ($tables as $t) {
+            DB::table($t)->truncate();
+        }
 
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        if ($driver === 'mysql') {
+            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        } elseif ($driver === 'sqlite') {
+            DB::statement('PRAGMA foreign_keys = ON;');
+        }
 
         $defaultPassword = Hash::make('password123');
 

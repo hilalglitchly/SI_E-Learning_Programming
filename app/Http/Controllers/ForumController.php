@@ -64,6 +64,15 @@ class ForumController extends Controller
                 $where_sql = 'WHERE ' . implode(' AND ', $where_clauses);
                 $order_sql = "ORDER BY p.tgl_post DESC";
                 break;
+            case 'saved':
+                if (!$id_user) {
+                    return redirect()->route('login', ['msg' => 'login_required']);
+                }
+                $where_clauses[] = "p.id_post IN (SELECT fs.id_post FROM tb_forum_simpan fs WHERE fs.id_user = ?)";
+                $params[] = $id_user;
+                $where_sql = 'WHERE ' . implode(' AND ', $where_clauses);
+                $order_sql = "ORDER BY p.tgl_post DESC";
+                break;
             default: // 'hot'
                 $order_sql = "ORDER BY p.is_pinned DESC, (vote_count * 2 + p.views * 0.05 + jawaban_count * 3) DESC, p.tgl_post DESC";
                 break;
@@ -86,32 +95,48 @@ class ForumController extends Controller
         ";
 
         $postRows = DB::select($sql, $params);
+        $postIds = array_map(fn($r) => (int) $r->id_post, $postRows);
+
+        $tagsByPost = [];
+        $votesByPost = [];
+        $bookmarksSet = [];
+
+        if (!empty($postIds)) {
+            $placeholders = implode(',', array_fill(0, count($postIds), '?'));
+            $tagRows = DB::select("
+                SELECT pt.id_post, t.nama_tag, t.warna
+                FROM tb_forum_post_tag pt
+                JOIN tb_forum_tag t ON pt.id_tag = t.id_tag
+                WHERE pt.id_post IN ({$placeholders})
+            ", $postIds);
+            foreach ($tagRows as $tr) {
+                $tagsByPost[(int) $tr->id_post][] = [
+                    'nama_tag' => $tr->nama_tag,
+                    'warna' => $tr->warna,
+                ];
+            }
+
+            if ($id_user) {
+                $votesByPost = ForumVote::where('id_user', $id_user)
+                    ->whereIn('id_post', $postIds)
+                    ->pluck('tipe_vote', 'id_post')
+                    ->toArray();
+
+                $bookmarksSet = ForumSimpan::where('id_user', $id_user)
+                    ->whereIn('id_post', $postIds)
+                    ->pluck('id_post')
+                    ->flip()
+                    ->toArray();
+            }
+        }
+
         $posts = [];
         foreach ($postRows as $row) {
             $p = (array) $row;
-
-            $tagRows = DB::select("
-                SELECT t.nama_tag, t.warna 
-                FROM tb_forum_post_tag pt 
-                JOIN tb_forum_tag t ON pt.id_tag = t.id_tag 
-                WHERE pt.id_post = ?
-            ", [$p['id_post']]);
-            $p['tags'] = array_map(fn($r) => (array) $r, $tagRows);
-
-            if ($id_user) {
-                $voteRow = ForumVote::where('id_user', $id_user)
-                    ->where('id_post', $p['id_post'])
-                    ->first();
-                $p['user_vote'] = $voteRow ? $voteRow->tipe_vote : null;
-
-                $p['bookmarked'] = ForumSimpan::where('id_user', $id_user)
-                    ->where('id_post', $p['id_post'])
-                    ->exists();
-            } else {
-                $p['user_vote'] = null;
-                $p['bookmarked'] = false;
-            }
-
+            $pid = (int) $p['id_post'];
+            $p['tags'] = $tagsByPost[$pid] ?? [];
+            $p['user_vote'] = $votesByPost[$pid] ?? null;
+            $p['bookmarked'] = isset($bookmarksSet[$pid]);
             $posts[] = $p;
         }
 
@@ -140,17 +165,19 @@ class ForumController extends Controller
         $totalForumPosts = ForumPost::count();
 
         $topContribRows = DB::select("
-            SELECT u.username, u.role,
-                (SELECT COALESCE(SUM(CASE WHEN v.tipe_vote = 'up' THEN 1 ELSE 0 END), 0)
-                 FROM tb_forum_vote v 
-                 JOIN tb_forum_post p2 ON v.id_post = p2.id_post 
-                 WHERE p2.id_user = u.id_user) +
-                (SELECT COALESCE(SUM(CASE WHEN v2.tipe_vote = 'up' THEN 1 ELSE 0 END), 0)
-                 FROM tb_forum_vote v2 
-                 JOIN tb_forum_jawaban j2 ON v2.id_jawaban = j2.id_jawaban 
-                 WHERE j2.id_user = u.id_user) as total_score
-            FROM tb_user u
-            HAVING total_score > 0
+            SELECT username, role, total_score FROM (
+                SELECT u.username, u.role,
+                    (SELECT COALESCE(SUM(CASE WHEN v.tipe_vote = 'up' THEN 1 ELSE 0 END), 0)
+                     FROM tb_forum_vote v 
+                     JOIN tb_forum_post p2 ON v.id_post = p2.id_post 
+                     WHERE p2.id_user = u.id_user) +
+                    (SELECT COALESCE(SUM(CASE WHEN v2.tipe_vote = 'up' THEN 1 ELSE 0 END), 0)
+                     FROM tb_forum_vote v2 
+                     JOIN tb_forum_jawaban j2 ON v2.id_jawaban = j2.id_jawaban 
+                     WHERE j2.id_user = u.id_user) AS total_score
+                FROM tb_user u
+            ) AS contrib
+            WHERE total_score > 0
             ORDER BY total_score DESC
             LIMIT 5
         ");
@@ -205,16 +232,20 @@ class ForumController extends Controller
         $role = $user->role ?? '';
 
         $judul = trim((string) $request->input('judul'));
-        $tipe = $request->input('tipe', 'pertanyaan');
+        $tipe = (string) $request->input('tipe', 'pertanyaan');
         $konten = trim((string) $request->input('konten'));
-        $tags_selected = (array) $request->input('tags', []);
+        $tags_selected = array_values(array_unique(array_map('intval', (array) $request->input('tags', []))));
+
+        if (!in_array($tipe, ['pertanyaan', 'diskusi', 'berbagi'], true)) {
+            $tipe = 'pertanyaan';
+        }
 
         if ($judul === '' || trim(strip_tags($konten)) === '') {
             return redirect()->route('forum.create')
                 ->with('msg', 'Judul dan konten tidak boleh kosong.')
                 ->with('msg_type', 'warning');
         }
-        if (strlen($judul) > 250) {
+        if (mb_strlen($judul) > 250) {
             return redirect()->route('forum.create')
                 ->with('msg', 'Judul terlalu panjang (maksimal 250 karakter).')
                 ->with('msg_type', 'warning');
@@ -225,6 +256,7 @@ class ForumController extends Controller
                 ->with('msg_type', 'warning');
         }
 
+        $validTagIds = ForumTag::whereIn('id_tag', $tags_selected)->pluck('id_tag')->all();
         $konten = sanitize_rich_text($konten);
 
         DB::beginTransaction();
@@ -240,7 +272,7 @@ class ForumController extends Controller
                 'tgl_post' => now(),
             ]);
 
-            foreach ($tags_selected as $tag_id) {
+            foreach ($validTagIds as $tag_id) {
                 ForumPostTag::create([
                     'id_post' => $post->id_post,
                     'id_tag' => (int) $tag_id,
@@ -252,8 +284,9 @@ class ForumController extends Controller
             return redirect()->route('forum.show', ['id' => $post->id_post, 'new' => 1]);
         } catch (\Exception $e) {
             DB::rollBack();
+            report($e);
             return redirect()->route('forum.create')
-                ->with('msg', 'Gagal membuat postingan: ' . $e->getMessage())
+                ->with('msg', 'Gagal membuat postingan. Silakan coba lagi.')
                 ->with('msg_type', 'error');
         }
     }
@@ -390,13 +423,21 @@ class ForumController extends Controller
 
         // 2. Mark as Solved
         if ($request->has('mark_solved')) {
-            if ((int) $id_user === (int) $post->id_user || strtolower($role) === 'admin') {
+            if (((int) $id_user === (int) $post->id_user || strtolower($role) === 'admin') && $post->tipe === 'pertanyaan') {
                 $id_jawaban_solved = (int) $request->input('id_jawaban');
+                $targetJawaban = ForumJawaban::where('id_jawaban', $id_jawaban_solved)
+                    ->where('id_post', $id_post)
+                    ->first();
+
+                if (!$targetJawaban) {
+                    abort(404, 'Jawaban tidak ditemukan pada postingan ini.');
+                }
 
                 DB::beginTransaction();
                 try {
                     ForumJawaban::where('id_post', $id_post)->update(['is_solusi' => 0]);
-                    ForumJawaban::where('id_jawaban', $id_jawaban_solved)->update(['is_solusi' => 1]);
+                    $targetJawaban->is_solusi = true;
+                    $targetJawaban->save();
                     $post->status = 'solved';
                     $post->save();
 
@@ -404,14 +445,112 @@ class ForumController extends Controller
                     return redirect()->route('forum.show', ['id' => $id_post]);
                 } catch (\Exception $e) {
                     DB::rollBack();
+                    report($e);
                     return redirect()->route('forum.show', ['id' => $id_post])
-                        ->with('msg', 'Gagal menandai solusi: ' . $e->getMessage())
+                        ->with('msg', 'Gagal menandai solusi. Silakan coba lagi.')
                         ->with('msg_type', 'error');
                 }
             }
+            abort(403, 'Anda tidak memiliki izin menandai solusi pada postingan ini.');
         }
 
         return redirect()->route('forum.show', ['id' => $id_post]);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $user = auth()->user();
+        $post = ForumPost::findOrFail((int) $id);
+        if ((int) $post->id_user !== (int) $user->id_user && !$user->isAdmin()) {
+            abort(403, 'Anda tidak memiliki izin mengedit postingan ini.');
+        }
+
+        $judul = trim((string) $request->input('judul'));
+        $tipe = (string) $request->input('tipe', $post->tipe);
+        $konten = sanitize_rich_text(trim((string) $request->input('konten')));
+
+        if (!in_array($tipe, ['pertanyaan', 'diskusi', 'berbagi'], true)) {
+            $tipe = $post->tipe;
+        }
+        if ($judul === '' || mb_strlen($judul) > 250 || trim(strip_tags($konten)) === '') {
+            return redirect()->route('forum.show', ['id' => $post->id_post])
+                ->with('msg', 'Judul (maks. 250 karakter) dan konten tidak boleh kosong.')
+                ->with('msg_type', 'warning');
+        }
+
+        $post->update([
+            'judul' => $judul,
+            'tipe' => $tipe,
+            'konten' => $konten,
+            'tgl_update' => now(),
+        ]);
+
+        return redirect()->route('forum.show', ['id' => $post->id_post])
+            ->with('msg', 'Postingan berhasil diperbarui!')
+            ->with('msg_type', 'success');
+    }
+
+    public function destroy($id)
+    {
+        $user = auth()->user();
+        $post = ForumPost::findOrFail((int) $id);
+        if ((int) $post->id_user !== (int) $user->id_user && !$user->isAdmin()) {
+            abort(403, 'Anda tidak memiliki izin menghapus postingan ini.');
+        }
+
+        $post->delete();
+
+        return redirect()->route('forum.index');
+    }
+
+    public function updateJawaban(Request $request, $id, $id_jawaban)
+    {
+        $user = auth()->user();
+        $post = ForumPost::findOrFail((int) $id);
+        $jawaban = ForumJawaban::where('id_jawaban', (int) $id_jawaban)
+            ->where('id_post', $post->id_post)
+            ->firstOrFail();
+
+        if ((int) $jawaban->id_user !== (int) $user->id_user && !$user->isAdmin()) {
+            abort(403, 'Anda tidak memiliki izin mengedit jawaban ini.');
+        }
+
+        $konten = sanitize_rich_text(trim((string) $request->input('konten')));
+        if (trim(strip_tags($konten)) === '') {
+            return redirect()->route('forum.show', ['id' => $post->id_post])
+                ->with('msg', 'Jawaban tidak boleh kosong.')
+                ->with('msg_type', 'warning');
+        }
+
+        $jawaban->update(['konten' => $konten]);
+
+        return redirect()->route('forum.show', ['id' => $post->id_post])
+            ->with('msg', 'Jawaban berhasil diperbarui!')
+            ->with('msg_type', 'success');
+    }
+
+    public function deleteJawaban($id, $id_jawaban)
+    {
+        $user = auth()->user();
+        $post = ForumPost::findOrFail((int) $id);
+        $jawaban = ForumJawaban::where('id_jawaban', (int) $id_jawaban)
+            ->where('id_post', $post->id_post)
+            ->firstOrFail();
+
+        if ((int) $jawaban->id_user !== (int) $user->id_user && !$user->isAdmin()) {
+            abort(403, 'Anda tidak memiliki izin menghapus jawaban ini.');
+        }
+
+        $wasSolution = (bool) $jawaban->is_solusi;
+        $jawaban->delete();
+
+        if ($wasSolution) {
+            $post->update(['status' => 'open']);
+        }
+
+        return redirect()->route('forum.show', ['id' => $post->id_post])
+            ->with('msg', 'Jawaban berhasil dihapus.')
+            ->with('msg_type', 'success');
     }
 
     public function vote(Request $request)

@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
 
 class AuthController extends Controller
 {
@@ -23,23 +24,6 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        if (!session()->has('login_attempts')) {
-            session([
-                'login_attempts' => 0,
-                'last_attempt_time' => time(),
-            ]);
-        }
-
-        if (time() - session('last_attempt_time', time()) > 900) {
-            session(['login_attempts' => 0]);
-        }
-
-        if (session('login_attempts', 0) >= 5) {
-            $sisa_waktu = ceil((900 - (time() - session('last_attempt_time'))) / 60);
-            $error = "Terlalu banyak percobaan gagal! Silakan tunggu {$sisa_waktu} menit lagi.";
-            return view('auth.login', compact('error'));
-        }
-
         $username = trim((string) $request->input('username'));
         $password = (string) $request->input('password');
 
@@ -48,21 +32,20 @@ class AuthController extends Controller
             return view('auth.login', compact('error'));
         }
 
-        $user = User::where('username', $username)->first();
+        $userKey = 'login:' . strtolower($username) . '|' . $request->ip();
+        $ipKey = 'login-ip:' . $request->ip();
 
-        $passwordValid = false;
-        if ($user) {
-            if (Hash::check($password, $user->password)) {
-                $passwordValid = true;
-            } elseif ($password === $user->password) {
-                $passwordValid = true;
-                $user->password = Hash::make($password);
-                $user->save();
-            }
+        if (RateLimiter::tooManyAttempts($userKey, 5) || RateLimiter::tooManyAttempts($ipKey, 20)) {
+            $seconds = max(RateLimiter::availableIn($userKey), RateLimiter::availableIn($ipKey));
+            $sisa_waktu = max(1, (int) ceil($seconds / 60));
+            $error = "Terlalu banyak percobaan gagal! Silakan tunggu {$sisa_waktu} menit lagi.";
+            return view('auth.login', compact('error'));
         }
 
-        if ($user && $passwordValid) {
-            session(['login_attempts' => 0]);
+        $user = User::where('username', $username)->first();
+
+        if ($user && Hash::check($password, $user->password)) {
+            RateLimiter::clear($userKey);
             Auth::login($user);
             $request->session()->regenerate();
 
@@ -72,14 +55,17 @@ class AuthController extends Controller
                 'role' => $user->role,
             ]);
 
+            if ($request->input('redirect') === 'enroll' && $user->isMurid()) {
+                return redirect()->route('enroll.index');
+            }
+
             return redirect()->route('dashboard');
         }
 
-        session([
-            'login_attempts' => session('login_attempts', 0) + 1,
-            'last_attempt_time' => time(),
-        ]);
-        $sisa_percobaan = 5 - session('login_attempts');
+        RateLimiter::hit($userKey, 900);
+        RateLimiter::hit($ipKey, 900);
+
+        $sisa_percobaan = max(0, 5 - RateLimiter::attempts($userKey));
         $error = "Username atau password salah! (Sisa percobaan: {$sisa_percobaan})";
 
         return view('auth.login', compact('error'));
@@ -107,6 +93,16 @@ class AuthController extends Controller
             return view('auth.register', compact('error'));
         }
 
+        if (!preg_match('/^[a-zA-Z0-9_.-]{3,50}$/', $username)) {
+            $error = "Username harus 3–50 karakter dan hanya boleh huruf, angka, titik, garis bawah, atau tanda hubung.";
+            return view('auth.register', compact('error'));
+        }
+
+        if (strlen($password) < 8) {
+            $error = "Password minimal harus 8 karakter!";
+            return view('auth.register', compact('error'));
+        }
+
         if ($password !== $konfirmasi) {
             $error = "Konfirmasi password tidak cocok!";
             return view('auth.register', compact('error'));
@@ -126,8 +122,8 @@ class AuthController extends Controller
                 'role' => 'Murid',
             ]);
 
-            $nim_dummy = 'NIM' . date('ymd') . rand(100, 999);
-            $email_dummy = $username . '@student.local';
+            $nim_dummy = 'NIM' . date('ymd') . random_int(100000, 999999);
+            $email_dummy = strtolower($username) . '@student.local';
 
             Murid::create([
                 'nim' => $nim_dummy,
@@ -141,7 +137,8 @@ class AuthController extends Controller
             return redirect()->route('login', ['msg' => 'register_success']);
         } catch (\Exception $e) {
             DB::rollBack();
-            $error = "Gagal mendaftar: " . $e->getMessage();
+            report($e);
+            $error = "Gagal mendaftar. Silakan coba lagi beberapa saat.";
             return view('auth.register', compact('error'));
         }
     }

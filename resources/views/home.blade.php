@@ -349,7 +349,7 @@
                                         <span>Pengajar: <strong>{{ $k->pengajar->nama_pengajar ?? 'Tim Pengajar' }}</strong></span>
                                     </div>
                                     <a href="{{ route('login', ['redirect' => 'enroll']) }}" class="neo-btn" style="text-align: center; text-decoration: none; display: block; padding: 10px;">
-                                        Mulai Belajar <i class='bx bx-Log-in-circle'></i>
+                                        Mulai Belajar <i class='bx bx-log-in-circle'></i>
                                     </a>
                                 </div>
                             </div>
@@ -501,7 +501,7 @@
                             </div>
                             <div>
                                 <div style="font-size: 0.8rem; font-weight: 900; text-transform: uppercase; color: #555;">Email Resmi</div>
-                                <div style="font-size: 1.2rem; font-weight: 900; word-break: break-all;">support@elearning.local</div>
+                                <div style="font-size: 1.2rem; font-weight: 900; word-break: break-all;">{{ config('app.contact.email') }}</div>
                                 <span style="font-size: 0.75rem; background: #E5E7EB; padding: 2px 6px; font-weight: 700; border: 1px solid #000;">Respon Cepat &lt; 24 Jam</span>
                             </div>
                         </div>
@@ -512,7 +512,7 @@
                             </div>
                             <div>
                                 <div style="font-size: 0.8rem; font-weight: 900; text-transform: uppercase; color: #555;">WhatsApp CS</div>
-                                <div style="font-size: 1.2rem; font-weight: 900;">+62 812-3456-7890</div>
+                                <div style="font-size: 1.2rem; font-weight: 900;">{{ config('app.contact.phone') }}</div>
                                 <span style="font-size: 0.75rem; background: #D1FAE5; padding: 2px 6px; font-weight: 700; border: 1px solid #000;">Senin - Jumat (08.00 - 17.00)</span>
                             </div>
                         </div>
@@ -523,8 +523,8 @@
                             </div>
                             <div>
                                 <div style="font-size: 0.8rem; font-weight: 900; text-transform: uppercase; color: #555;">Markas Besar</div>
-                                <div style="font-size: 1.05rem; font-weight: 900;">Gedung Inovasi Digital Lt. 4</div>
-                                <div style="font-size: 0.85rem; font-weight: 600;">Jl. Teknologi Raya No. 404, Jakarta</div>
+                                <div style="font-size: 1.05rem; font-weight: 900;">{{ config('app.contact.address_line1') }}</div>
+                                <div style="font-size: 0.85rem; font-weight: 600;">{{ config('app.contact.address_line2') }}</div>
                             </div>
                         </div>
                     </div>
@@ -534,7 +534,7 @@
                         <!-- Window Top Bar -->
                         <div style="background-color: #000; color: #FFF; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid #000;">
                             <span style="font-weight: 900; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 8px;">
-                                <i class='bx bxs-message-Detail' style="color: #FFD700;"></i> Kirim Tiket Pesan
+                                <i class='bx bxs-message-detail' style="color: #FFD700;"></i> Kirim Tiket Pesan
                             </span>
                             <div style="display: flex; gap: 6px;">
                                 <span style="width: 12px; height: 12px; background-color: #EF4444; border-radius: 50%; display: inline-block; border: 1px solid #FFF;"></span>
@@ -543,29 +543,39 @@
                             </div>
                         </div>
 
-                        <form onsubmit="event.preventDefault(); NeoAlert('Terkirim!', 'Terima kasih! Pesan Anda telah kami terima dan akan segera dibalas melalui email.', 'success'); this.reset();" style="padding: 25px; flex: 1; display: flex; flex-direction: column; justify-content: space-between;">
+                        <form method="POST" action="{{ route('kontak.send') }}" style="padding: 25px; flex: 1; display: flex; flex-direction: column; justify-content: space-between;">
+                            @csrf
                             <div>
+                                @if (session('kontak_success'))
+                                    <div class="neo-box" style="margin-bottom: 16px; padding: 10px 14px; background-color: #a8e6cf; color: #000; font-weight: bold;">
+                                        {{ session('kontak_success') }}
+                                    </div>
+                                @elseif ($errors->any())
+                                    <div class="neo-box" style="margin-bottom: 16px; padding: 10px 14px; background-color: var(--primary); color: #fff; font-weight: bold;">
+                                        {{ $errors->first() }}
+                                    </div>
+                                @endif
                                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 16px;">
                                     <div>
                                         <label style="font-weight: 900; display: block; margin-bottom: 6px; text-transform: uppercase; font-size: 0.8rem;">Nama Lengkap</label>
-                                        <input type="text" class="neo-input" placeholder="Budi Santoso" required style="margin: 0; border: 3px solid #000;">
+                                        <input type="text" name="nama" class="neo-input" placeholder="Budi Santoso" value="{{ old('nama') }}" maxlength="100" required style="margin: 0; border: 3px solid #000;">
                                     </div>
                                     <div>
                                         <label style="font-weight: 900; display: block; margin-bottom: 6px; text-transform: uppercase; font-size: 0.8rem;">Kategori</label>
-                                        <select class="neo-input" style="margin: 0; border: 3px solid #000; font-weight: 700;">
-                                            <option>Tanya Kelas</option>
-                                            <option>Kendala Akun</option>
-                                            <option>Kerjasama</option>
+                                        <select name="kategori" class="neo-input" style="margin: 0; border: 3px solid #000; font-weight: 700;">
+                                            <option value="Tanya Kelas" {{ old('kategori') === 'Tanya Kelas' ? 'selected' : '' }}>Tanya Kelas</option>
+                                            <option value="Kendala Akun" {{ old('kategori') === 'Kendala Akun' ? 'selected' : '' }}>Kendala Akun</option>
+                                            <option value="Kerjasama" {{ old('kategori') === 'Kerjasama' ? 'selected' : '' }}>Kerjasama</option>
                                         </select>
                                     </div>
                                 </div>
                                 <div style="margin-bottom: 16px;">
                                     <label style="font-weight: 900; display: block; margin-bottom: 6px; text-transform: uppercase; font-size: 0.8rem;">Alamat Email</label>
-                                    <input type="email" class="neo-input" placeholder="budi@email.com" required style="margin: 0; border: 3px solid #000;">
+                                    <input type="email" name="email" class="neo-input" placeholder="budi@email.com" value="{{ old('email') }}" maxlength="100" required style="margin: 0; border: 3px solid #000;">
                                 </div>
                                 <div style="margin-bottom: 20px;">
                                     <label style="font-weight: 900; display: block; margin-bottom: 6px; text-transform: uppercase; font-size: 0.8rem;">Detail Pesan</label>
-                                    <textarea class="neo-input" rows="3" placeholder="Tuliskan pertanyaan Anda di sini..." required style="margin: 0; border: 3px solid #000;"></textarea>
+                                    <textarea name="pesan" class="neo-input" rows="3" placeholder="Tuliskan pertanyaan Anda di sini..." maxlength="1000" required style="margin: 0; border: 3px solid #000;">{{ old('pesan') }}</textarea>
                                 </div>
                             </div>
                             <button type="submit" class="neo-btn brutal-hover" style="width: 100%; background-color: #FFD700; color: #000; border: 3px solid #000; box-shadow: 4px 4px 0px #000; font-size: 1.05rem;">

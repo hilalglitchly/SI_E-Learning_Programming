@@ -63,6 +63,13 @@
                         <i class='bx bx-help-circle'></i> Belum Terjawab
                     </a>
                 </li>
+                @if ($is_logged_in)
+                <li class="forum-explore-item">
+                    <a href="{{ route('forum.index', ['sort' => 'saved']) }}" class="{{ $sort === 'saved' ? 'active' : '' }}">
+                        <i class='bx bxs-bookmark'></i> Tersimpan
+                    </a>
+                </li>
+                @endif
             </ul>
         </div>
 
@@ -148,6 +155,9 @@
             <a href="{{ route('forum.index', array_filter(['sort' => 'baru', 'tag' => $tag_filter ?: null, 'tipe' => $tipe_filter ?: null])) }}" class="forum-sort-tab {{ $sort === 'baru' ? 'active' : '' }}"><i class='bx bx-time-five'></i> Baru</a>
             <a href="{{ route('forum.index', array_filter(['sort' => 'top', 'tag' => $tag_filter ?: null, 'tipe' => $tipe_filter ?: null])) }}" class="forum-sort-tab {{ $sort === 'top' ? 'active' : '' }}"><i class='bx bx-up-arrow-alt'></i> Top</a>
             <a href="{{ route('forum.index', array_filter(['sort' => 'unsolved', 'tag' => $tag_filter ?: null])) }}" class="forum-sort-tab {{ $sort === 'unsolved' ? 'active' : '' }}"><i class='bx bx-help-circle'></i> Belum Solved</a>
+            @if ($is_logged_in)
+            <a href="{{ route('forum.index', array_filter(['sort' => 'saved', 'tag' => $tag_filter ?: null, 'tipe' => $tipe_filter ?: null])) }}" class="forum-sort-tab {{ $sort === 'saved' ? 'active' : '' }}"><i class='bx bxs-bookmark'></i> Tersimpan</a>
+            @endif
         </div>
 
         <!-- Announcements -->
@@ -244,7 +254,7 @@
                         <a href="{{ route('forum.show', ['id' => $post['id_post']]) }}" class="forum-action-btn">
                             <i class='bx bx-message-rounded-dots'></i> {{ $post['jawaban_count'] }} Jawaban
                         </a>
-                        <button class="forum-action-btn" onclick="sharePost({{ $post['id_post'] }}, '{{ addslashes($post['judul']) }}')">
+                        <button class="forum-action-btn" data-post-id="{{ $post['id_post'] }}" data-post-title="{{ $post['judul'] }}" onclick="sharePost(this.dataset.postId, this.dataset.postTitle)">
                             <i class='bx bx-share-alt'></i> Bagikan
                         </button>
                         @if ($is_logged_in)
@@ -265,13 +275,25 @@
             </div>
             @endforeach
 
-            <!-- Load More / Pagination -->
+            <!-- Pagination -->
             @if ($total_pages > 1)
-                @if ($page < $total_pages)
-                    <a href="{{ route('forum.index', array_filter(['page' => $page + 1, 'sort' => $sort, 'tag' => $tag_filter ?: null, 'tipe' => $tipe_filter ?: null, 'q' => $search ?: null])) }}" class="forum-load-more">
-                        <i class='bx bx-chevron-down'></i> Muat {{ min($per_page, $total_posts - $page * $per_page) }} Thread Lainnya
-                    </a>
-                @endif
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 1rem; flex-wrap: wrap;">
+                    @if ($page > 1)
+                        <a href="{{ route('forum.index', array_filter(['page' => $page - 1, 'sort' => $sort, 'tag' => $tag_filter ?: null, 'tipe' => $tipe_filter ?: null, 'q' => $search ?: null])) }}" class="forum-load-more" style="margin: 0; width: auto; padding: 10px 18px;">
+                            <i class='bx bx-chevron-left'></i> Sebelumnya
+                        </a>
+                    @else
+                        <span></span>
+                    @endif
+                    <span style="font-weight: 800; font-size: 0.9rem;">Halaman {{ $page }} dari {{ $total_pages }}</span>
+                    @if ($page < $total_pages)
+                        <a href="{{ route('forum.index', array_filter(['page' => $page + 1, 'sort' => $sort, 'tag' => $tag_filter ?: null, 'tipe' => $tipe_filter ?: null, 'q' => $search ?: null])) }}" class="forum-load-more" style="margin: 0; width: auto; padding: 10px 18px;">
+                            Berikutnya <i class='bx bx-chevron-right'></i>
+                        </a>
+                    @else
+                        <span></span>
+                    @endif
+                </div>
             @endif
         @endif
     </main>

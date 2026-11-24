@@ -2,6 +2,8 @@
 // Designed specifically for Neo Brutalism aesthetic
 
 function NeoToast(message, type = 'success') {
+    const safeType = ['success', 'error', 'warning'].includes(type) ? type : 'success';
+
     // Container for toasts
     let container = document.getElementById('neo-toast-container');
     if (!container) {
@@ -10,20 +12,23 @@ function NeoToast(message, type = 'success') {
         document.body.appendChild(container);
     }
 
-    // Create toast element
+    // Create toast element safely without interpolating user strings into innerHTML
     const toast = document.createElement('div');
-    toast.className = `neo-toast neo-toast-${type}`;
-    
-    // Icon based on type
-    let icon = '';
-    if (type === 'success') icon = "<i class='bx bxs-check-circle'></i>";
-    else if (type === 'error') icon = "<i class='bx bxs-error-circle'></i>";
-    else if (type === 'warning') icon = "<i class='bx bxs-error'></i>";
+    toast.className = `neo-toast neo-toast-${safeType}`;
 
-    toast.innerHTML = `
-        <div class="neo-toast-icon">${icon}</div>
-        <div class="neo-toast-content">${message}</div>
-    `;
+    const iconWrap = document.createElement('div');
+    iconWrap.className = 'neo-toast-icon';
+    const iconEl = document.createElement('i');
+    if (safeType === 'success') iconEl.className = 'bx bxs-check-circle';
+    else if (safeType === 'error') iconEl.className = 'bx bxs-error-circle';
+    else iconEl.className = 'bx bxs-error';
+    iconWrap.appendChild(iconEl);
+
+    const contentEl = document.createElement('div');
+    contentEl.className = 'neo-toast-content';
+    contentEl.textContent = message ?? '';
+
+    toast.append(iconWrap, contentEl);
 
     // Append to container
     container.appendChild(toast);
@@ -51,23 +56,38 @@ function NeoConfirm(title, text, confirmCallback) {
     const overlay = document.createElement('div');
     overlay.className = 'neo-modal-overlay';
     
-    // Create modal box
+    // Create modal box safely using textContent for title/body
     const modal = document.createElement('div');
     modal.className = 'neo-modal-box neo-box';
-    
-    modal.innerHTML = `
-        <div class="neo-modal-header">
-            <i class='bx bx-error-circle neo-modal-icon'></i>
-            <h3 class="neo-modal-title">${title}</h3>
-        </div>
-        <div class="neo-modal-body">
-            <p>${text}</p>
-        </div>
-        <div class="neo-modal-footer">
-            <button class="neo-btn neo-btn-cancel" id="neo-modal-cancel">Batal</button>
-            <button class="neo-btn neo-btn-confirm" id="neo-modal-confirm">Ya</button>
-        </div>
-    `;
+
+    const header = document.createElement('div');
+    header.className = 'neo-modal-header';
+    const icon = document.createElement('i');
+    icon.className = 'bx bx-error-circle neo-modal-icon';
+    const titleEl = document.createElement('h3');
+    titleEl.className = 'neo-modal-title';
+    titleEl.textContent = title ?? '';
+    header.append(icon, titleEl);
+
+    const body = document.createElement('div');
+    body.className = 'neo-modal-body';
+    const textEl = document.createElement('p');
+    textEl.textContent = text ?? '';
+    body.appendChild(textEl);
+
+    const footer = document.createElement('div');
+    footer.className = 'neo-modal-footer';
+    const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
+    cancelBtn.className = 'neo-btn neo-btn-cancel';
+    cancelBtn.textContent = 'Batal';
+    const confirmBtn = document.createElement('button');
+    confirmBtn.type = 'button';
+    confirmBtn.className = 'neo-btn neo-btn-confirm';
+    confirmBtn.textContent = 'Ya';
+    footer.append(cancelBtn, confirmBtn);
+
+    modal.append(header, body, footer);
     
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
@@ -77,10 +97,6 @@ function NeoConfirm(title, text, confirmCallback) {
         overlay.classList.add('show');
         modal.classList.add('show');
     }, 10);
-    
-    // Setup event listeners
-    const cancelBtn = modal.querySelector('#neo-modal-cancel');
-    const confirmBtn = modal.querySelector('#neo-modal-confirm');
     
     const closeModal = () => {
         overlay.classList.remove('show');
@@ -99,8 +115,12 @@ function NeoConfirm(title, text, confirmCallback) {
         if (typeof confirmCallback === 'function') {
             confirmCallback();
         } else if (typeof confirmCallback === 'string') {
-            // Assume it's a URL to redirect to
-            window.location.href = confirmCallback;
+            try {
+                const parsed = new URL(confirmCallback, window.location.origin);
+                if (parsed.origin === window.location.origin && (parsed.protocol === 'http:' || parsed.protocol === 'https:')) {
+                    window.location.href = parsed.href;
+                }
+            } catch (e) {}
         }
     });
 }

@@ -18,11 +18,37 @@
             background-color: var(--muted);
             transform: translate(2px, 2px);
         }
+        .opsi-radio {
+            position: absolute;
+            opacity: 0;
+            width: 1px;
+            height: 1px;
+            pointer-events: none;
+        }
         .opsi-radio:checked + .opsi-label {
             background-color: var(--secondary);
             color: #000;
             font-weight: 800;
             box-shadow: 3px 3px 0px var(--shadow-color);
+        }
+        .kuis-timer-bar {
+            position: sticky;
+            top: 95px;
+            z-index: 90;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 18px;
+            margin-bottom: 20px;
+            background-color: var(--secondary);
+            color: #000;
+            border: 3px solid #000;
+            box-shadow: 5px 5px 0px #000;
+            font-weight: 900;
+        }
+        .kuis-timer-bar.urgent {
+            background-color: #EF4444;
+            color: #fff;
         }
     </style>
 @endsection
@@ -43,10 +69,15 @@
             </div>
 
             @if (count($daftarSoal) > 0)
-                <form method="POST" action="{{ route('kuis.submit', ['id_kuis' => $id_kuis]) }}" onsubmit="event.preventDefault(); NeoConfirm('Kumpulkan Kuis', 'Apakah Anda yakin sudah menjawab semua soal dengan benar? Jawaban tidak dapat diubah setelah dikirim.', () => this.submit());">
+                <div id="kuis-timer-bar" class="kuis-timer-bar">
+                    <span>⏱ SISA WAKTU PENGERJAAN</span>
+                    <span id="kuis-countdown" style="font-size: 1.35rem; font-family: monospace;">--:--</span>
+                </div>
+
+                <form id="kuis-form" method="POST" action="{{ route('kuis.submit', ['id_kuis' => $id_kuis]) }}">
                     @csrf
                     @foreach ($daftarSoal as $index => $s)
-                        <div class="neo-box">
+                        <div class="neo-box soal-card" data-soal-id="{{ $s['id_soal'] }}" data-soal-num="{{ $index + 1 }}">
                             <div style="font-weight: 800; font-size: 1.1em; margin-bottom: 12px; border-bottom: 2px solid var(--border); padding-bottom: 8px;">
                                 Pertanyaan #{{ $index + 1 }}
                             </div>
@@ -54,7 +85,7 @@
 
                             <div>
                                 @foreach (['A' => 'opsi_a', 'B' => 'opsi_b', 'C' => 'opsi_c', 'D' => 'opsi_d'] as $huruf => $kolom)
-                                    <input type="radio" name="soal_{{ $s['id_soal'] }}" id="soal_{{ $s['id_soal'] }}_{{ $huruf }}" value="{{ $huruf }}" class="opsi-radio" style="display: none;" required>
+                                    <input type="radio" name="soal_{{ $s['id_soal'] }}" id="soal_{{ $s['id_soal'] }}_{{ $huruf }}" value="{{ $huruf }}" class="opsi-radio">
                                     <label for="soal_{{ $s['id_soal'] }}_{{ $huruf }}" class="opsi-label">
                                         <strong>{{ $huruf }}.</strong> {{ $s[$kolom] }}
                                     </label>
@@ -75,4 +106,72 @@
 
         </div>
     </main>
+@endsection
+
+@section('scripts')
+@if (count($daftarSoal) > 0)
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('kuis-form');
+    const timerBar = document.getElementById('kuis-timer-bar');
+    const countdownEl = document.getElementById('kuis-countdown');
+    let remaining = {{ (int) ($remainingSeconds ?? ($kuis['durasi_menit'] * 60)) }};
+    let isSubmitting = false;
+
+    function formatTime(sec) {
+        const m = Math.floor(sec / 60);
+        const s = sec % 60;
+        return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    }
+
+    function updateTimer() {
+        countdownEl.textContent = formatTime(Math.max(0, remaining));
+        if (remaining <= 60) {
+            timerBar.classList.add('urgent');
+        }
+        if (remaining <= 0 && !isSubmitting) {
+            isSubmitting = true;
+            clearInterval(interval);
+            NeoToast('Waktu habis! Jawaban Anda sedang dikirim otomatis...', 'warning');
+            form.submit();
+            return;
+        }
+        remaining--;
+    }
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+
+    form.addEventListener('submit', function(e) {
+        if (isSubmitting) return;
+        e.preventDefault();
+
+        const cards = form.querySelectorAll('.soal-card');
+        let firstUnanswered = null;
+        cards.forEach(card => {
+            const id = card.dataset.soalId;
+            const checked = form.querySelector(`input[name="soal_${id}"]:checked`);
+            if (!checked) {
+                card.style.borderColor = '#EF4444';
+                if (!firstUnanswered) firstUnanswered = card;
+            } else {
+                card.style.borderColor = '';
+            }
+        });
+
+        if (firstUnanswered) {
+            NeoToast(`Pertanyaan #${firstUnanswered.dataset.soalNum} belum dijawab.`, 'warning');
+            firstUnanswered.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+
+        NeoConfirm('Kumpulkan Kuis', 'Apakah Anda yakin sudah menjawab semua soal dengan benar? Jawaban tidak dapat diubah setelah dikirim.', () => {
+            isSubmitting = true;
+            clearInterval(interval);
+            form.submit();
+        });
+    });
+});
+</script>
+@endif
 @endsection

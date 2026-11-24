@@ -37,7 +37,7 @@
                                 </p>
                             </div>
                             
-                            <form method="POST" action="{{ route('enroll.store') }}" style="margin-top: auto;" onsubmit="event.preventDefault(); NeoConfirm('Gabung Kelas', 'Yakin ingin bergabung ke kelas {{ addslashes($kelas['nama_kelas']) }}?', () => this.submit());">
+                            <form method="POST" action="{{ route('enroll.store') }}" data-kelas-nama="{{ $kelas['nama_kelas'] }}" style="margin-top: auto;" onsubmit="event.preventDefault(); NeoConfirm('Gabung Kelas', 'Yakin ingin bergabung ke kelas ' + this.dataset.kelasNama + '?', () => this.submit());">
                                 @csrf
                                 <input type="hidden" name="id_kelas" value="{{ $kelas['id_kelas'] }}">
                                 <button type="submit" class="neo-btn" style="width: 100%; background-color: var(--accent);">Gabung Kelas &rarr;</button>

@@ -13,6 +13,9 @@ use App\Models\Submission;
 use App\Models\Tugas;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class KelasController extends Controller
 {
@@ -58,7 +61,11 @@ class KelasController extends Controller
         }
 
         $nim = $murid->nim;
-        $id_kelas_ambil = $request->input('id_kelas');
+        $id_kelas_ambil = (int) $request->input('id_kelas');
+
+        if (!Kelas::where('id_kelas', $id_kelas_ambil)->exists()) {
+            abort(404, 'Kelas tidak ditemukan.');
+        }
 
         $exists = PesertaKelas::where('id_kelas', $id_kelas_ambil)
             ->where('nim', $nim)
@@ -77,8 +84,8 @@ class KelasController extends Controller
 
     public function show(Request $request, $id = null)
     {
-        $id_kelas = $id ?? $request->query('id');
-        if (empty($id_kelas)) {
+        $id_kelas = (int) ($id ?? $request->query('id'));
+        if ($id_kelas <= 0) {
             abort(404, 'ID Kelas tidak ditemukan.');
         }
 
@@ -87,20 +94,22 @@ class KelasController extends Controller
         $role = $user->role;
         $username = $user->username;
 
+        $kelasModel = Kelas::find($id_kelas);
+        if (!$kelasModel) {
+            abort(404, 'Kelas tidak ditemukan.');
+        }
+
+        if (!$kelasModel->canView($user)) {
+            abort(403, 'Akses Ditolak. Anda tidak memiliki izin mengakses kelas ini.');
+        }
+
         $nim = '';
-        if (strtolower($role) === 'murid') {
+        if ($user->isMurid()) {
             $mhs = Murid::where('id_user', $id_user)->first();
-            if ($mhs) {
-                $nim = $mhs->nim;
-                $terdaftar = PesertaKelas::where('id_kelas', $id_kelas)
-                    ->where('nim', $nim)
-                    ->exists();
-                if (!$terdaftar) {
-                    abort(403, 'Akses Ditolak. Anda tidak terdaftar di kelas ini.');
-                }
-            } else {
+            if (!$mhs) {
                 abort(403, 'Data murid tidak ditemukan di database.');
             }
+            $nim = $mhs->nim;
         }
 
         $kelasRow = DB::selectOne("
@@ -166,6 +175,7 @@ class KelasController extends Controller
         // Progress belajar untuk Murid
         $progressValue = 0;
         $submittedTugasIds = [];
+        $submissionMap = [];
         $nilaiKuisMap = [];
 
         if (strtolower($role) === 'murid' && !empty($nim)) {
@@ -194,10 +204,19 @@ class KelasController extends Controller
                 $progressValue = round(($totalDone / $totalItems) * 100);
                 if ($progressValue > 100) $progressValue = 100;
             } else {
-                $progressValue = 100;
+                $progressValue = 0;
             }
 
-            $submittedTugasIds = Submission::where('nim', $nim)->pluck('id_tugas')->toArray();
+            $submissions = Submission::where('nim', $nim)->get();
+            foreach ($submissions as $sub) {
+                $submittedTugasIds[] = $sub->id_tugas;
+                $submissionMap[$sub->id_tugas] = [
+                    'id_submission' => $sub->id_submission,
+                    'nilai' => $sub->nilai,
+                    'catatan' => $sub->catatan,
+                    'tgl_kumpul' => $sub->tgl_kumpul ? $sub->tgl_kumpul->format('Y-m-d H:i') : '',
+                ];
+            }
 
             $nilaiRows = NilaiKuis::where('nim', $nim)->get();
             foreach ($nilaiRows as $nr) {
@@ -210,8 +229,10 @@ class KelasController extends Controller
         if ($role === 'Pengajar' || strtolower($role) === 'pengajar' || strtolower($role) === 'admin') {
             $rekapRows = DB::select("
                 SELECT m.nim, m.nama_murid,
-                       (SELECT IFNULL(AVG(nilai), 0) FROM tb_submission s JOIN tb_tugas t ON s.id_tugas = t.id_tugas WHERE s.nim = m.nim AND t.id_kelas = pk.id_kelas) as avg_tugas,
-                       (SELECT IFNULL(AVG(nilai), 0) FROM tb_nilai_kuis nk JOIN tb_kuis k ON nk.id_kuis = k.id_kuis WHERE nk.nim = m.nim AND k.id_kelas = pk.id_kelas) as avg_kuis
+                       (SELECT COALESCE(AVG(nilai), 0) FROM tb_submission s JOIN tb_tugas t ON s.id_tugas = t.id_tugas WHERE s.nim = m.nim AND t.id_kelas = pk.id_kelas AND s.nilai IS NOT NULL) as avg_tugas,
+                       (SELECT COALESCE(AVG(nilai), 0) FROM tb_nilai_kuis nk JOIN tb_kuis k ON nk.id_kuis = k.id_kuis WHERE nk.nim = m.nim AND k.id_kelas = pk.id_kelas) as avg_kuis,
+                       (SELECT COUNT(DISTINCT s2.id_tugas) FROM tb_submission s2 JOIN tb_tugas t2 ON s2.id_tugas = t2.id_tugas WHERE s2.nim = m.nim AND t2.id_kelas = pk.id_kelas) as tugas_selesai,
+                       (SELECT COUNT(DISTINCT nk2.id_kuis) FROM tb_nilai_kuis nk2 JOIN tb_kuis k2 ON nk2.id_kuis = k2.id_kuis WHERE nk2.nim = m.nim AND k2.id_kelas = pk.id_kelas) as kuis_selesai
                 FROM tb_peserta_kelas pk
                 JOIN tb_murid m ON pk.nim = m.nim
                 WHERE pk.id_kelas = :id_kelas
@@ -283,6 +304,7 @@ class KelasController extends Controller
             'kuisList',
             'progressValue',
             'submittedTugasIds',
+            'submissionMap',
             'nilaiKuisMap',
             'rekapNilai',
             'upcomingTugas',
@@ -293,67 +315,66 @@ class KelasController extends Controller
 
     public function handlePost(Request $request, $id)
     {
-        $id_kelas = $id;
+        $id_kelas = (int) $id;
         $user = auth()->user();
         $id_user = $user->id_user;
-        $role = $user->role;
         $action = $request->input('action');
+
+        $kelasModel = Kelas::findOrFail($id_kelas);
 
         $allowed_materi_ext = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'zip', 'rar', 'jpg', 'jpeg', 'png', 'txt', 'mp4'];
         $allowed_tugas_ext = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'zip', 'rar', 'jpg', 'jpeg', 'png', 'txt'];
 
         // 1. Tambah Materi (Tab Materi)
-        if ($action === 'tambah_materi' && in_array(strtolower($role), ['pengajar', 'admin', 'pimpinan'])) {
-            $judul = $request->input('judul_materi');
-            $deskripsi = $request->input('hidden_deskripsi_materi');
-            $nama_file = '';
+        if ($action === 'tambah_materi') {
+            if (!$kelasModel->canManage($user)) {
+                abort(403, 'Akses ditolak. Anda tidak memiliki izin mengelola kelas ini.');
+            }
 
-            if ($request->hasFile('file_materi') && $request->file('file_materi')->isValid()) {
-                $file = $request->file('file_materi');
-                $ext = strtolower($file->getClientOriginalExtension());
-                if (!in_array($ext, $allowed_materi_ext)) {
-                    return redirect()->route('kelas.show', ['id' => $id_kelas])->with('pesan', 'Gagal: Ekstensi file tidak diizinkan!');
-                }
-                $materi_dir = public_path('uploads/materi');
-                if (!is_dir($materi_dir)) mkdir($materi_dir, 0777, true);
-                $nama_file = 'materi_' . time() . '_' . rand(1000, 9999) . '.' . $ext;
-                $file->move($materi_dir, $nama_file);
+            $judul = trim((string) $request->input('judul_materi'));
+            $deskripsi = sanitize_rich_text((string) $request->input('hidden_deskripsi_materi'));
+            if ($judul === '') {
+                return redirect()->route('kelas.show', ['id' => $id_kelas])->with('pesan', 'Gagal: Judul materi wajib diisi!');
+            }
+
+            $upload = $this->storePrivateUpload($request, 'file_materi', 'materi', $allowed_materi_ext, 'materi');
+            if (!$upload['ok']) {
+                return redirect()->route('kelas.show', ['id' => $id_kelas])->with('pesan', $upload['error']);
             }
 
             Materi::create([
                 'id_kelas' => $id_kelas,
                 'judul_materi' => $judul,
                 'deskripsi' => $deskripsi,
-                'file_materi' => $nama_file,
+                'file_materi' => $upload['filename'],
             ]);
 
             return redirect()->route('kelas.show', ['id' => $id_kelas])->with('pesan', 'Materi berhasil ditambahkan!');
         }
 
         // 2. Tambah Tugas (Tab Tugas)
-        if ($action === 'tambah_tugas' && in_array(strtolower($role), ['pengajar', 'admin', 'pimpinan'])) {
-            $judul = $request->input('judul_tugas');
-            $deskripsi = $request->input('hidden_deskripsi_tugas');
-            $deadline = $request->input('deadline_tugas');
-            $nama_file = '';
+        if ($action === 'tambah_tugas') {
+            if (!$kelasModel->canManage($user)) {
+                abort(403, 'Akses ditolak. Anda tidak memiliki izin mengelola kelas ini.');
+            }
 
-            if ($request->hasFile('file_tugas') && $request->file('file_tugas')->isValid()) {
-                $file = $request->file('file_tugas');
-                $ext = strtolower($file->getClientOriginalExtension());
-                if (!in_array($ext, $allowed_tugas_ext)) {
-                    return redirect()->route('kelas.show', ['id' => $id_kelas])->with('pesan', 'Gagal: Ekstensi file tidak diizinkan!');
-                }
-                $tugas_dir = public_path('uploads/tugas');
-                if (!is_dir($tugas_dir)) mkdir($tugas_dir, 0777, true);
-                $nama_file = 'tugas_ref_' . time() . '_' . rand(1000, 9999) . '.' . $ext;
-                $file->move($tugas_dir, $nama_file);
+            $judul = trim((string) $request->input('judul_tugas'));
+            $deskripsi = sanitize_rich_text((string) $request->input('hidden_deskripsi_tugas'));
+            $deadline = $request->input('deadline_tugas');
+            if ($judul === '' || empty($deadline)) {
+                return redirect()->route('kelas.show', ['id' => $id_kelas])->with('pesan', 'Gagal: Judul tugas dan deadline wajib diisi!');
+            }
+
+            $upload = $this->storePrivateUpload($request, 'file_tugas', 'tugas', $allowed_tugas_ext, 'tugas_ref');
+            if (!$upload['ok']) {
+                return redirect()->route('kelas.show', ['id' => $id_kelas])->with('pesan', $upload['error']);
             }
 
             Tugas::create([
                 'id_kelas' => $id_kelas,
                 'judul_tugas' => $judul,
                 'deskripsi' => $deskripsi,
-                'file_tugas' => $nama_file,
+                'file_tugas' => $upload['filename'],
                 'deadline' => $deadline,
             ]);
 
@@ -361,34 +382,37 @@ class KelasController extends Controller
         }
 
         // 3. Post Feed (Tab Upload)
-        if ($action === 'post_feed' && ($role === 'Pengajar' || strtolower($role) === 'pengajar' || strtolower($role) === 'admin')) {
+        if ($action === 'post_feed') {
+            if (!$kelasModel->canManage($user)) {
+                abort(403, 'Akses ditolak. Anda tidak memiliki izin mengelola kelas ini.');
+            }
+
             $jenis_post = $request->input('jenis_post');
-            $judul = $request->input('judul');
-            $deskripsi = $request->input('deskripsi');
+            $judul = trim((string) $request->input('judul'));
+            $deskripsi = sanitize_rich_text((string) $request->input('deskripsi'));
+
+            if ($judul === '') {
+                return redirect()->route('kelas.show', ['id' => $id_kelas])->with('pesan', 'Gagal: Judul wajib diisi!');
+            }
 
             if ($jenis_post === 'materi') {
-                $file_materi = '';
-                if ($request->hasFile('file_materi') && $request->file('file_materi')->isValid()) {
-                    $file = $request->file('file_materi');
-                    $ext = strtolower($file->getClientOriginalExtension());
-                    if (!in_array($ext, $allowed_materi_ext)) {
-                        return redirect()->route('kelas.show', ['id' => $id_kelas])->with('pesan', 'Gagal: Ekstensi file tidak diizinkan!');
-                    }
-                    $fileName = time() . '_' . $file->getClientOriginalName();
-                    $targetDir = public_path('uploads/materi');
-                    if (!is_dir($targetDir)) mkdir($targetDir, 0777, true);
-                    $file->move($targetDir, $fileName);
-                    $file_materi = $fileName;
+                $upload = $this->storePrivateUpload($request, 'file_materi', 'materi', $allowed_materi_ext, 'materi');
+                if (!$upload['ok']) {
+                    return redirect()->route('kelas.show', ['id' => $id_kelas])->with('pesan', $upload['error']);
                 }
+
                 Materi::create([
                     'id_kelas' => $id_kelas,
                     'judul_materi' => $judul,
                     'deskripsi' => $deskripsi,
-                    'file_materi' => $file_materi,
+                    'file_materi' => $upload['filename'],
                 ]);
                 return redirect()->route('kelas.show', ['id' => $id_kelas, 'msg' => 'success_post']);
             } elseif ($jenis_post === 'tugas') {
                 $deadline = $request->input('deadline');
+                if (empty($deadline)) {
+                    return redirect()->route('kelas.show', ['id' => $id_kelas])->with('pesan', 'Gagal: Deadline tugas wajib diisi!');
+                }
                 Tugas::create([
                     'id_kelas' => $id_kelas,
                     'judul_tugas' => $judul,
@@ -400,57 +424,321 @@ class KelasController extends Controller
         }
 
         // 4. Post Diskusi (Tab Diskusi)
-        if ($action === 'post_diskusi' && (strtolower($role) === 'murid' || $role === 'Pengajar' || strtolower($role) === 'pengajar')) {
+        if ($action === 'post_diskusi') {
+            if (!$kelasModel->canView($user) || $user->isPimpinan()) {
+                abort(403, 'Akses ditolak. Anda tidak memiliki izin membuat diskusi di kelas ini.');
+            }
+
+            $judul_diskusi = trim((string) $request->input('judul_diskusi'));
+            $isi_diskusi = sanitize_rich_text((string) $request->input('isi_diskusi'));
+            if ($judul_diskusi === '' || trim(strip_tags($isi_diskusi)) === '') {
+                return redirect()->route('kelas.show', ['id' => $id_kelas])->with('pesan', 'Gagal: Judul dan isi diskusi wajib diisi!');
+            }
+
             Diskusi::create([
                 'id_kelas' => $id_kelas,
                 'id_user' => $id_user,
-                'judul_diskusi' => $request->input('judul_diskusi'),
-                'isi_diskusi' => $request->input('isi_diskusi'),
+                'judul_diskusi' => $judul_diskusi,
+                'isi_diskusi' => $isi_diskusi,
             ]);
             return redirect()->route('kelas.show', ['id' => $id_kelas, 'msg' => 'success_diskusi']);
         }
 
         // 5. Post Kuis (Tab Kuis)
-        if ($action === 'post_kuis' && ($role === 'Pengajar' || strtolower($role) === 'pengajar' || strtolower($role) === 'admin')) {
+        if ($action === 'post_kuis') {
+            if (!$kelasModel->canManage($user)) {
+                abort(403, 'Akses ditolak. Anda tidak memiliki izin membuat kuis di kelas ini.');
+            }
+
+            $judul_kuis = trim((string) $request->input('judul_kuis'));
+            $deskripsi_kuis = trim((string) $request->input('deskripsi_kuis'));
+            $durasi = (int) $request->input('durasi_menit', 30);
+            if ($judul_kuis === '' || $durasi < 1 || $durasi > 600) {
+                return redirect()->route('kelas.show', ['id' => $id_kelas])->with('pesan', 'Gagal: Judul kuis dan durasi (1–600 menit) wajib valid!');
+            }
+
             Kuis::create([
                 'id_kelas' => $id_kelas,
-                'judul_kuis' => $request->input('judul_kuis'),
-                'deskripsi' => $request->input('deskripsi_kuis'),
-                'durasi_menit' => $request->input('durasi_menit'),
+                'judul_kuis' => $judul_kuis,
+                'deskripsi' => $deskripsi_kuis,
+                'durasi_menit' => $durasi,
             ]);
             return redirect()->route('kelas.show', ['id' => $id_kelas, 'msg' => 'success_kuis']);
         }
 
         // 6. Upload Jawaban Tugas oleh Murid
         if ($request->hasFile('file_jawaban') && $request->filled('id_tugas')) {
-            $mhs = Murid::where('id_user', $id_user)->first();
-            $nim = $mhs ? $mhs->nim : '';
-
-            $id_tugas = $request->input('id_tugas');
-            $file = $request->file('file_jawaban');
-
-            if ($file->isValid()) {
-                $ext = strtolower($file->getClientOriginalExtension());
-                if (!in_array($ext, $allowed_tugas_ext)) {
-                    return redirect()->route('kelas.show', ['id' => $id_kelas])->with('pesan', 'Gagal: Ekstensi file tidak diizinkan!');
-                }
-                $fileName = time() . '_' . $file->getClientOriginalName();
-                $targetDir = public_path('uploads/tugas');
-                if (!is_dir($targetDir)) mkdir($targetDir, 0777, true);
-                $file->move($targetDir, $fileName);
-
-                Submission::create([
-                    'id_tugas' => $id_tugas,
-                    'nim' => $nim,
-                    'file_jawaban' => $fileName,
-                ]);
-
-                return redirect()->route('kelas.show', ['id' => $id_kelas])->with('pesan', 'Tugas berhasil dikumpulkan!');
+            if (!$user->isMurid() || !$kelasModel->canView($user)) {
+                abort(403, 'Akses ditolak. Anda tidak terdaftar sebagai murid di kelas ini.');
             }
 
-            return redirect()->route('kelas.show', ['id' => $id_kelas])->with('pesan', 'Terjadi kesalahan saat mengunggah file.');
+            $mhs = Murid::where('id_user', $id_user)->first();
+            if (!$mhs) {
+                abort(403, 'Data murid tidak ditemukan.');
+            }
+            $nim = $mhs->nim;
+
+            $id_tugas = (int) $request->input('id_tugas');
+            $tugasValid = Tugas::where('id_tugas', $id_tugas)
+                ->where('id_kelas', $id_kelas)
+                ->exists();
+            if (!$tugasValid) {
+                abort(403, 'Tugas tidak ditemukan pada kelas ini.');
+            }
+
+            if (Submission::where('id_tugas', $id_tugas)->where('nim', $nim)->exists()) {
+                return redirect()->route('kelas.show', ['id' => $id_kelas])->with('pesan', 'Anda sudah mengumpulkan jawaban untuk tugas ini.');
+            }
+
+            $upload = $this->storePrivateUpload($request, 'file_jawaban', 'submission', $allowed_tugas_ext, 'jawaban');
+            if (!$upload['ok']) {
+                return redirect()->route('kelas.show', ['id' => $id_kelas])->with('pesan', $upload['error']);
+            }
+
+            Submission::create([
+                'id_tugas' => $id_tugas,
+                'nim' => $nim,
+                'file_jawaban' => $upload['filename'],
+            ]);
+
+            return redirect()->route('kelas.show', ['id' => $id_kelas])->with('pesan', 'Tugas berhasil dikumpulkan!');
         }
 
         return redirect()->route('kelas.show', ['id' => $id_kelas]);
+    }
+
+    public function updateMateri(Request $request, $id, $id_materi)
+    {
+        $kelas = Kelas::findOrFail((int) $id);
+        if (!$kelas->canManage(auth()->user())) {
+            abort(403, 'Akses ditolak.');
+        }
+
+        $materi = Materi::where('id_materi', (int) $id_materi)->where('id_kelas', $kelas->id_kelas)->firstOrFail();
+        $judul = trim((string) $request->input('judul_materi'));
+        if ($judul === '' || mb_strlen($judul) > 150) {
+            return redirect()->route('kelas.show', ['id' => $kelas->id_kelas])->with('pesan', 'Gagal: Judul materi wajib diisi (maks. 150 karakter).');
+        }
+
+        $allowed = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'zip', 'rar', 'jpg', 'jpeg', 'png', 'txt', 'mp4'];
+        $upload = $this->storePrivateUpload($request, 'file_materi', 'materi', $allowed, 'materi');
+        if (!$upload['ok']) {
+            return redirect()->route('kelas.show', ['id' => $kelas->id_kelas])->with('pesan', $upload['error']);
+        }
+
+        $newFile = $materi->file_materi;
+        if ($upload['filename'] !== '') {
+            $this->deletePrivateFile('materi', $materi->file_materi);
+            $newFile = $upload['filename'];
+        }
+
+        $materi->update([
+            'judul_materi' => $judul,
+            'deskripsi' => sanitize_rich_text((string) $request->input('deskripsi')),
+            'file_materi' => $newFile,
+        ]);
+
+        return redirect()->route('kelas.show', ['id' => $kelas->id_kelas])->with('pesan', 'Materi berhasil diperbarui!');
+    }
+
+    public function deleteMateri($id, $id_materi)
+    {
+        $kelas = Kelas::findOrFail((int) $id);
+        if (!$kelas->canManage(auth()->user())) {
+            abort(403, 'Akses ditolak.');
+        }
+
+        $materi = Materi::where('id_materi', (int) $id_materi)->where('id_kelas', $kelas->id_kelas)->firstOrFail();
+        $this->deletePrivateFile('materi', $materi->file_materi);
+        $materi->delete();
+
+        return redirect()->route('kelas.show', ['id' => $kelas->id_kelas])->with('pesan', 'Materi berhasil dihapus.');
+    }
+
+    public function updateTugas(Request $request, $id, $id_tugas)
+    {
+        $kelas = Kelas::findOrFail((int) $id);
+        if (!$kelas->canManage(auth()->user())) {
+            abort(403, 'Akses ditolak.');
+        }
+
+        $tugas = Tugas::where('id_tugas', (int) $id_tugas)->where('id_kelas', $kelas->id_kelas)->firstOrFail();
+        $judul = trim((string) $request->input('judul_tugas'));
+        $deadline = $request->input('deadline_tugas');
+        if ($judul === '' || mb_strlen($judul) > 150 || empty($deadline)) {
+            return redirect()->route('kelas.show', ['id' => $kelas->id_kelas])->with('pesan', 'Gagal: Judul tugas (maks. 150 karakter) dan deadline wajib diisi.');
+        }
+
+        $allowed = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'zip', 'rar', 'jpg', 'jpeg', 'png', 'txt'];
+        $upload = $this->storePrivateUpload($request, 'file_tugas', 'tugas', $allowed, 'tugas_ref');
+        if (!$upload['ok']) {
+            return redirect()->route('kelas.show', ['id' => $kelas->id_kelas])->with('pesan', $upload['error']);
+        }
+
+        $newFile = $tugas->file_tugas;
+        if ($upload['filename'] !== '') {
+            $this->deletePrivateFile('tugas', $tugas->file_tugas);
+            $newFile = $upload['filename'];
+        }
+
+        $tugas->update([
+            'judul_tugas' => $judul,
+            'deskripsi' => sanitize_rich_text((string) $request->input('deskripsi')),
+            'file_tugas' => $newFile,
+            'deadline' => $deadline,
+        ]);
+
+        return redirect()->route('kelas.show', ['id' => $kelas->id_kelas])->with('pesan', 'Tugas berhasil diperbarui!');
+    }
+
+    public function deleteTugas($id, $id_tugas)
+    {
+        $kelas = Kelas::findOrFail((int) $id);
+        if (!$kelas->canManage(auth()->user())) {
+            abort(403, 'Akses ditolak.');
+        }
+
+        $tugas = Tugas::where('id_tugas', (int) $id_tugas)->where('id_kelas', $kelas->id_kelas)->firstOrFail();
+        $this->deletePrivateFile('tugas', $tugas->file_tugas);
+        foreach ($tugas->submissions as $sub) {
+            $this->deletePrivateFile('submission', $sub->file_jawaban);
+        }
+        $tugas->delete();
+
+        return redirect()->route('kelas.show', ['id' => $kelas->id_kelas])->with('pesan', 'Tugas berhasil dihapus.');
+    }
+
+    public function updateKuis(Request $request, $id, $id_kuis)
+    {
+        $kelas = Kelas::findOrFail((int) $id);
+        if (!$kelas->canManage(auth()->user())) {
+            abort(403, 'Akses ditolak.');
+        }
+
+        $kuis = Kuis::where('id_kuis', (int) $id_kuis)->where('id_kelas', $kelas->id_kelas)->firstOrFail();
+        $judul = trim((string) $request->input('judul_kuis'));
+        $durasi = (int) $request->input('durasi_menit', 30);
+        if ($judul === '' || mb_strlen($judul) > 150 || $durasi < 1 || $durasi > 600) {
+            return redirect()->route('kelas.show', ['id' => $kelas->id_kelas])->with('pesan', 'Gagal: Judul kuis dan durasi (1–600 menit) wajib valid.');
+        }
+
+        $kuis->update([
+            'judul_kuis' => $judul,
+            'deskripsi' => trim((string) $request->input('deskripsi_kuis')),
+            'durasi_menit' => $durasi,
+        ]);
+
+        return redirect()->route('kelas.show', ['id' => $kelas->id_kelas])->with('pesan', 'Kuis berhasil diperbarui!');
+    }
+
+    public function deleteKuis($id, $id_kuis)
+    {
+        $kelas = Kelas::findOrFail((int) $id);
+        if (!$kelas->canManage(auth()->user())) {
+            abort(403, 'Akses ditolak.');
+        }
+
+        $kuis = Kuis::where('id_kuis', (int) $id_kuis)->where('id_kelas', $kelas->id_kelas)->firstOrFail();
+        $kuis->delete();
+
+        return redirect()->route('kelas.show', ['id' => $kelas->id_kelas])->with('pesan', 'Kuis berhasil dihapus.');
+    }
+
+    public function downloadMateri($id)
+    {
+        $materi = Materi::with('kelas')->findOrFail((int) $id);
+        if (!$materi->kelas || !$materi->kelas->canView(auth()->user())) {
+            abort(403, 'Akses ditolak.');
+        }
+
+        return $this->streamPrivateFile('materi', 'materi', $materi->file_materi);
+    }
+
+    public function downloadTugas($id)
+    {
+        $tugas = Tugas::with('kelas')->findOrFail((int) $id);
+        if (!$tugas->kelas || !$tugas->kelas->canView(auth()->user())) {
+            abort(403, 'Akses ditolak.');
+        }
+
+        return $this->streamPrivateFile('tugas', 'tugas', $tugas->file_tugas);
+    }
+
+    public function downloadSubmission($id)
+    {
+        $submission = Submission::with('tugas.kelas')->findOrFail((int) $id);
+        $user = auth()->user();
+        $kelas = $submission->tugas?->kelas;
+
+        $isOwnerStudent = $user->isMurid()
+            && Murid::where('id_user', $user->id_user)->where('nim', $submission->nim)->exists();
+
+        if (!$kelas || (!$kelas->canManage($user) && !$isOwnerStudent)) {
+            abort(403, 'Akses ditolak.');
+        }
+
+        return $this->streamPrivateFile('submission', 'tugas', $submission->file_jawaban);
+    }
+
+    private function storePrivateUpload(Request $request, string $field, string $folder, array $allowedExt, string $prefix, int $maxKb = 10240): array
+    {
+        if (!$request->hasFile($field)) {
+            return ['ok' => true, 'filename' => ''];
+        }
+
+        $file = $request->file($field);
+        if (!$file || !$file->isValid()) {
+            return ['ok' => false, 'error' => 'Terjadi kesalahan saat mengunggah file.'];
+        }
+
+        $ext = strtolower($file->getClientOriginalExtension());
+        $validator = Validator::make($request->all(), [
+            $field => ['file', 'max:' . $maxKb, 'mimes:' . implode(',', $allowedExt)],
+        ]);
+
+        if ($validator->fails() || !in_array($ext, $allowedExt, true)) {
+            return ['ok' => false, 'error' => 'Gagal: Format file tidak diizinkan atau ukuran melebihi ' . ($maxKb / 1024) . ' MB!'];
+        }
+
+        $safeName = $prefix . '_' . time() . '_' . Str::random(16) . '.' . $ext;
+        Storage::disk('local')->putFileAs('private/' . $folder, $file, $safeName);
+
+        return ['ok' => true, 'filename' => $safeName];
+    }
+
+    private function streamPrivateFile(string $folder, string $legacyPublicSubdir, ?string $filename)
+    {
+        $safeName = basename((string) $filename);
+        if ($safeName === '' || $safeName === '.' || $safeName === '..') {
+            abort(404, 'Berkas tidak ditemukan.');
+        }
+
+        $privateRelPath = 'private/' . $folder . '/' . $safeName;
+        if (Storage::disk('local')->exists($privateRelPath)) {
+            return response()->download(Storage::disk('local')->path($privateRelPath), $safeName, [
+                'X-Content-Type-Options' => 'nosniff',
+            ]);
+        }
+
+        $legacyPath = public_path('uploads/' . $legacyPublicSubdir . '/' . $safeName);
+        if (is_file($legacyPath)) {
+            return response()->download($legacyPath, $safeName, [
+                'X-Content-Type-Options' => 'nosniff',
+            ]);
+        }
+
+        abort(404, 'Berkas tidak ditemukan di server.');
+    }
+
+    private function deletePrivateFile(string $folder, ?string $filename): void
+    {
+        $safeName = basename((string) $filename);
+        if ($safeName === '' || $safeName === '.' || $safeName === '..') {
+            return;
+        }
+        $rel = 'private/' . $folder . '/' . $safeName;
+        if (Storage::disk('local')->exists($rel)) {
+            Storage::disk('local')->delete($rel);
+        }
     }
 }

@@ -18,18 +18,10 @@ class DashboardController extends Controller
         $role = $user->role;
         $username = $user->username;
 
-        // Legacy support if ?delete_user=ID is passed to dashboard
-        if (strtolower($role) === 'admin' && $request->has('delete_user')) {
-            $id_hapus = (int) $request->query('delete_user');
-            if ($id_hapus !== (int) $id_user) {
-                DB::table('tb_user')->where('id_user', $id_hapus)->delete();
-                return redirect()->route('dashboard', ['msg' => 'deleted']);
-            }
-        }
-
         $daftarKelas = [];
         $listPengajar = [];
         $listMurid = [];
+        $listKelas = [];
         $statKelas = 0;
         $statPengajar = 0;
         $statMurid = 0;
@@ -52,6 +44,15 @@ class DashboardController extends Controller
                 ORDER BY m.nama_murid ASC
             ");
             $listMurid = array_map(fn($r) => (array) $r, $listMurid);
+
+            $listKelas = DB::select("
+                SELECT k.id_kelas, k.nama_kelas, k.deskripsi, k.nidn, p.nama_pengajar,
+                       (SELECT COUNT(*) FROM tb_peserta_kelas pk WHERE pk.id_kelas = k.id_kelas) AS jumlah_murid
+                FROM tb_kelas k
+                LEFT JOIN tb_pengajar p ON k.nidn = p.nidn
+                ORDER BY k.id_kelas DESC
+            ");
+            $listKelas = array_map(fn($r) => (array) $r, $listKelas);
 
         } elseif (strtolower($role) === 'pimpinan') {
             $statKelas = Kelas::count();
@@ -103,6 +104,7 @@ class DashboardController extends Controller
             'daftarKelas',
             'listPengajar',
             'listMurid',
+            'listKelas',
             'statKelas',
             'statPengajar',
             'statMurid',

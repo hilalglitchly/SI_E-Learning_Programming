@@ -14,6 +14,16 @@ class TrustProxies extends Middleware
      */
     protected $proxies;
 
+    public function __construct()
+    {
+        $trusted = env('TRUSTED_PROXIES');
+        if ($trusted === '*') {
+            $this->proxies = '*';
+        } elseif (is_string($trusted) && trim($trusted) !== '') {
+            $this->proxies = array_map('trim', explode(',', $trusted));
+        }
+    }
+
     /**
      * The headers that should be used to detect proxies.
      *

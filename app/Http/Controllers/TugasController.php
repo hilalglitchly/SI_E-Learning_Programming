@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Submission;
+use App\Models\Tugas;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -52,15 +53,22 @@ class TugasController extends Controller
     public function penilaian(Request $request)
     {
         $user = auth()->user();
-        $role = $user->role;
-
-        if ($role !== 'Pengajar' && strtolower($role) !== 'pengajar' && strtolower($role) !== 'admin') {
+        if (!$user->isPengajar() && !$user->isAdmin()) {
             abort(403, 'Akses ditolak. Halaman ini khusus untuk Pengajar.');
         }
 
-        $id_tugas = $request->query('id_tugas');
-        if (empty($id_tugas)) {
+        $id_tugas = (int) $request->query('id_tugas');
+        if ($id_tugas <= 0) {
             abort(404, 'ID Tugas tidak ditemukan.');
+        }
+
+        $tugasModel = Tugas::with('kelas')->find($id_tugas);
+        if (!$tugasModel || !$tugasModel->kelas) {
+            abort(404, 'Data tugas tidak ditemukan.');
+        }
+
+        if (!$tugasModel->kelas->canManage($user)) {
+            abort(403, 'Akses ditolak. Anda tidak memiliki izin menilai tugas kelas ini.');
         }
 
         $infoRow = DB::selectOne("
@@ -70,9 +78,6 @@ class TugasController extends Controller
             WHERE t.id_tugas = :id_tugas
         ", ['id_tugas' => $id_tugas]);
 
-        if (!$infoRow) {
-            abort(404, 'Data tugas tidak ditemukan.');
-        }
         $infoTugas = (array) $infoRow;
 
         $subRows = DB::select("
@@ -93,25 +98,36 @@ class TugasController extends Controller
     public function storeNilai(Request $request)
     {
         $user = auth()->user();
-        $role = $user->role;
-
-        if ($role !== 'Pengajar' && strtolower($role) !== 'pengajar' && strtolower($role) !== 'admin') {
+        if (!$user->isPengajar() && !$user->isAdmin()) {
             abort(403, 'Akses ditolak. Halaman ini khusus untuk Pengajar.');
         }
 
-        $id_tugas = $request->query('id_tugas') ?? $request->input('id_tugas');
-        $id_submission = $request->input('id_submission');
-        $nilai = $request->input('nilai');
+        $id_tugas = (int) ($request->query('id_tugas') ?? $request->input('id_tugas'));
+        $id_submission = (int) $request->input('id_submission');
+        $nilaiRaw = $request->input('nilai');
         $catatan = trim((string) $request->input('catatan'));
 
-        if ($nilai !== '' && $nilai !== null && ($nilai < 0 || $nilai > 100)) {
-            return redirect()->route('penilaian.index', ['id_tugas' => $id_tugas])
-                ->with('pesan', 'Gagal: Nilai harus berada di rentang 0 hingga 100!')
-                ->with('tipe_pesan', 'error');
+        $tugasModel = Tugas::with('kelas')->findOrFail($id_tugas);
+        if (!$tugasModel->kelas || !$tugasModel->kelas->canManage($user)) {
+            abort(403, 'Akses ditolak. Anda tidak memiliki izin menilai tugas kelas ini.');
         }
 
-        Submission::where('id_submission', $id_submission)->update([
-            'nilai' => $nilai !== '' ? $nilai : null,
+        $submission = Submission::where('id_submission', $id_submission)
+            ->where('id_tugas', $tugasModel->id_tugas)
+            ->firstOrFail();
+
+        $nilai = null;
+        if ($nilaiRaw !== '' && $nilaiRaw !== null) {
+            if (!is_numeric($nilaiRaw) || (int) $nilaiRaw < 0 || (int) $nilaiRaw > 100) {
+                return redirect()->route('penilaian.index', ['id_tugas' => $id_tugas])
+                    ->with('pesan', 'Gagal: Nilai harus berupa angka di rentang 0 hingga 100!')
+                    ->with('tipe_pesan', 'error');
+            }
+            $nilai = (int) $nilaiRaw;
+        }
+
+        $submission->update([
+            'nilai' => $nilai,
             'catatan' => $catatan,
         ]);
 

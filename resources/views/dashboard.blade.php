@@ -6,7 +6,11 @@
     <main class="neo-layout-container">
         <div class="neo-content-inner" style="max-width: 1400px; margin: 0 auto; padding-top: 20px;">
             
-            @if (request()->query('msg') == 'deleted' || session('msg') == 'deleted')
+            @if (session('pesan'))
+                <div class="neo-box" style="background-color: {{ session('tipe_pesan') === 'error' ? 'var(--primary)' : '#a8e6cf' }}; color: {{ session('tipe_pesan') === 'error' ? '#fff' : '#000' }}; font-weight: bold;">
+                    {{ session('pesan') }}
+                </div>
+            @elseif (request()->query('msg') == 'deleted' || session('msg') == 'deleted')
                 <div class="neo-box" style="background-color: var(--primary); color: var(--primary-foreground);">
                     <strong>Pesan:</strong> Akun pengguna berhasil dihapus secara permanen.
                 </div>
@@ -100,12 +104,11 @@
                                             <td>{{ $p['email'] }}</td>
                                             <td style="text-align: center; white-space: nowrap;">
                                                 <a href="{{ route('admin.users.edit', $p['id_user']) }}" class="neo-btn" style="padding: 6px 12px; font-size: 0.8rem; background-color: var(--secondary); color: #000; margin-right: 4px;">Update</a>
-                                                <a href="{{ route('admin.users.delete', $p['id_user']) }}" 
-                                                   class="neo-btn" 
-                                                   style="padding: 6px 12px; font-size: 0.8rem; background-color: var(--primary); color: #fff;"
-                                                   onclick="event.preventDefault(); const url = this.href; NeoConfirm('Hapus Pengajar', 'Yakin ingin menghapus pengajar {{ addslashes($p['nama_pengajar']) }}?', () => window.location.href = url);">
-                                                   Hapus
-                                                </a>
+                                                <form method="POST" action="{{ route('admin.users.delete', $p['id_user']) }}" class="js-confirm-form" data-confirm-title="Hapus Pengajar" data-confirm-message="Yakin ingin menghapus pengajar {{ $p['nama_pengajar'] }}?" style="display: inline;">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="neo-btn" style="padding: 6px 12px; font-size: 0.8rem; background-color: var(--primary); color: #fff;">Hapus</button>
+                                                </form>
                                             </td>
                                         </tr>
                                     @endforeach
@@ -141,18 +144,99 @@
                                             <td>{{ $m['email'] }}</td>
                                             <td style="text-align: center; white-space: nowrap;">
                                                 <a href="{{ route('admin.users.edit', $m['id_user']) }}" class="neo-btn" style="padding: 6px 12px; font-size: 0.8rem; background-color: var(--secondary); color: #000; margin-right: 4px;">Update</a>
-                                                <a href="{{ route('admin.users.delete', $m['id_user']) }}" 
-                                                   class="neo-btn" 
-                                                   style="padding: 6px 12px; font-size: 0.8rem; background-color: var(--primary); color: #fff;"
-                                                   onclick="event.preventDefault(); const url = this.href; NeoConfirm('Hapus Murid', 'Yakin ingin menghapus murid {{ addslashes($m['nama_murid']) }}?', () => window.location.href = url);">
-                                                   Hapus
-                                                </a>
+                                                <form method="POST" action="{{ route('admin.users.delete', $m['id_user']) }}" class="js-confirm-form" data-confirm-title="Hapus Murid" data-confirm-message="Yakin ingin menghapus murid {{ $m['nama_murid'] }}?" style="display: inline;">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="neo-btn" style="padding: 6px 12px; font-size: 0.8rem; background-color: var(--primary); color: #fff;">Hapus</button>
+                                                </form>
                                             </td>
                                         </tr>
                                     @endforeach
                                 @else
                                     <tr><td colspan="5" style="text-align: center;">Belum ada data murid.</td></tr>
                                 @endif
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Manajemen Kelas (Admin CRUD) -->
+                <div class="neo-box" style="margin-top: 28px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid var(--border); padding-bottom: 10px; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+                        <h3 style="margin: 0;">📚 Manajemen Kelas ({{ count($listKelas) }})</h3>
+                        <button type="button" class="neo-btn" style="padding: 6px 14px; font-size: 0.85rem; background-color: var(--accent); color: var(--accent-foreground);" onclick="const f = document.getElementById('form-tambah-kelas'); f.style.display = f.style.display === 'none' ? 'block' : 'none';">+ Buat Kelas Baru</button>
+                    </div>
+
+                    <form id="form-tambah-kelas" method="POST" action="{{ route('admin.kelas.store') }}" style="display: none; margin-bottom: 20px; padding: 16px; border: 3px solid var(--border); background-color: var(--muted);">
+                        @csrf
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 12px;">
+                            <div>
+                                <label class="neo-label">Nama Kelas</label>
+                                <input type="text" name="nama_kelas" class="neo-input" maxlength="100" placeholder="Contoh: Pemrograman Web Laravel" required>
+                            </div>
+                            <div>
+                                <label class="neo-label">Dosen Pengampu</label>
+                                <select name="nidn" class="neo-input">
+                                    <option value="">-- Belum ditentukan --</option>
+                                    @foreach ($listPengajar as $p)
+                                        <option value="{{ $p['nidn'] }}">{{ $p['nama_pengajar'] }} ({{ $p['nidn'] }})</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <label class="neo-label">Deskripsi Kelas</label>
+                            <textarea name="deskripsi" rows="2" class="neo-input" maxlength="2000" placeholder="Deskripsi singkat materi kelas..."></textarea>
+                        </div>
+                        <button type="submit" class="neo-btn" style="background-color: var(--secondary); color: #000;">Simpan Kelas Baru</button>
+                    </form>
+
+                    <div style="overflow-x: auto;">
+                        <table class="neo-table">
+                            <thead>
+                                <tr>
+                                    <th>Kode</th>
+                                    <th>Nama Kelas &amp; Deskripsi</th>
+                                    <th>Pengajar</th>
+                                    <th style="text-align: center;">Peserta</th>
+                                    <th style="width: 220px; text-align: center;">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse ($listKelas as $k)
+                                    <tr>
+                                        <td>
+                                            <span class="badge-kode" style="margin:0;">KLS-{{ $k['id_kelas'] }}</span>
+                                            <form method="POST" action="{{ route('admin.kelas.update', $k['id_kelas']) }}" id="edit-kelas-{{ $k['id_kelas'] }}" style="display: none;">
+                                                @csrf
+                                            </form>
+                                        </td>
+                                        <td>
+                                            <input type="text" form="edit-kelas-{{ $k['id_kelas'] }}" name="nama_kelas" class="neo-input" value="{{ $k['nama_kelas'] }}" maxlength="100" required style="margin-bottom: 6px; padding: 6px 8px; font-weight: bold;">
+                                            <input type="text" form="edit-kelas-{{ $k['id_kelas'] }}" name="deskripsi" class="neo-input" value="{{ $k['deskripsi'] }}" maxlength="2000" placeholder="Deskripsi..." style="margin-bottom: 0; padding: 6px 8px; font-size: 0.85rem;">
+                                        </td>
+                                        <td>
+                                            <select form="edit-kelas-{{ $k['id_kelas'] }}" name="nidn" class="neo-input" style="margin-bottom: 0; padding: 6px 8px;">
+                                                <option value="">-- Belum ditentukan --</option>
+                                                @foreach ($listPengajar as $p)
+                                                    <option value="{{ $p['nidn'] }}" {{ $k['nidn'] === $p['nidn'] ? 'selected' : '' }}>{{ $p['nama_pengajar'] }}</option>
+                                                @endforeach
+                                            </select>
+                                        </td>
+                                        <td style="text-align: center; font-weight: 900;">{{ $k['jumlah_murid'] }}</td>
+                                        <td style="text-align: center; white-space: nowrap;">
+                                            <a href="{{ route('kelas.show', ['id' => $k['id_kelas']]) }}" class="neo-btn" style="padding: 6px 10px; font-size: 0.78rem; background-color: var(--muted); color: var(--foreground); margin-right: 4px;">Buka</a>
+                                            <button type="submit" form="edit-kelas-{{ $k['id_kelas'] }}" class="neo-btn" style="padding: 6px 10px; font-size: 0.78rem; background-color: var(--secondary); color: #000; margin-right: 4px;">Simpan</button>
+                                            <form method="POST" action="{{ route('admin.kelas.delete', $k['id_kelas']) }}" class="js-confirm-form" data-confirm-title="Hapus Kelas" data-confirm-message="Yakin ingin menghapus kelas {{ $k['nama_kelas'] }} beserta materi/tugas di dalamnya?" style="display: inline;">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="neo-btn" style="padding: 6px 10px; font-size: 0.78rem; background-color: var(--primary); color: #fff;">Hapus</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr><td colspan="5" style="text-align: center;">Belum ada kelas terdaftar.</td></tr>
+                                @endforelse
                             </tbody>
                         </table>
                     </div>
@@ -295,7 +379,7 @@
                         <!-- Total Pengumpulan Tugas -->
                         <div class="pimpinan-stat-card" style="background-color: #FED7AA; color: #000;">
                             <div class="pimpinan-stat-icon" style="background-color: #EA580C; color: #FFF;">
-                                <i class='bx bxs-file-Import'></i>
+                                <i class='bx bxs-file-import'></i>
                             </div>
                             <div>
                                 <div class="pimpinan-stat-label">Total Pengumpulan</div>
@@ -445,7 +529,7 @@
                         </div>
                         <div>
                             <div style="font-size: 0.85rem; font-weight: 800; color: var(--muted-foreground); text-transform: uppercase;">Semester Aktif</div>
-                            <div style="font-size: 1.4rem; font-weight: 900; line-height: 1.2;">GENAP 2026</div>
+                            <div style="font-size: 1.4rem; font-weight: 900; line-height: 1.2;">{{ (date('n') <= 6 ? 'GENAP ' : 'GANJIL ') . date('Y') }}</div>
                         </div>
                     </div>
 
@@ -479,7 +563,7 @@
                                         $progress = round(($selesai_item / $total_item) * 100);
                                         if ($progress > 100) $progress = 100;
                                     } else {
-                                        $progress = 100;
+                                        $progress = 0;
                                     }
                                 }
                             @endphp
@@ -496,7 +580,7 @@
                                     
                                     @if (isset($kelas['nama_pengajar']))
                                         <div style="display: flex; align-items: center; gap: 8px; font-size: 0.9em; margin-bottom: 12px; color: var(--foreground); background-color: var(--muted); padding: 6px 10px; border: 2px solid var(--border);">
-                                            <i class='bx bxs-user-Voice' style="font-size: 1.2rem; color: var(--primary);"></i>
+                                            <i class='bx bxs-user-voice' style="font-size: 1.2rem; color: var(--primary);"></i>
                                             <span>Pengajar: <strong>{{ $kelas['nama_pengajar'] ?? 'Belum ditentukan' }}</strong></span>
                                         </div>
                                     @endif
@@ -546,7 +630,7 @@
 
 @section('scripts')
 <script>
-    // Animasi Progress Bar saat halaman selesai dimuat
+    // Animasi Progress Bar & Konfirmasi Form Hapus
     document.addEventListener("DOMContentLoaded", () => {
         setTimeout(() => {
             const bars = document.querySelectorAll('.progress-fill');
@@ -554,6 +638,17 @@
                 bar.style.width = bar.getAttribute('data-target');
             });
         }, 150);
+
+        document.querySelectorAll('.js-confirm-form').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                NeoConfirm(
+                    this.dataset.confirmTitle || 'Konfirmasi',
+                    this.dataset.confirmMessage || 'Yakin melanjutkan tindakan ini?',
+                    () => this.submit()
+                );
+            });
+        });
     });
 </script>
 @endsection

@@ -53,7 +53,7 @@
                                         @endif
                                     </td>
                                     <td>
-                                        <a href="{{ asset('uploads/tugas/' . $sub['file_jawaban']) }}" target="_blank" class="neo-btn" style="padding: 6px 12px; font-size: 0.8rem; background-color: var(--accent);">
+                                        <a href="{{ route('files.submission', ['id' => $sub['id_submission']]) }}" target="_blank" rel="noopener" class="neo-btn" style="padding: 6px 12px; font-size: 0.8rem; background-color: var(--accent);">
                                             📥 Unduh File
                                         </a>
                                     </td>

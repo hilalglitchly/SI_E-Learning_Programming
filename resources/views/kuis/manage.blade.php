@@ -76,10 +76,11 @@
                     <div class="neo-box" style="position: relative;">
                         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
                             <strong style="font-size: 1.1em;">Soal #{{ $index + 1 }}</strong>
-                            <a href="{{ route('kuis.soal.delete', ['id_kuis' => $id_kuis, 'id_soal' => $s['id_soal']]) }}" 
-                               class="neo-btn" 
-                               style="padding: 4px 10px; font-size: 0.75rem; background-color: var(--primary); color: #fff;"
-                               onclick="event.preventDefault(); const url = this.href; NeoConfirm('Hapus Soal', 'Hapus soal ini?', () => window.location.href = url);">Hapus</a>
+                            <form method="POST" action="{{ route('kuis.soal.delete', ['id_kuis' => $id_kuis, 'id_soal' => $s['id_soal']]) }}" style="display: inline;" onsubmit="event.preventDefault(); NeoConfirm('Hapus Soal', 'Hapus soal ini?', () => this.submit());">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="neo-btn" style="padding: 4px 10px; font-size: 0.75rem; background-color: var(--primary); color: #fff;">Hapus</button>
+                            </form>
                         </div>
                         <p style="font-size: 1.05em; margin-bottom: 16px; font-weight: 500;">{!! nl2br(e($s['pertanyaan'])) !!}</p>
                         
@@ -89,6 +90,32 @@
                             <div style="padding: 8px; border: 2px solid var(--border); {{ $s['jawaban_benar'] === 'C' ? 'background-color: #a8e6cf; color: #000; font-weight: bold;' : '' }}">C. {{ $s['opsi_c'] }}</div>
                             <div style="padding: 8px; border: 2px solid var(--border); {{ $s['jawaban_benar'] === 'D' ? 'background-color: #a8e6cf; color: #000; font-weight: bold;' : '' }}">D. {{ $s['opsi_d'] }}</div>
                         </div>
+
+                        <details style="margin-top: 12px;">
+                            <summary class="neo-btn" style="padding: 4px 10px; font-size: 0.75rem; background-color: var(--secondary); color: #000; list-style: none; display: inline-block; cursor: pointer;">✏️ Edit Soal</summary>
+                            <form method="POST" action="{{ route('kuis.soal.update', ['id_kuis' => $id_kuis, 'id_soal' => $s['id_soal']]) }}" style="margin-top: 12px; padding: 14px; border: 2px solid var(--border); background-color: var(--muted);">
+                                @csrf
+                                <div class="neo-form-group">
+                                    <label class="neo-label">Pertanyaan</label>
+                                    <textarea name="pertanyaan" rows="2" class="neo-input" required>{{ $s['pertanyaan'] }}</textarea>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                    <div class="neo-form-group"><label class="neo-label">Opsi A</label><input type="text" name="opsi_a" class="neo-input" value="{{ $s['opsi_a'] }}" required></div>
+                                    <div class="neo-form-group"><label class="neo-label">Opsi B</label><input type="text" name="opsi_b" class="neo-input" value="{{ $s['opsi_b'] }}" required></div>
+                                    <div class="neo-form-group"><label class="neo-label">Opsi C</label><input type="text" name="opsi_c" class="neo-input" value="{{ $s['opsi_c'] }}" required></div>
+                                    <div class="neo-form-group"><label class="neo-label">Opsi D</label><input type="text" name="opsi_d" class="neo-input" value="{{ $s['opsi_d'] }}" required></div>
+                                </div>
+                                <div class="neo-form-group">
+                                    <label class="neo-label">Kunci Jawaban</label>
+                                    <select name="jawaban_benar" class="neo-input" style="max-width: 180px;" required>
+                                        @foreach (['A', 'B', 'C', 'D'] as $opt)
+                                            <option value="{{ $opt }}" {{ $s['jawaban_benar'] === $opt ? 'selected' : '' }}>Opsi {{ $opt }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <button type="submit" class="neo-btn" style="padding: 6px 14px; font-size: 0.85rem;">Simpan Perubahan</button>
+                            </form>
+                        </details>
                     </div>
                 @endforeach
             @else

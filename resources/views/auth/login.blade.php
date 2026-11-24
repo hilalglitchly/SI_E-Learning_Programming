@@ -69,6 +69,9 @@
 
             <form method="POST" action="{{ route('login') }}">
                 @csrf
+                @if (request()->query('redirect') === 'enroll')
+                    <input type="hidden" name="redirect" value="enroll">
+                @endif
                 
                 <div class="neo-form-group">
                     <label class="neo-label" for="username">Username</label>

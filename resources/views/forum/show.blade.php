@@ -247,7 +247,7 @@
     @if (!empty($msg))
         <script>
             document.addEventListener('DOMContentLoaded', () => {
-                NeoToast('{{ addslashes($msg) }}', '{{ $msg_type }}');
+                NeoToast(@json($msg), @json($msg_type));
             });
         </script>
     @endif
@@ -296,11 +296,11 @@
             @endif
             
             <div class="post-detail-content">
-                {!! $post['konten'] !!}
+                {!! sanitize_rich_text($post['konten']) !!}
             </div>
             
             <div class="forum-post-actions" style="margin-top: 20px; padding-top: 15px;">
-                <button class="forum-action-btn" onclick="sharePost({{ $post['id_post'] }}, '{{ addslashes($post['judul']) }}')">
+                <button class="forum-action-btn" data-post-id="{{ $post['id_post'] }}" data-post-title="{{ $post['judul'] }}" onclick="sharePost(this.dataset.postId, this.dataset.postTitle)">
                     <i class='bx bx-share-alt'></i> Bagikan
                 </button>
                 @if ($is_logged_in)
@@ -310,7 +310,44 @@
                 </button>
                 @endif
                 <span class="forum-action-btn" style="cursor: default;"><i class='bx bx-show'></i> {{ $post['views'] }} Dilihat</span>
+                @if ($is_logged_in && ((int) $id_user === (int) $post['id_user'] || strtolower($role) === 'admin'))
+                    <form method="POST" action="{{ route('forum.delete', ['id' => $post['id_post']]) }}" style="display: inline; margin-left: auto;" onsubmit="event.preventDefault(); NeoConfirm('Hapus Postingan', 'Yakin ingin menghapus postingan ini secara permanen?', () => this.submit());">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="forum-action-btn" style="background-color: var(--primary); color: #fff; border-color: #000;">
+                            <i class='bx bx-trash'></i> Hapus Post
+                        </button>
+                    </form>
+                @endif
             </div>
+
+            @if ($is_logged_in && ((int) $id_user === (int) $post['id_user'] || strtolower($role) === 'admin'))
+                <details style="margin-top: 14px;">
+                    <summary class="forum-action-btn" style="list-style: none; display: inline-flex; background-color: var(--secondary); color: #000; border-color: #000; cursor: pointer;">
+                        <i class='bx bx-edit'></i> Edit Postingan
+                    </summary>
+                    <form method="POST" action="{{ route('forum.update', ['id' => $post['id_post']]) }}" style="margin-top: 12px; padding: 14px; border: 2px solid var(--border); background-color: var(--muted);">
+                        @csrf
+                        <div class="neo-form-group">
+                            <label class="neo-label">Judul</label>
+                            <input type="text" name="judul" class="neo-input" value="{{ $post['judul'] }}" maxlength="250" required>
+                        </div>
+                        <div class="neo-form-group">
+                            <label class="neo-label">Tipe</label>
+                            <select name="tipe" class="neo-input">
+                                <option value="pertanyaan" {{ $post['tipe'] === 'pertanyaan' ? 'selected' : '' }}>Pertanyaan</option>
+                                <option value="diskusi" {{ $post['tipe'] === 'diskusi' ? 'selected' : '' }}>Diskusi</option>
+                                <option value="berbagi" {{ $post['tipe'] === 'berbagi' ? 'selected' : '' }}>Berbagi</option>
+                            </select>
+                        </div>
+                        <div class="neo-form-group">
+                            <label class="neo-label">Konten</label>
+                            <textarea name="konten" rows="5" class="neo-input" required>{{ $post['konten'] }}</textarea>
+                        </div>
+                        <button type="submit" class="neo-btn" style="padding: 8px 18px;">Simpan Perubahan</button>
+                    </form>
+                </details>
+            @endif
         </div>
     </article>
 
@@ -360,7 +397,7 @@
                     </div>
                     
                     <div class="answer-content">
-                        {!! $ans['konten'] !!}
+                        {!! sanitize_rich_text($ans['konten']) !!}
                     </div>
                     
                     <!-- Post owner can mark as solved -->
@@ -374,6 +411,27 @@
                             </button>
                         </form>
                     </div>
+                    @endif
+                    @if ($is_logged_in && ((int) $id_user === (int) $ans['id_user'] || strtolower($role) === 'admin'))
+                        <div style="margin-top: 12px; padding-top: 10px; border-top: 2px dashed var(--border); display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px;">
+                            <details style="flex: 1; min-width: 220px;">
+                                <summary class="forum-action-btn" style="list-style: none; display: inline-flex; background-color: var(--secondary); color: #000; border-color: #000; cursor: pointer;">
+                                    <i class='bx bx-edit'></i> Edit Jawaban
+                                </summary>
+                                <form method="POST" action="{{ route('forum.jawaban.update', ['id' => $post['id_post'], 'id_jawaban' => $ans['id_jawaban']]) }}" style="margin-top: 10px; padding: 12px; border: 2px solid var(--border); background-color: var(--muted);">
+                                    @csrf
+                                    <textarea name="konten" rows="4" class="neo-input" required style="margin-bottom: 10px;">{{ $ans['konten'] }}</textarea>
+                                    <button type="submit" class="neo-btn" style="padding: 6px 14px; font-size: 0.85rem;">Simpan Perubahan</button>
+                                </form>
+                            </details>
+                            <form method="POST" action="{{ route('forum.jawaban.delete', ['id' => $post['id_post'], 'id_jawaban' => $ans['id_jawaban']]) }}" onsubmit="event.preventDefault(); NeoConfirm('Hapus Jawaban', 'Yakin ingin menghapus jawaban ini?', () => this.submit());">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="forum-action-btn" style="background-color: var(--primary); color: #fff; border-color: #000;">
+                                    <i class='bx bx-trash'></i> Hapus
+                                </button>
+                            </form>
+                        </div>
                     @endif
                 </div>
             </div>
@@ -432,7 +490,7 @@ var quill = new Quill('#editor-container', {
             ['blockquote', 'code-block'],
             [{ 'header': 1 }, { 'header': 2 }],
             [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-            ['link', 'image'],
+            ['link'],
             ['clean']
         ]
     }

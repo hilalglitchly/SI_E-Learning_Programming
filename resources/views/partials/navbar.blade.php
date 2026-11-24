@@ -87,9 +87,12 @@ $username = $user ? $user->username : 'Guest';
                 </div>
                 
                 <div class="neo-dropdown-menu" style="position: absolute; top: 100%; right: 0; z-index: 1001; min-width: 100%; padding-top: 5px; display: none;">
-                    <a href="{{ route('logout') }}" id="logout-btn" class="neo-logout-btn brutal-hover" style="background-color: var(--primary); color: #FFF; border: 3px solid #000; box-shadow: 4px 4px 0px #000; padding: 8px 16px; font-weight: bold; text-transform: uppercase; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; box-sizing: border-box;">
-                        <i class='bx bx-log-out'></i> LOG OUT
-                    </a>
+                    <form id="logout-form" method="POST" action="{{ route('logout') }}" style="margin: 0;">
+                        @csrf
+                        <button type="submit" id="logout-btn" class="neo-logout-btn brutal-hover" style="background-color: var(--primary); color: #FFF; border: 3px solid #000; box-shadow: 4px 4px 0px #000; padding: 8px 16px; font-weight: bold; text-transform: uppercase; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; box-sizing: border-box; cursor: pointer;">
+                            <i class='bx bx-log-out'></i> LOG OUT
+                        </button>
+                    </form>
                 </div>
             </div>
         @else
@@ -234,15 +237,27 @@ $username = $user ? $user->username : 'Guest';
                                     item.style.cssText = `padding: 12px 15px; border-bottom: 2px solid var(--border); cursor: pointer; transition: background 0.2s; ${bg}`;
                                     item.onmouseover = () => item.style.backgroundColor = 'var(--muted)';
                                     item.onmouseout = () => item.style.backgroundColor = n.is_read == 0 ? 'rgba(255, 215, 0, 0.15)' : 'transparent';
-                                    
-                                    item.innerHTML = `
-                                        <div style="font-weight: 900; font-size: 0.9rem; margin-bottom: 4px; color: var(--primary); display: flex; justify-content: space-between;">
-                                            <span>${n.judul}</span>
-                                            ${n.is_read == 0 ? '<span style="width: 8px; height: 8px; background-color: var(--primary); border-radius: 50%; display: inline-block;"></span>' : ''}
-                                        </div>
-                                        <div style="font-size: 0.85rem; font-weight: 500; margin-bottom: 6px; line-height: 1.3;">${n.pesan}</div>
-                                        <div style="font-size: 0.7rem; color: var(--muted-foreground); font-weight: bold;">${n.tgl_dibuat}</div>
-                                    `;
+
+                                    const header = document.createElement('div');
+                                    header.style.cssText = 'font-weight: 900; font-size: 0.9rem; margin-bottom: 4px; color: var(--primary); display: flex; justify-content: space-between;';
+                                    const titleSpan = document.createElement('span');
+                                    titleSpan.textContent = n.judul ?? '';
+                                    header.appendChild(titleSpan);
+                                    if (n.is_read == 0) {
+                                        const dot = document.createElement('span');
+                                        dot.style.cssText = 'width: 8px; height: 8px; background-color: var(--primary); border-radius: 50%; display: inline-block;';
+                                        header.appendChild(dot);
+                                    }
+
+                                    const body = document.createElement('div');
+                                    body.style.cssText = 'font-size: 0.85rem; font-weight: 500; margin-bottom: 6px; line-height: 1.3;';
+                                    body.textContent = n.pesan ?? '';
+
+                                    const timeEl = document.createElement('div');
+                                    timeEl.style.cssText = 'font-size: 0.7rem; color: var(--muted-foreground); font-weight: bold;';
+                                    timeEl.textContent = n.tgl_dibuat ?? '';
+
+                                    item.append(header, body, timeEl);
 
                                     item.onclick = () => {
                                         fetch('{{ route("api.notifikasi") }}', {
@@ -251,9 +266,16 @@ $username = $user ? $user->username : 'Guest';
                                                 'Content-Type': 'application/x-www-form-urlencoded',
                                                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
                                             },
-                                            body: `action=mark_read&id_notifikasi=${n.id_notifikasi}`
+                                            body: `action=mark_read&id_notifikasi=${encodeURIComponent(n.id_notifikasi)}`
                                         }).then(() => {
-                                            window.location.href = n.link;
+                                            if (typeof n.link === 'string' && n.link) {
+                                                try {
+                                                    const parsed = new URL(n.link, window.location.origin);
+                                                    if (parsed.origin === window.location.origin && (parsed.protocol === 'http:' || parsed.protocol === 'https:')) {
+                                                        window.location.href = parsed.href;
+                                                    }
+                                                } catch (e) {}
+                                            }
                                         });
                                     };
 
@@ -293,19 +315,22 @@ $username = $user ? $user->username : 'Guest';
                 });
             };
 
-            // Initial load & Poll every 10 seconds
+            // Initial load & Poll every 60 seconds only while tab is visible
             loadNotifikasi();
-            setInterval(loadNotifikasi, 10000);
+            setInterval(() => {
+                if (!document.hidden) {
+                    loadNotifikasi();
+                }
+            }, 60000);
         }
 
         // Custom Logout Confirmation
-        const logoutBtn = document.getElementById("logout-btn");
-        if (logoutBtn) {
-            logoutBtn.addEventListener("click", function(e) {
+        const logoutForm = document.getElementById("logout-form");
+        if (logoutForm) {
+            logoutForm.addEventListener("submit", function(e) {
                 e.preventDefault();
-                const targetUrl = this.getAttribute("href");
-                NeoConfirm("Konfirmasi Keluar", "Apakah Anda yakin ingin keluar dari sistem?", function() {
-                    window.location.href = targetUrl;
+                NeoConfirm("Konfirmasi Keluar", "Apakah Anda yakin ingin keluar dari sistem?", () => {
+                    logoutForm.submit();
                 });
             });
         }

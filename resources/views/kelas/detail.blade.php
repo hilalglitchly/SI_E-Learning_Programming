@@ -405,7 +405,7 @@
             <!-- BANNER UTAMA -->
             <div class="classroom-banner">
                 <div class="banner-title">{{ $kelasInfo['nama_kelas'] ?? 'Nama Kelas' }}</div>
-                <div class="banner-subtitle">Sistem Informasi E-Learning Programming - Kelompok 3</div>
+                <div class="banner-subtitle">{{ !empty($kelasInfo['nama_pengajar']) ? 'Pengajar: ' . $kelasInfo['nama_pengajar'] : 'Sistem Informasi E-Learning Programming' }}</div>
             </div>
 
             <!-- LAYOUT 2 KOLOM -->
@@ -487,13 +487,13 @@
         <div id="tab-materi" class="tab-section">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                 <h3 style="font-size: 1.6rem; text-transform: uppercase; font-weight: 800; margin: 0;">Daftar Materi</h3>
-                @if (in_array(strtolower($role), ['pengajar', 'admin', 'pimpinan']))
+                @if (in_array(strtolower($role), ['pengajar', 'admin']))
                     <button class="btn-accent" onclick="toggleUploadMateri()">+ UPLOAD MATERI</button>
                 @endif
             </div>
 
             <!-- Form Upload Materi (Tersembunyi by default) -->
-            @if (in_array(strtolower($role), ['pengajar', 'admin', 'pimpinan']))
+            @if (in_array(strtolower($role), ['pengajar', 'admin']))
             <div id="formUploadMateri" class="brutal-card" style="display: none; margin-bottom: 2rem; border-color: var(--primary);">
                 <h4 style="text-transform: uppercase; margin-bottom: 1rem; font-size: 1.3rem;">📤 Tambah Materi Baru</h4>
                 <form action="{{ route('kelas.post', ['id' => $id_kelas]) }}" method="POST" enctype="multipart/form-data">
@@ -532,10 +532,38 @@
                         <div style="font-size: 1rem; margin-bottom: 1rem; line-height: 1.5;" class="ql-editor-content">{!! sanitize_rich_text($materi['deskripsi']) !!}</div>
                         @if (!empty($materi['file_materi']))
                             <div style="margin-bottom: 1rem;">
-                                <a href="{{ asset('uploads/materi/' . $materi['file_materi']) }}" target="_blank" class="btn-accent" style="text-decoration: none; padding: 0.5rem 1rem; font-size: 0.9rem;">📥 Unduh File</a>
+                                <a href="{{ route('files.materi', ['id' => $materi['id_materi']]) }}" target="_blank" rel="noopener" class="btn-accent" style="text-decoration: none; padding: 0.5rem 1rem; font-size: 0.9rem;">📥 Unduh File</a>
                             </div>
                         @endif
                         <small style="color: var(--muted-foreground); font-weight: bold;">Diupload: {{ $materi['tgl_upload'] }}</small>
+                        @if (in_array(strtolower($role), ['pengajar', 'admin']))
+                            <div style="margin-top: 1rem; padding-top: 0.75rem; border-top: 2px dashed var(--border); display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0.75rem;">
+                                <details style="flex: 1; min-width: 240px;">
+                                    <summary class="btn-small" style="background-color: var(--secondary); color: #000; list-style: none; display: inline-block;">✏️ Edit Materi</summary>
+                                    <form method="POST" action="{{ route('kelas.materi.update', ['id' => $id_kelas, 'id_materi' => $materi['id_materi']]) }}" enctype="multipart/form-data" style="margin-top: 0.75rem; padding: 1rem; border: 2px solid var(--border); background-color: var(--muted);">
+                                        @csrf
+                                        <div style="margin-bottom: 0.75rem;">
+                                            <label style="display: block; font-weight: bold; font-size: 0.85rem; margin-bottom: 4px;">Judul Materi</label>
+                                            <input type="text" name="judul_materi" class="neo-input" value="{{ $materi['judul_materi'] }}" maxlength="150" required style="margin: 0;">
+                                        </div>
+                                        <div style="margin-bottom: 0.75rem;">
+                                            <label style="display: block; font-weight: bold; font-size: 0.85rem; margin-bottom: 4px;">Deskripsi</label>
+                                            <textarea name="deskripsi" rows="3" class="neo-input" style="margin: 0;">{{ $materi['deskripsi'] }}</textarea>
+                                        </div>
+                                        <div style="margin-bottom: 0.75rem;">
+                                            <label style="display: block; font-weight: bold; font-size: 0.85rem; margin-bottom: 4px;">Ganti Lampiran (Opsional)</label>
+                                            <input type="file" name="file_materi" class="neo-input" style="margin: 0;">
+                                        </div>
+                                        <button type="submit" class="btn-small" style="background-color: var(--accent); color: var(--accent-foreground);">Simpan Perubahan</button>
+                                    </form>
+                                </details>
+                                <form method="POST" action="{{ route('kelas.materi.delete', ['id' => $id_kelas, 'id_materi' => $materi['id_materi']]) }}" class="js-confirm-form" data-confirm-title="Hapus Materi" data-confirm-message="Yakin ingin menghapus materi {{ $materi['judul_materi'] }}?">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn-small" style="background-color: var(--primary); color: #fff;">Hapus</button>
+                                </form>
+                            </div>
+                        @endif
                     </div>
                 @endforeach
             @else
@@ -549,13 +577,13 @@
         <div id="tab-tugas" class="tab-section">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                 <h3 style="font-size: 1.6rem; text-transform: uppercase; font-weight: 800; margin: 0;">Daftar Tugas</h3>
-                @if (in_array(strtolower($role), ['pengajar', 'admin', 'pimpinan']))
+                @if (in_array(strtolower($role), ['pengajar', 'admin']))
                     <button class="btn-accent" onclick="toggleUploadTugas()">+ BUAT TUGAS</button>
                 @endif
             </div>
 
             <!-- Form Upload Tugas (Tersembunyi by default) -->
-            @if (in_array(strtolower($role), ['pengajar', 'admin', 'pimpinan']))
+            @if (in_array(strtolower($role), ['pengajar', 'admin']))
             <div id="formUploadTugas" class="brutal-card" style="display: none; margin-bottom: 2rem; border-color: var(--primary);">
                 <h4 style="text-transform: uppercase; margin-bottom: 1rem; font-size: 1.3rem;">📝 Buat Tugas Baru</h4>
                 <form action="{{ route('kelas.post', ['id' => $id_kelas]) }}" method="POST" enctype="multipart/form-data">
@@ -601,16 +629,66 @@
                         
                         @if (!empty($tugas['file_tugas']))
                             <div style="margin-bottom: 1rem;">
-                                <a href="{{ asset('uploads/tugas/' . $tugas['file_tugas']) }}" target="_blank" class="btn-accent" style="text-decoration: none; padding: 0.5rem 1rem; font-size: 0.9rem; background-color: var(--secondary); color: #000;">📎 Unduh Lampiran Referensi</a>
+                                <a href="{{ route('files.tugas', ['id' => $tugas['id_tugas']]) }}" target="_blank" rel="noopener" class="btn-accent" style="text-decoration: none; padding: 0.5rem 1rem; font-size: 0.9rem; background-color: var(--secondary); color: #000;">📎 Unduh Lampiran Referensi</a>
                             </div>
                         @endif
 
                         <div style="display: inline-block; background-color: var(--secondary); padding: 0.4rem 0.8rem; font-weight: 800; color: #000000; border: 2px solid var(--border); box-shadow: 2px 2px 0px var(--shadow-color); font-size: 0.9rem; text-transform: uppercase;">
                             ⏰ Tenggat: {{ $tugas['deadline'] }}
                         </div>
-                        @if (in_array($tugas['id_tugas'], $submittedTugasIds))
-                            <div style="display: inline-block; margin-left: 1rem; background-color: #4CAF50; padding: 0.4rem 0.8rem; font-weight: bold; color: #fff; font-size: 0.9rem; text-transform: uppercase; border: 2px solid #000; box-shadow: 2px 2px 0px #000;">
+                        @if (isset($submissionMap[$tugas['id_tugas']]))
+                            @php $subInfo = $submissionMap[$tugas['id_tugas']]; @endphp
+                            <div style="display: inline-block; margin-left: 0.75rem; background-color: #4CAF50; padding: 0.4rem 0.8rem; font-weight: bold; color: #fff; font-size: 0.9rem; text-transform: uppercase; border: 2px solid #000; box-shadow: 2px 2px 0px #000;">
                                 ✅ SUDAH DIKUMPULKAN
+                            </div>
+                            @if ($subInfo['nilai'] !== null)
+                                <div style="display: inline-block; margin-left: 0.75rem; background-color: #2563EB; padding: 0.4rem 0.8rem; font-weight: 900; color: #fff; font-size: 0.9rem; text-transform: uppercase; border: 2px solid #000; box-shadow: 2px 2px 0px #000;">
+                                    ⭐ NILAI: {{ $subInfo['nilai'] }}/100
+                                </div>
+                            @else
+                                <div style="display: inline-block; margin-left: 0.75rem; background-color: var(--muted); padding: 0.4rem 0.8rem; font-weight: 800; color: var(--foreground); font-size: 0.85rem; text-transform: uppercase; border: 2px solid var(--border);">
+                                    ⏳ MENUNGGU PENILAIAN
+                                </div>
+                            @endif
+                            <div style="margin-top: 0.85rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem;">
+                                <a href="{{ route('files.submission', ['id' => $subInfo['id_submission']]) }}" target="_blank" rel="noopener" class="btn-small" style="background-color: var(--muted); color: var(--foreground);">📥 File Jawaban Anda</a>
+                                @if (!empty($subInfo['catatan']))
+                                    <div style="flex: 1; min-width: 220px; padding: 0.5rem 0.8rem; background-color: var(--muted); border-left: 4px solid var(--accent); font-size: 0.9rem;">
+                                        <strong>Catatan Pengajar:</strong> {{ $subInfo['catatan'] }}
+                                    </div>
+                                @endif
+                            </div>
+                        @endif
+                        @if (in_array(strtolower($role), ['pengajar', 'admin']))
+                            <div style="margin-top: 1rem; padding-top: 0.75rem; border-top: 2px dashed var(--border); display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0.75rem;">
+                                <details style="flex: 1; min-width: 240px;">
+                                    <summary class="btn-small" style="background-color: var(--secondary); color: #000; list-style: none; display: inline-block;">✏️ Edit Tugas</summary>
+                                    <form method="POST" action="{{ route('kelas.tugas.update', ['id' => $id_kelas, 'id_tugas' => $tugas['id_tugas']]) }}" enctype="multipart/form-data" style="margin-top: 0.75rem; padding: 1rem; border: 2px solid var(--border); background-color: var(--muted);">
+                                        @csrf
+                                        <div style="margin-bottom: 0.75rem;">
+                                            <label style="display: block; font-weight: bold; font-size: 0.85rem; margin-bottom: 4px;">Judul Tugas</label>
+                                            <input type="text" name="judul_tugas" class="neo-input" value="{{ $tugas['judul_tugas'] }}" maxlength="150" required style="margin: 0;">
+                                        </div>
+                                        <div style="margin-bottom: 0.75rem;">
+                                            <label style="display: block; font-weight: bold; font-size: 0.85rem; margin-bottom: 4px;">Instruksi Tugas</label>
+                                            <textarea name="deskripsi" rows="3" class="neo-input" style="margin: 0;">{{ $tugas['deskripsi'] }}</textarea>
+                                        </div>
+                                        <div style="margin-bottom: 0.75rem;">
+                                            <label style="display: block; font-weight: bold; font-size: 0.85rem; margin-bottom: 4px;">Deadline</label>
+                                            <input type="datetime-local" name="deadline_tugas" class="neo-input" value="{{ !empty($tugas['deadline']) ? date('Y-m-d\TH:i', strtotime($tugas['deadline'])) : '' }}" required style="margin: 0;">
+                                        </div>
+                                        <div style="margin-bottom: 0.75rem;">
+                                            <label style="display: block; font-weight: bold; font-size: 0.85rem; margin-bottom: 4px;">Ganti Lampiran Referensi (Opsional)</label>
+                                            <input type="file" name="file_tugas" class="neo-input" style="margin: 0;">
+                                        </div>
+                                        <button type="submit" class="btn-small" style="background-color: var(--accent); color: var(--accent-foreground);">Simpan Perubahan</button>
+                                    </form>
+                                </details>
+                                <form method="POST" action="{{ route('kelas.tugas.delete', ['id' => $id_kelas, 'id_tugas' => $tugas['id_tugas']]) }}" class="js-confirm-form" data-confirm-title="Hapus Tugas" data-confirm-message="Yakin ingin menghapus tugas {{ $tugas['judul_tugas'] }} beserta seluruh pengumpulannya?">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn-small" style="background-color: var(--primary); color: #fff;">Hapus</button>
+                                </form>
                             </div>
                         @endif
                     </div>
@@ -821,8 +899,34 @@
                         </div>
                         <p style="font-size: 1rem; margin-bottom: 1.5rem; line-height: 1.5; font-weight: 500;">{!! nl2br(e($k['deskripsi'])) !!}</p>
                         
-                        @if ($role === 'Pengajar' || strtolower($role) === 'admin')
-                            <a href="{{ route('kuis.manage', ['id_kuis' => $k['id_kuis']]) }}" class="btn-small" style="background-color: var(--accent); color: var(--primary-foreground);">Kelola Soal &rarr;</a>
+                        @if ($role === 'Pengajar' || strtolower($role) === 'pengajar' || strtolower($role) === 'admin')
+                            <div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0.75rem;">
+                                <a href="{{ route('kuis.manage', ['id_kuis' => $k['id_kuis']]) }}" class="btn-small" style="background-color: var(--accent); color: var(--primary-foreground);">Kelola Soal &rarr;</a>
+                                <details style="flex: 1; min-width: 220px;">
+                                    <summary class="btn-small" style="background-color: var(--secondary); color: #000; list-style: none; display: inline-block;">✏️ Edit Kuis</summary>
+                                    <form method="POST" action="{{ route('kelas.kuis.update', ['id' => $id_kelas, 'id_kuis' => $k['id_kuis']]) }}" style="margin-top: 0.75rem; padding: 1rem; border: 2px solid var(--border); background-color: var(--muted);">
+                                        @csrf
+                                        <div style="margin-bottom: 0.75rem;">
+                                            <label style="display: block; font-weight: bold; font-size: 0.85rem; margin-bottom: 4px;">Judul Kuis</label>
+                                            <input type="text" name="judul_kuis" class="neo-input" value="{{ $k['judul_kuis'] }}" maxlength="150" required style="margin: 0;">
+                                        </div>
+                                        <div style="margin-bottom: 0.75rem;">
+                                            <label style="display: block; font-weight: bold; font-size: 0.85rem; margin-bottom: 4px;">Deskripsi</label>
+                                            <textarea name="deskripsi_kuis" rows="2" class="neo-input" style="margin: 0;">{{ $k['deskripsi'] }}</textarea>
+                                        </div>
+                                        <div style="margin-bottom: 0.75rem;">
+                                            <label style="display: block; font-weight: bold; font-size: 0.85rem; margin-bottom: 4px;">Durasi (Menit)</label>
+                                            <input type="number" name="durasi_menit" class="neo-input" value="{{ $k['durasi_menit'] }}" min="1" max="600" required style="margin: 0;">
+                                        </div>
+                                        <button type="submit" class="btn-small" style="background-color: var(--accent); color: var(--accent-foreground);">Simpan Perubahan</button>
+                                    </form>
+                                </details>
+                                <form method="POST" action="{{ route('kelas.kuis.delete', ['id' => $id_kelas, 'id_kuis' => $k['id_kuis']]) }}" class="js-confirm-form" data-confirm-title="Hapus Kuis" data-confirm-message="Yakin ingin menghapus kuis {{ $k['judul_kuis'] }} beserta seluruh soal dan nilainya?">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn-small" style="background-color: var(--primary); color: #fff;">Hapus</button>
+                                </form>
+                            </div>
                         @elseif (strtolower($role) === 'murid')
                             @php
                                 $nilaiKuis = $nilaiKuisMap[$k['id_kuis']] ?? null;
@@ -857,7 +961,7 @@
                                 <th style="padding: 1rem; font-weight: 900; text-transform: uppercase;">Nama Murid</th>
                                 <th style="padding: 1rem; font-weight: 900; text-transform: uppercase;">Rata-rata Tugas</th>
                                 <th style="padding: 1rem; font-weight: 900; text-transform: uppercase;">Rata-rata Kuis</th>
-                                <th style="padding: 1rem; font-weight: 900; text-transform: uppercase;">Aksi</th>
+                                <th style="padding: 1rem; font-weight: 900; text-transform: uppercase;">Progres</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -867,8 +971,8 @@
                                     <td style="padding: 1rem; font-weight: 500;">{{ $rekap['nama_murid'] }}</td>
                                     <td style="padding: 1rem; font-weight: 900; color: var(--primary);">{{ round($rekap['avg_tugas'], 2) }}</td>
                                     <td style="padding: 1rem; font-weight: 900; color: var(--accent);">{{ round($rekap['avg_kuis'], 2) }}</td>
-                                    <td style="padding: 1rem;">
-                                        <a href="#" class="btn-small" style="background-color: var(--foreground); color: var(--background);">Detail</a>
+                                    <td style="padding: 1rem; font-weight: 700; font-size: 0.9rem;">
+                                        {{ $rekap['tugas_selesai'] ?? 0 }}/{{ count($tugasList) }} Tugas &bull; {{ $rekap['kuis_selesai'] ?? 0 }}/{{ count($kuisList) }} Kuis
                                     </td>
                                 </tr>
                             @endforeach
@@ -1058,8 +1162,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             function updateFileDisplay(name) {
                 fileNameDisplay.style.display = 'inline-block';
-                fileNameDisplay.innerHTML = '📁 ' + name;
-                dropText.innerHTML = 'File Berhasil Dimasukkan!';
+                fileNameDisplay.textContent = '📁 ' + name;
+                dropText.textContent = 'File Berhasil Dimasukkan!';
                 dropZone.style.backgroundColor = '#4CAF50';
                 dropZone.style.border = '4px solid var(--border)';
                 dropText.style.color = '#FFF';
@@ -1079,6 +1183,17 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Setup for Pengajar (Buat Tugas)
     setupDropZone('drop-zone-tugas', 'file_tugas', 'drop-text-tugas', 'file-name-display-tugas', 'drop-icon-tugas');
+
+    document.querySelectorAll('.js-confirm-form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            NeoConfirm(
+                this.dataset.confirmTitle || 'Konfirmasi',
+                this.dataset.confirmMessage || 'Yakin melanjutkan tindakan ini?',
+                () => this.submit()
+            );
+        });
+    });
 });
 </script>
 @endsection

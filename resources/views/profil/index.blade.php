@@ -46,14 +46,43 @@
                     </div>
                 </div>
 
-                <!-- Tombol Buka/Tutup Form Ganti Password -->
-                <div style="border-top: 2px dashed var(--border); padding-top: 20px; display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-weight: bold; font-size: 0.95em;">Ingin mengamankan akun Anda?</span>
-                    <button type="button" onclick="togglePasswordForm()" class="neo-btn" style="background-color: var(--accent); color: var(--accent-foreground); padding: 8px 16px; font-size: 0.85rem;">
-                        🔒 Ubah Password
-                    </button>
+                <!-- Tombol Buka/Tutup Form Edit Profil & Ganti Password -->
+                <div style="border-top: 2px dashed var(--border); padding-top: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <span style="font-weight: bold; font-size: 0.95em;">Kelola akun Anda:</span>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        @if (in_array(strtolower($role), ['murid', 'pengajar']))
+                            <button type="button" onclick="toggleProfileForm()" class="neo-btn" style="background-color: var(--secondary); color: #000; padding: 8px 16px; font-size: 0.85rem;">
+                                ✏️ Edit Profil
+                            </button>
+                        @endif
+                        <button type="button" onclick="togglePasswordForm()" class="neo-btn" style="background-color: var(--accent); color: var(--accent-foreground); padding: 8px 16px; font-size: 0.85rem;">
+                            🔒 Ubah Password
+                        </button>
+                    </div>
                 </div>
             </div>
+
+            @if (in_array(strtolower($role), ['murid', 'pengajar']))
+            <!-- Kotak Form Edit Profil -->
+            <div id="form-profil" class="neo-box" style="max-width: 650px; display: none; border-left: 8px solid var(--secondary);">
+                <h3 style="border-bottom: 3px solid var(--border); padding-bottom: 10px; margin-bottom: 20px; text-transform: uppercase;">Edit Profil Pengguna</h3>
+                <form method="POST" action="{{ route('profil.update') }}">
+                    @csrf
+                    <div class="neo-form-group">
+                        <label class="neo-label">Nama Lengkap</label>
+                        <input type="text" name="nama_lengkap" class="neo-input" value="{{ $nama_lengkap }}" maxlength="100" required>
+                    </div>
+                    <div class="neo-form-group">
+                        <label class="neo-label">Alamat Email</label>
+                        <input type="email" name="email" class="neo-input" value="{{ $email }}" maxlength="100" required>
+                    </div>
+                    <div style="display: flex; gap: 12px;">
+                        <button type="submit" class="neo-btn" style="flex: 1; background-color: var(--secondary); color: #000;">Simpan Profil</button>
+                        <button type="button" onclick="toggleProfileForm()" class="neo-btn" style="background-color: var(--muted); color: var(--foreground);">Batal</button>
+                    </div>
+                </form>
+            </div>
+            @endif
 
             <!-- Kotak Form Ganti Password (Tersembunyi secara default) -->
             <div id="form-password" class="neo-box" style="max-width: 650px; display: {{ !empty($pesan) && $tipe_pesan === 'error' ? 'block' : 'none' }}; border-left: 8px solid var(--primary);">
@@ -68,12 +97,12 @@
 
                     <div class="neo-form-group">
                         <label class="neo-label">Password Baru</label>
-                        <input type="password" name="password_baru" class="neo-input" placeholder="Masukkan password baru..." required>
+                        <input type="password" name="password_baru" class="neo-input" placeholder="Minimal 8 karakter..." minlength="8" required autocomplete="new-password">
                     </div>
 
                     <div class="neo-form-group">
                         <label class="neo-label">Konfirmasi Password Baru</label>
-                        <input type="password" name="konfirmasi_password" class="neo-input" placeholder="Ketik ulang password baru..." required>
+                        <input type="password" name="konfirmasi_password" class="neo-input" placeholder="Ketik ulang password baru..." minlength="8" required autocomplete="new-password">
                     </div>
 
                     <div style="display: flex; gap: 12px;">
@@ -89,6 +118,17 @@
 
 @section('scripts')
 <script>
+function toggleProfileForm() {
+    var form = document.getElementById('form-profil');
+    if (!form) return;
+    if (form.style.display === 'none') {
+        form.style.display = 'block';
+        form.scrollIntoView({ behavior: 'smooth' });
+    } else {
+        form.style.display = 'none';
+    }
+}
+
 function togglePasswordForm() {
     var form = document.getElementById('form-password');
     if (form.style.display === 'none') {

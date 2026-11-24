@@ -85,15 +85,15 @@
             <h4 class="neo-footer-heading" style="border-bottom: 3px solid #10B981;">Kantor Pusat</h4>
             <div class="neo-footer-contact-item">
                 <i class='bx bxs-map' style="color: #FF4C4C;"></i>
-                <span>Gedung Inovasi Digital Lt. 4<br>Jl. Teknologi Raya No. 404, Jakarta Selatan</span>
+                <span>{{ config('app.contact.address_line1') }}<br>{{ config('app.contact.address_line2') }}</span>
             </div>
             <div class="neo-footer-contact-item">
                 <i class='bx bxs-envelope' style="color: #FFD700;"></i>
-                <span>support@elearning.local</span>
+                <span>{{ config('app.contact.email') }}</span>
             </div>
             <div class="neo-footer-contact-item">
                 <i class='bx bxs-phone' style="color: #10B981;"></i>
-                <span>+62 812-3456-7890</span>
+                <span>{{ config('app.contact.phone') }}</span>
             </div>
         </div>
     </div>

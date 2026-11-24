@@ -45,5 +45,40 @@ class Kelas extends Model
     {
         return $this->hasMany(Diskusi::class, 'id_kelas', 'id_kelas')->orderBy('tgl_post', 'desc');
     }
+
+    public function canManage(User $user): bool
+    {
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        if ($user->isPengajar()) {
+            return Pengajar::where('id_user', $user->id_user)
+                ->where('nidn', $this->nidn)
+                ->exists();
+        }
+
+        return false;
+    }
+
+    public function canView(User $user): bool
+    {
+        if ($user->isAdmin() || $user->isPimpinan()) {
+            return true;
+        }
+
+        if ($user->isPengajar()) {
+            return $this->canManage($user);
+        }
+
+        if ($user->isMurid()) {
+            $nim = Murid::where('id_user', $user->id_user)->value('nim');
+            return $nim !== null && PesertaKelas::where('id_kelas', $this->id_kelas)
+                ->where('nim', $nim)
+                ->exists();
+        }
+
+        return false;
+    }
 }
 

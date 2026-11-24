@@ -185,7 +185,7 @@
     @if (!empty($msg))
         <script>
             document.addEventListener('DOMContentLoaded', () => {
-                NeoToast('{{ addslashes($msg) }}', '{{ $msg_type }}');
+                NeoToast(@json($msg), @json($msg_type));
             });
         </script>
     @endif
@@ -295,7 +295,7 @@
                 ['blockquote', 'code-block'],
                 [{ 'list': 'ordered'}, { 'list': 'bullet' }],
                 [{ 'color': [] }, { 'background': [] }],
-                ['link', 'image'],
+                ['link'],
                 ['clean']
             ]
         }

@@ -84,6 +84,31 @@
             <div style="font-size: 1.1rem; line-height: 1.6; font-weight: 500;" class="ql-editor-content">
                 {!! sanitize_rich_text($diskusi['isi_diskusi']) !!}
             </div>
+
+            @if ((int) $diskusi['id_user'] === (int) $id_user || !empty($canManageClass))
+                <div style="margin-top: 1.25rem; padding-top: 0.75rem; border-top: 2px dashed var(--border); display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0.75rem;">
+                    <details style="flex: 1; min-width: 240px;">
+                        <summary class="btn-accent" style="padding: 0.4rem 0.9rem; font-size: 0.8rem; background-color: var(--secondary); color: #000; list-style: none;">✏️ Edit Topik</summary>
+                        <form method="POST" action="{{ route('diskusi.update', ['id' => $id_diskusi]) }}" style="margin-top: 0.75rem; padding: 1rem; border: 2px solid var(--border); background-color: var(--muted);">
+                            @csrf
+                            <div style="margin-bottom: 0.75rem;">
+                                <label style="display: block; font-weight: bold; font-size: 0.85rem; margin-bottom: 4px;">Judul Diskusi</label>
+                                <input type="text" name="judul_diskusi" class="neo-input" value="{{ $diskusi['judul_diskusi'] }}" maxlength="150" required style="margin: 0;">
+                            </div>
+                            <div style="margin-bottom: 0.75rem;">
+                                <label style="display: block; font-weight: bold; font-size: 0.85rem; margin-bottom: 4px;">Isi Diskusi</label>
+                                <textarea name="isi_diskusi" rows="4" class="neo-input" required style="margin: 0;">{{ $diskusi['isi_diskusi'] }}</textarea>
+                            </div>
+                            <button type="submit" class="btn-accent" style="padding: 0.45rem 1rem; font-size: 0.85rem;">Simpan Perubahan</button>
+                        </form>
+                    </details>
+                    <form method="POST" action="{{ route('diskusi.delete', ['id' => $id_diskusi]) }}" onsubmit="event.preventDefault(); NeoConfirm('Hapus Topik', 'Yakin ingin menghapus topik diskusi ini?', () => this.submit());">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn-accent" style="padding: 0.4rem 0.9rem; font-size: 0.8rem; background-color: var(--primary); color: #fff;">Hapus Topik</button>
+                    </form>
+                </div>
+            @endif
         </div>
 
         <!-- Daftar Balasan -->
@@ -103,6 +128,23 @@
                         <div style="font-size: 1rem; line-height: 1.5;" class="ql-editor-content">
                             {!! sanitize_rich_text($balas['isi_balasan']) !!}
                         </div>
+                        @if ((int) $balas['id_user'] === (int) $id_user || !empty($canManageClass))
+                            <div style="margin-top: 0.75rem; padding-top: 0.6rem; border-top: 2px dashed var(--border); display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0.6rem;">
+                                <details style="flex: 1; min-width: 220px;">
+                                    <summary class="btn-accent" style="padding: 0.3rem 0.75rem; font-size: 0.75rem; background-color: var(--secondary); color: #000; list-style: none;">✏️ Edit</summary>
+                                    <form method="POST" action="{{ route('diskusi.balasan.update', ['id' => $id_diskusi, 'id_balasan' => $balas['id_balasan']]) }}" style="margin-top: 0.6rem; padding: 0.75rem; border: 2px solid var(--border); background-color: var(--muted);">
+                                        @csrf
+                                        <textarea name="isi_balasan" rows="3" class="neo-input" required style="margin-bottom: 0.6rem;">{{ $balas['isi_balasan'] }}</textarea>
+                                        <button type="submit" class="btn-accent" style="padding: 0.35rem 0.8rem; font-size: 0.8rem;">Simpan</button>
+                                    </form>
+                                </details>
+                                <form method="POST" action="{{ route('diskusi.balasan.delete', ['id' => $id_diskusi, 'id_balasan' => $balas['id_balasan']]) }}" onsubmit="event.preventDefault(); NeoConfirm('Hapus Balasan', 'Yakin ingin menghapus balasan ini?', () => this.submit());">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn-accent" style="padding: 0.3rem 0.75rem; font-size: 0.75rem; background-color: var(--primary); color: #fff;">Hapus</button>
+                                </form>
+                            </div>
+                        @endif
                     </div>
                 @endforeach
             @else

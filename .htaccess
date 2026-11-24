@@ -1,14 +1,32 @@
 # Disable directory listing
 Options -Indexes
 
-# Cegah akses ke file yang diawali titik (.htaccess, .env, .gitignore)
+# Block dotfiles (.env, .htaccess, .gitignore, .git)
 <FilesMatch "^\.">
-    Order allow,deny
-    Deny from all
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
 </FilesMatch>
 
-# Cegah akses ke folder .git dan seluruh isinya menggunakan mod_rewrite
+# Block sensitive root project/doc/SQL/config files if webroot mistakenly points here
+<FilesMatch "(?i)\.(sql|md|pdf|html|lock|json|xml|py|yml|yaml|bak|log)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Block internal directories and route all HTTP requests to public/
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteRule ^\.git - [F,L]
+    RewriteRule ^(\.git|app|bootstrap|config|database|docs|resources|routes|scripts|storage|tests|vendor)(/|$) - [F,L]
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ public/$1 [L]
 </IfModule>

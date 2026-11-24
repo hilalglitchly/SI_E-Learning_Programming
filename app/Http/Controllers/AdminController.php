@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Kelas;
 use App\Models\Murid;
 use App\Models\Pengajar;
 use App\Models\User;
@@ -29,12 +30,32 @@ class AdminController extends Controller
             abort(403, 'Akses ditolak. Halaman ini khusus untuk Administrator.');
         }
 
-        $role_baru = $request->input('role_pilihan');
+        $role_baru = (string) $request->input('role_pilihan');
         $username_baru = trim((string) $request->input('username'));
-        $password_baru = trim((string) $request->input('password'));
+        $password_baru = (string) $request->input('password');
         $nomor_induk = trim((string) $request->input('nomor_induk'));
         $nama_lengkap = trim((string) $request->input('nama_lengkap'));
         $email = trim((string) $request->input('email'));
+
+        if (!in_array($role_baru, ['Murid', 'Pengajar'], true)) {
+            return redirect()->route('admin.users.create')
+                ->withInput($request->except('password'))
+                ->with('pesan', 'Gagal: Role yang dipilih tidak valid.')
+                ->with('tipe_pesan', 'error');
+        }
+
+        if (
+            !preg_match('/^[a-zA-Z0-9_.-]{3,50}$/', $username_baru) ||
+            strlen($password_baru) < 8 ||
+            $nomor_induk === '' || strlen($nomor_induk) > 20 ||
+            $nama_lengkap === '' || mb_strlen($nama_lengkap) > 100 ||
+            !filter_var($email, FILTER_VALIDATE_EMAIL)
+        ) {
+            return redirect()->route('admin.users.create')
+                ->withInput($request->except('password'))
+                ->with('pesan', 'Gagal: Pastikan semua kolom valid (username 3–50 huruf/angka/._-, password minimal 8 karakter, dan format email benar).')
+                ->with('tipe_pesan', 'error');
+        }
 
         try {
             DB::beginTransaction();
@@ -68,8 +89,9 @@ class AdminController extends Controller
                 ->with('tipe_pesan', 'success');
         } catch (\Exception $e) {
             DB::rollBack();
+            report($e);
             return redirect()->route('admin.users.create')
-                ->withInput()
+                ->withInput($request->except('password'))
                 ->with('pesan', 'Gagal menambahkan pengguna: Pastikan Username, NIM/NIDN, atau Email belum pernah terdaftar sebelumnya.')
                 ->with('tipe_pesan', 'error');
         }
@@ -139,9 +161,20 @@ class AdminController extends Controller
         $role_target = $userData->role;
 
         $username_baru = trim((string) $request->input('username'));
-        $password_baru = trim((string) $request->input('password'));
+        $password_baru = (string) $request->input('password');
         $nama_baru = trim((string) $request->input('nama_lengkap'));
         $email_baru = trim((string) $request->input('email'));
+
+        if (
+            !preg_match('/^[a-zA-Z0-9_.-]{3,50}$/', $username_baru) ||
+            ($password_baru !== '' && strlen($password_baru) < 8) ||
+            $nama_baru === '' || mb_strlen($nama_baru) > 100 ||
+            !filter_var($email_baru, FILTER_VALIDATE_EMAIL)
+        ) {
+            return redirect()->route('admin.users.edit', ['id' => $id_target])
+                ->with('pesan', 'Gagal: Pastikan format username, nama, email valid, dan password baru minimal 8 karakter jika diisi.')
+                ->with('tipe_pesan', 'error');
+        }
 
         try {
             DB::beginTransaction();
@@ -187,5 +220,87 @@ class AdminController extends Controller
         }
 
         return redirect()->route('dashboard', ['msg' => 'deleted']);
+    }
+
+    public function storeKelas(Request $request)
+    {
+        if (!auth()->user()->isAdmin()) {
+            abort(403, 'Akses ditolak.');
+        }
+
+        $nama = trim((string) $request->input('nama_kelas'));
+        $deskripsi = trim((string) $request->input('deskripsi'));
+        $nidn = trim((string) $request->input('nidn'));
+
+        if ($nama === '' || mb_strlen($nama) > 100) {
+            return redirect()->route('dashboard')
+                ->with('pesan', 'Gagal: Nama kelas wajib diisi (maks. 100 karakter).')
+                ->with('tipe_pesan', 'error');
+        }
+
+        if ($nidn !== '' && !Pengajar::where('nidn', $nidn)->exists()) {
+            return redirect()->route('dashboard')
+                ->with('pesan', 'Gagal: Pengajar yang dipilih tidak ditemukan.')
+                ->with('tipe_pesan', 'error');
+        }
+
+        Kelas::create([
+            'nama_kelas' => $nama,
+            'deskripsi' => $deskripsi,
+            'nidn' => $nidn !== '' ? $nidn : null,
+        ]);
+
+        return redirect()->route('dashboard')
+            ->with('pesan', "Kelas '{$nama}' berhasil ditambahkan.")
+            ->with('tipe_pesan', 'success');
+    }
+
+    public function updateKelas(Request $request, $id)
+    {
+        if (!auth()->user()->isAdmin()) {
+            abort(403, 'Akses ditolak.');
+        }
+
+        $kelas = Kelas::findOrFail((int) $id);
+        $nama = trim((string) $request->input('nama_kelas'));
+        $deskripsi = trim((string) $request->input('deskripsi'));
+        $nidn = trim((string) $request->input('nidn'));
+
+        if ($nama === '' || mb_strlen($nama) > 100) {
+            return redirect()->route('dashboard')
+                ->with('pesan', 'Gagal: Nama kelas wajib diisi (maks. 100 karakter).')
+                ->with('tipe_pesan', 'error');
+        }
+
+        if ($nidn !== '' && !Pengajar::where('nidn', $nidn)->exists()) {
+            return redirect()->route('dashboard')
+                ->with('pesan', 'Gagal: Pengajar yang dipilih tidak ditemukan.')
+                ->with('tipe_pesan', 'error');
+        }
+
+        $kelas->update([
+            'nama_kelas' => $nama,
+            'deskripsi' => $deskripsi,
+            'nidn' => $nidn !== '' ? $nidn : null,
+        ]);
+
+        return redirect()->route('dashboard')
+            ->with('pesan', "Kelas '{$nama}' berhasil diperbarui.")
+            ->with('tipe_pesan', 'success');
+    }
+
+    public function deleteKelas($id)
+    {
+        if (!auth()->user()->isAdmin()) {
+            abort(403, 'Akses ditolak.');
+        }
+
+        $kelas = Kelas::findOrFail((int) $id);
+        $nama = $kelas->nama_kelas;
+        $kelas->delete();
+
+        return redirect()->route('dashboard')
+            ->with('pesan', "Kelas '{$nama}' berhasil dihapus.")
+            ->with('tipe_pesan', 'success');
     }
 }

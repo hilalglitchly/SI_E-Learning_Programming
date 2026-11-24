@@ -35,10 +35,14 @@ class ProfilController extends Controller
                 $nomor_induk = $dsn->nidn;
                 $email = $dsn->email;
             }
+        } elseif (strtolower($role) === 'pimpinan') {
+            $nama_lengkap = "Pimpinan Institusi";
+            $nomor_induk = "PMP-00" . $id_user;
+            $email = config('app.contact.email');
         } else {
             $nama_lengkap = "Administrator Sistem";
             $nomor_induk = "ADM-00" . $id_user;
-            $email = "admin@elearning.local";
+            $email = config('app.contact.email');
         }
 
         $pesan = session('pesan', '');
@@ -63,15 +67,19 @@ class ProfilController extends Controller
         $pass_baru = (string) $request->input('password_baru');
         $konfirmasi = (string) $request->input('konfirmasi_password');
 
+        if (strlen($pass_baru) < 8) {
+            return redirect()->route('profil.index')
+                ->with('pesan', 'Gagal: Password baru minimal harus 8 karakter!')
+                ->with('tipe_pesan', 'error');
+        }
+
         if ($pass_baru !== $konfirmasi) {
             return redirect()->route('profil.index')
                 ->with('pesan', 'Gagal: Konfirmasi password baru tidak cocok!')
                 ->with('tipe_pesan', 'error');
         }
 
-        $isOldValid = Hash::check($pass_lama, $user->password) || ($pass_lama === $user->password);
-
-        if (!$isOldValid) {
+        if (!Hash::check($pass_lama, $user->password)) {
             return redirect()->route('profil.index')
                 ->with('pesan', 'Gagal: Password lama yang Anda masukkan salah!')
                 ->with('tipe_pesan', 'error');
@@ -79,9 +87,55 @@ class ProfilController extends Controller
 
         $user->password = Hash::make($pass_baru);
         $user->save();
+        $request->session()->regenerate();
 
         return redirect()->route('profil.index')
             ->with('pesan', 'Berhasil: Password akun Anda telah diperbarui!')
             ->with('tipe_pesan', 'success');
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $user = auth()->user();
+        if (!$user->isMurid() && !$user->isPengajar()) {
+            abort(403, 'Profil untuk role ini tidak dapat diubah dari halaman ini.');
+        }
+
+        $nama = trim((string) $request->input('nama_lengkap'));
+        $email = trim((string) $request->input('email'));
+
+        if ($nama === '' || mb_strlen($nama) > 100 || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return redirect()->route('profil.index')
+                ->with('pesan', 'Gagal: Pastikan nama lengkap (maks. 100 karakter) dan format email valid.')
+                ->with('tipe_pesan', 'error');
+        }
+
+        try {
+            if ($user->isMurid()) {
+                Murid::where('id_user', $user->id_user)->update([
+                    'nama_murid' => $nama,
+                    'email' => $email,
+                ]);
+            } else {
+                Pengajar::where('id_user', $user->id_user)->update([
+                    'nama_pengajar' => $nama,
+                    'email' => $email,
+                ]);
+            }
+
+            return redirect()->route('profil.index')
+                ->with('pesan', 'Berhasil: Data profil Anda telah diperbarui!')
+                ->with('tipe_pesan', 'success');
+        } catch (\Exception $e) {
+            report($e);
+            return redirect()->route('profil.index')
+                ->with('pesan', 'Gagal: Email mungkin sudah digunakan akun lain.')
+                ->with('tipe_pesan', 'error');
+        }
+    }
+
+    public function apiUser(Request $request)
+    {
+        return $request->user();
     }
 }
