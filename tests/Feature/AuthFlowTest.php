@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Murid;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -78,5 +79,30 @@ class AuthFlowTest extends TestCase
         $dup->assertSessionHasInput('nama_lengkap', 'Orang Lain');
         $dup->assertSessionHasInput('username', 'orang.lain');
         $this->assertFalse(User::where('username', 'orang.lain')->exists());
+    }
+
+    public function test_murid_enforces_one_to_one_unique_user_id(): void
+    {
+        $user = User::create([
+            'username' => 'unique_user_check',
+            'password' => Hash::make('SecretPass123'),
+            'role' => 'Murid',
+        ]);
+
+        Murid::create([
+            'nim' => '9990001',
+            'nama_murid' => 'Profil Pertama',
+            'email' => 'pertama@example.com',
+            'id_user' => $user->id_user,
+        ]);
+
+        $this->expectException(QueryException::class);
+
+        Murid::create([
+            'nim' => '9990002',
+            'nama_murid' => 'Profil Ganda',
+            'email' => 'ganda@example.com',
+            'id_user' => $user->id_user,
+        ]);
     }
 }
