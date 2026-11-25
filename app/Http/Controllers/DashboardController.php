@@ -20,10 +20,15 @@ class DashboardController extends Controller
         $username = $user->username;
 
         $daftarKelas = [];
-        $listPengajar = [];
-        $listMurid = [];
-        $listKelas = [];
+        $listPengajar = null;
+        $listMurid = null;
+        $listKelas = null;
+        $allPengajarOptions = [];
+        $totalPengajarCount = 0;
+        $totalMuridCount = 0;
+        $totalKelasCount = 0;
         $activeSubscription = null;
+        $needsEmailVerification = ($user->isMurid() || $user->isPengajar()) && !$user->hasVerifiedEmail();
         $statKelas = 0;
         $statPengajar = 0;
         $statMurid = 0;
@@ -35,30 +40,43 @@ class DashboardController extends Controller
         $rekapKelas = [];
 
         if (strtolower($role) === 'admin') {
-            $listPengajar = DB::select("
-                SELECT p.nidn, p.nama_pengajar, p.email, u.id_user, u.username 
-                FROM tb_pengajar p 
-                JOIN tb_user u ON p.id_user = u.id_user 
-                ORDER BY p.nama_pengajar ASC
-            ");
-            $listPengajar = array_map(fn($r) => (array) $r, $listPengajar);
+            $listPengajar = DB::table('tb_pengajar as p')
+                ->join('tb_user as u', 'p.id_user', '=', 'u.id_user')
+                ->select('p.nidn', 'p.nama_pengajar', 'p.email', 'u.id_user', 'u.username')
+                ->orderBy('p.nama_pengajar', 'asc')
+                ->paginate(10, ['*'], 'pengajar_page')
+                ->withQueryString();
 
-            $listMurid = DB::select("
-                SELECT m.nim, m.nama_murid, m.email, u.id_user, u.username 
-                FROM tb_murid m 
-                JOIN tb_user u ON m.id_user = u.id_user 
-                ORDER BY m.nama_murid ASC
-            ");
-            $listMurid = array_map(fn($r) => (array) $r, $listMurid);
+            $listMurid = DB::table('tb_murid as m')
+                ->join('tb_user as u', 'm.id_user', '=', 'u.id_user')
+                ->select('m.nim', 'm.nama_murid', 'm.email', 'u.id_user', 'u.username')
+                ->orderBy('m.nama_murid', 'asc')
+                ->paginate(10, ['*'], 'murid_page')
+                ->withQueryString();
 
-            $listKelas = DB::select("
-                SELECT k.id_kelas, k.nama_kelas, k.deskripsi, k.nidn, k.is_premium, p.nama_pengajar,
-                       (SELECT COUNT(*) FROM tb_peserta_kelas pk WHERE pk.id_kelas = k.id_kelas) AS jumlah_murid
-                FROM tb_kelas k
-                LEFT JOIN tb_pengajar p ON k.nidn = p.nidn
-                ORDER BY k.id_kelas DESC
-            ");
-            $listKelas = array_map(fn($r) => (array) $r, $listKelas);
+            $listKelas = DB::table('tb_kelas as k')
+                ->leftJoin('tb_pengajar as p', 'k.nidn', '=', 'p.nidn')
+                ->select(
+                    'k.id_kelas',
+                    'k.nama_kelas',
+                    'k.deskripsi',
+                    'k.nidn',
+                    'k.is_premium',
+                    'p.nama_pengajar',
+                    DB::raw('(SELECT COUNT(*) FROM tb_peserta_kelas pk WHERE pk.id_kelas = k.id_kelas) AS jumlah_murid')
+                )
+                ->orderBy('k.id_kelas', 'desc')
+                ->paginate(10, ['*'], 'kelas_page')
+                ->withQueryString();
+
+            $allPengajarOptions = DB::table('tb_pengajar')
+                ->select('nidn', 'nama_pengajar')
+                ->orderBy('nama_pengajar', 'asc')
+                ->get();
+
+            $totalPengajarCount = $listPengajar->total();
+            $totalMuridCount = $listMurid->total();
+            $totalKelasCount = $listKelas->total();
 
         } elseif (strtolower($role) === 'pimpinan') {
             $statKelas = Kelas::count();
@@ -116,7 +134,12 @@ class DashboardController extends Controller
             'listPengajar',
             'listMurid',
             'listKelas',
+            'allPengajarOptions',
+            'totalPengajarCount',
+            'totalMuridCount',
+            'totalKelasCount',
             'activeSubscription',
+            'needsEmailVerification',
             'statKelas',
             'statPengajar',
             'statMurid',

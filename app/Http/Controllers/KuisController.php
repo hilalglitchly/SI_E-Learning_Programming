@@ -217,6 +217,24 @@ class KuisController extends Controller
             abort(403, 'Akses ditolak. Anda tidak terdaftar di kelas ini.');
         }
 
+        if (NilaiKuis::where('id_kuis', $id_kuis)->where('nim', $nim)->exists()) {
+            return redirect()->route('kelas.show', ['id' => $kuisModel->id_kelas])
+                ->with('pesan', 'Anda sudah pernah mengerjakan kuis ini.');
+        }
+
+        // shortcut: server-side timer uses session timestamp + 30s network grace; upgrade to DB attempt table if cross-device resume is needed.
+        $sessionKey = "kuis_started_at_{$id_kuis}_{$nim}";
+        $startedAt = session($sessionKey);
+        $totalSeconds = max(60, (int) ($kuisModel->durasi_menit ?? 30) * 60);
+        if ($startedAt === null) {
+            return redirect()->route('kelas.show', ['id' => $kuisModel->id_kelas])
+                ->with('pesan', 'Sesi pengerjaan kuis tidak valid. Silakan buka kuis dari halaman kelas terlebih dahulu.');
+        }
+        if ((now()->timestamp - (int) $startedAt) > ($totalSeconds + 30)) {
+            return redirect()->route('kelas.show', ['id' => $kuisModel->id_kelas])
+                ->with('pesan', 'Waktu pengerjaan kuis telah habis! Jawaban yang dikirim melewati batas waktu tidak dapat disimpan.');
+        }
+
         $daftarSoal = SoalKuis::where('id_kuis', $id_kuis)->orderBy('id_soal', 'asc')->get();
         $benar = 0;
         $total_soal = $daftarSoal->count();

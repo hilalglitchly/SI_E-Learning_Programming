@@ -27,21 +27,36 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::post('/kontak', [HomeController::class, 'sendKontak'])->middleware('throttle:5,10')->name('kontak.send');
 Route::get('/forum', [ForumController::class, 'index'])->name('forum.index');
 Route::get('/forum/buat', [ForumController::class, 'create'])->name('forum.create');
-Route::post('/forum/buat', [ForumController::class, 'store'])->name('forum.store');
+Route::post('/forum/buat', [ForumController::class, 'store'])->middleware('throttle:10,1')->name('forum.store');
 Route::get('/forum/{id}', [ForumController::class, 'show'])->whereNumber('id')->name('forum.show');
-Route::post('/forum/{id}', [ForumController::class, 'handlePost'])->whereNumber('id')->name('forum.post');
+Route::post('/forum/{id}', [ForumController::class, 'handlePost'])->whereNumber('id')->middleware('throttle:15,1')->name('forum.post');
 
-// 2. Authentication
+// 2. Authentication, Password Reset & Email Verification
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
-Route::post('/register', [AuthController::class, 'register']);
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,10');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])->name('password.request');
+Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->middleware('throttle:5,10')->name('password.email');
+Route::get('/reset-password/{token}', [AuthController::class, 'showResetPassword'])->name('password.reset');
+Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:5,10')->name('password.update');
+
+Route::middleware('auth')->group(function () {
+    Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])
+        ->whereNumber('id')
+        ->middleware(['signed', 'throttle:6,1'])
+        ->name('verification.verify');
+    Route::post('/email/verification-notification', [AuthController::class, 'resendVerification'])
+        ->middleware('throttle:3,10')
+        ->name('verification.send');
+});
 
 // 3. AJAX API Endpoints (Session-aware)
 Route::match(['get', 'post'], '/api/notifikasi', [NotifikasiController::class, 'handle'])->name('api.notifikasi');
-Route::post('/api/forum/vote', [ForumController::class, 'vote'])->name('api.forum.vote');
-Route::post('/api/forum/simpan', [ForumController::class, 'simpan'])->name('api.forum.simpan');
+Route::post('/api/forum/vote', [ForumController::class, 'vote'])->middleware('throttle:60,1')->name('api.forum.vote');
+Route::post('/api/forum/simpan', [ForumController::class, 'simpan'])->middleware('throttle:60,1')->name('api.forum.simpan');
 
 // 4. Authenticated Routes
 Route::middleware('auth')->group(function () {

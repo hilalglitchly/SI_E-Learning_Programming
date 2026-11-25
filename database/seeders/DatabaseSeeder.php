@@ -78,14 +78,14 @@ class DatabaseSeeder extends Seeder
         ];
 
         $userRows = [
-            ['id_user' => 1, 'username' => 'admin',    'password' => $defaultPassword, 'role' => 'Admin'],
-            ['id_user' => 2, 'username' => 'pimpinan', 'password' => $defaultPassword, 'role' => 'Pimpinan'],
+            ['id_user' => 1, 'username' => 'admin',    'password' => $defaultPassword, 'role' => 'Admin', 'email_verified_at' => $now],
+            ['id_user' => 2, 'username' => 'pimpinan', 'password' => $defaultPassword, 'role' => 'Pimpinan', 'email_verified_at' => $now],
         ];
         foreach ($pengajarProfiles as $p) {
-            $userRows[] = ['id_user' => $p['id_user'], 'username' => $p['username'], 'password' => $defaultPassword, 'role' => 'Pengajar'];
+            $userRows[] = ['id_user' => $p['id_user'], 'username' => $p['username'], 'password' => $defaultPassword, 'role' => 'Pengajar', 'email_verified_at' => $now];
         }
         foreach ($muridProfiles as $m) {
-            $userRows[] = ['id_user' => $m['id_user'], 'username' => $m['username'], 'password' => $defaultPassword, 'role' => 'Murid'];
+            $userRows[] = ['id_user' => $m['id_user'], 'username' => $m['username'], 'password' => $defaultPassword, 'role' => 'Murid', 'email_verified_at' => $now];
         }
         DB::table('tb_user')->insert($userRows);
 

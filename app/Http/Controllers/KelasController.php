@@ -150,6 +150,7 @@ class KelasController extends Controller
                 'judul_materi' => $m->judul_materi,
                 'deskripsi' => $m->deskripsi,
                 'file_materi' => $m->file_materi,
+                'video_url' => $m->video_url,
                 'tgl_upload' => $m->tgl_upload ? $m->tgl_upload->format('Y-m-d H:i:s') : '',
             ])
             ->toArray();
@@ -280,6 +281,7 @@ class KelasController extends Controller
                 'deskripsi' => $m['deskripsi'],
                 'tanggal' => $m['tgl_upload'],
                 'file' => $m['file_materi'],
+                'video_url' => $m['video_url'],
             ];
         }
         foreach ($tugasList as $t) {
@@ -339,7 +341,7 @@ class KelasController extends Controller
 
         $kelasModel = Kelas::findOrFail($id_kelas);
 
-        $allowed_materi_ext = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'zip', 'rar', 'jpg', 'jpeg', 'png', 'txt', 'mp4'];
+        $allowed_materi_ext = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'zip', 'rar', 'jpg', 'jpeg', 'png', 'txt'];
         $allowed_tugas_ext = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'zip', 'rar', 'jpg', 'jpeg', 'png', 'txt'];
 
         // 1. Tambah Materi (Tab Materi)
@@ -350,8 +352,13 @@ class KelasController extends Controller
 
             $judul = trim((string) $request->input('judul_materi'));
             $deskripsi = sanitize_rich_text((string) $request->input('hidden_deskripsi_materi'));
+            $rawVideoUrl = trim((string) $request->input('video_url', ''));
+            $embedVideoUrl = $rawVideoUrl !== '' ? extract_video_embed_url($rawVideoUrl) : null;
             if ($judul === '') {
                 return redirect()->route('kelas.show', ['id' => $id_kelas])->with('pesan', 'Gagal: Judul materi wajib diisi!');
+            }
+            if ($rawVideoUrl !== '' && $embedVideoUrl === null) {
+                return redirect()->route('kelas.show', ['id' => $id_kelas])->with('pesan', 'Gagal: Link video hanya mendukung URL YouTube atau Vimeo (HTTPS) yang valid.');
             }
 
             $upload = $this->storePrivateUpload($request, 'file_materi', 'materi', $allowed_materi_ext, 'materi');
@@ -364,6 +371,7 @@ class KelasController extends Controller
                 'judul_materi' => $judul,
                 'deskripsi' => $deskripsi,
                 'file_materi' => $upload['filename'],
+                'video_url' => $embedVideoUrl,
             ]);
 
             return redirect()->route('kelas.show', ['id' => $id_kelas])->with('pesan', 'Materi berhasil ditambahkan!');
@@ -413,6 +421,12 @@ class KelasController extends Controller
             }
 
             if ($jenis_post === 'materi') {
+                $rawVideoUrl = trim((string) $request->input('video_url', ''));
+                $embedVideoUrl = $rawVideoUrl !== '' ? extract_video_embed_url($rawVideoUrl) : null;
+                if ($rawVideoUrl !== '' && $embedVideoUrl === null) {
+                    return redirect()->route('kelas.show', ['id' => $id_kelas])->with('pesan', 'Gagal: Link video hanya mendukung URL YouTube atau Vimeo (HTTPS) yang valid.');
+                }
+
                 $upload = $this->storePrivateUpload($request, 'file_materi', 'materi', $allowed_materi_ext, 'materi');
                 if (!$upload['ok']) {
                     return redirect()->route('kelas.show', ['id' => $id_kelas])->with('pesan', $upload['error']);
@@ -423,6 +437,7 @@ class KelasController extends Controller
                     'judul_materi' => $judul,
                     'deskripsi' => $deskripsi,
                     'file_materi' => $upload['filename'],
+                    'video_url' => $embedVideoUrl,
                 ]);
                 return redirect()->route('kelas.show', ['id' => $id_kelas, 'msg' => 'success_post']);
             } elseif ($jenis_post === 'tugas') {
@@ -533,11 +548,16 @@ class KelasController extends Controller
 
         $materi = Materi::where('id_materi', (int) $id_materi)->where('id_kelas', $kelas->id_kelas)->firstOrFail();
         $judul = trim((string) $request->input('judul_materi'));
+        $rawVideoUrl = trim((string) $request->input('video_url', ''));
+        $embedVideoUrl = $rawVideoUrl !== '' ? extract_video_embed_url($rawVideoUrl) : null;
         if ($judul === '' || mb_strlen($judul) > 150) {
             return redirect()->route('kelas.show', ['id' => $kelas->id_kelas])->with('pesan', 'Gagal: Judul materi wajib diisi (maks. 150 karakter).');
         }
+        if ($rawVideoUrl !== '' && $embedVideoUrl === null) {
+            return redirect()->route('kelas.show', ['id' => $kelas->id_kelas])->with('pesan', 'Gagal: Link video hanya mendukung URL YouTube atau Vimeo (HTTPS) yang valid.');
+        }
 
-        $allowed = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'zip', 'rar', 'jpg', 'jpeg', 'png', 'txt', 'mp4'];
+        $allowed = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'zip', 'rar', 'jpg', 'jpeg', 'png', 'txt'];
         $upload = $this->storePrivateUpload($request, 'file_materi', 'materi', $allowed, 'materi');
         if (!$upload['ok']) {
             return redirect()->route('kelas.show', ['id' => $kelas->id_kelas])->with('pesan', $upload['error']);
@@ -553,6 +573,7 @@ class KelasController extends Controller
             'judul_materi' => $judul,
             'deskripsi' => sanitize_rich_text((string) $request->input('deskripsi')),
             'file_materi' => $newFile,
+            'video_url' => $request->has('video_url') ? $embedVideoUrl : $materi->video_url,
         ]);
 
         return redirect()->route('kelas.show', ['id' => $kelas->id_kelas])->with('pesan', 'Materi berhasil diperbarui!');

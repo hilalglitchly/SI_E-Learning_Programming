@@ -23,6 +23,20 @@
                 </div>
             @endif
 
+            @if (!empty($needsEmailVerification))
+                <div class="neo-box" role="status" style="background-color: #FEF9C3; color: #000; border-left: 10px solid #D97706; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px;">
+                    <div style="font-weight: 700;">
+                        <strong>Email belum terverifikasi:</strong> Verifikasi alamat email Anda agar fitur pemulihan password dan keamanan akun aktif penuh.
+                    </div>
+                    <form method="POST" action="{{ route('verification.send') }}" style="margin: 0;">
+                        @csrf
+                        <button type="submit" class="neo-btn" style="min-height: 44px; padding: 8px 14px; font-size: 0.85rem; background-color: var(--accent); color: #FFF;">
+                            <i class='bx bx-envelope' aria-hidden="true"></i> Kirim Ulang Link Verifikasi
+                        </button>
+                    </form>
+                </div>
+            @endif
+
             @if (strtolower($role) === 'admin')
                 <!-- ==========================================
                      TAMPILAN KHUSUS ADMIN: MANAJEMEN PENGGUNA & KELAS
@@ -55,7 +69,7 @@
                         </div>
                         <div>
                             <div style="font-size: 0.8rem; font-weight: 800; color: var(--muted-foreground); text-transform: uppercase;">Total Pengajar</div>
-                            <div style="font-size: 2rem; font-weight: 900; line-height: 1.05;">{{ count($listPengajar) }}</div>
+                            <div style="font-size: 2rem; font-weight: 900; line-height: 1.05;">{{ $totalPengajarCount }}</div>
                         </div>
                     </div>
 
@@ -65,7 +79,7 @@
                         </div>
                         <div>
                             <div style="font-size: 0.8rem; font-weight: 800; color: var(--muted-foreground); text-transform: uppercase;">Total Murid</div>
-                            <div style="font-size: 2rem; font-weight: 900; line-height: 1.05;">{{ count($listMurid) }}</div>
+                            <div style="font-size: 2rem; font-weight: 900; line-height: 1.05;">{{ $totalMuridCount }}</div>
                         </div>
                     </div>
 
@@ -75,7 +89,7 @@
                         </div>
                         <div>
                             <div style="font-size: 0.8rem; font-weight: 800; color: var(--muted-foreground); text-transform: uppercase;">Total Pengguna</div>
-                            <div style="font-size: 2rem; font-weight: 900; line-height: 1.05;">{{ count($listPengajar) + count($listMurid) }}</div>
+                            <div style="font-size: 2rem; font-weight: 900; line-height: 1.05;">{{ $totalPengajarCount + $totalMuridCount }}</div>
                         </div>
                     </div>
 
@@ -85,7 +99,7 @@
                         </div>
                         <div>
                             <div style="font-size: 0.8rem; font-weight: 800; color: var(--muted-foreground); text-transform: uppercase;">Total Kelas</div>
-                            <div style="font-size: 2rem; font-weight: 900; line-height: 1.05;">{{ count($listKelas) }}</div>
+                            <div style="font-size: 2rem; font-weight: 900; line-height: 1.05;">{{ $totalKelasCount }}</div>
                         </div>
                     </div>
                 </div>
@@ -98,9 +112,9 @@
                 </div>
 
                 <!-- Tabel Data Pengajar -->
-                <div class="neo-box">
+                <div class="neo-box" id="section-pengajar">
                     <h3 style="border-bottom: 3px solid var(--border); padding-bottom: 8px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
-                        <i class='bx bxs-user-voice' aria-hidden="true"></i> Data Pengajar (Dosen)
+                        <i class='bx bxs-user-voice' aria-hidden="true"></i> Data Pengajar (Dosen) ({{ $totalPengajarCount }})
                     </h3>
                     <div style="overflow-x: auto;">
                         <table class="neo-table">
@@ -114,35 +128,48 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @if (count($listPengajar) > 0)
-                                    @foreach ($listPengajar as $p)
-                                        <tr>
-                                            <td style="font-weight: bold;">{{ $p['nidn'] }}</td>
-                                            <td>{{ $p['nama_pengajar'] }}</td>
-                                            <td><span class="badge-kode" style="margin:0;">{{ $p['username'] }}</span></td>
-                                            <td>{{ $p['email'] }}</td>
-                                            <td style="text-align: center; white-space: nowrap;">
-                                                <a href="{{ route('admin.users.edit', $p['id_user']) }}" class="neo-btn" style="padding: 6px 12px; font-size: 0.8rem; background-color: var(--secondary); color: #000; margin-right: 4px;">Update</a>
-                                                <form method="POST" action="{{ route('admin.users.delete', $p['id_user']) }}" class="js-confirm-form" data-confirm-title="Hapus Pengajar" data-confirm-message="Yakin ingin menghapus pengajar {{ $p['nama_pengajar'] }}?" style="display: inline;">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="neo-btn neo-btn--danger" style="padding: 6px 12px; font-size: 0.8rem;">Hapus</button>
-                                                </form>
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                @else
+                                @forelse ($listPengajar as $p)
+                                    <tr>
+                                        <td style="font-weight: bold;">{{ $p->nidn }}</td>
+                                        <td>{{ $p->nama_pengajar }}</td>
+                                        <td><span class="badge-kode" style="margin:0;">{{ $p->username }}</span></td>
+                                        <td>{{ $p->email }}</td>
+                                        <td style="text-align: center; white-space: nowrap;">
+                                            <a href="{{ route('admin.users.edit', $p->id_user) }}" class="neo-btn" style="padding: 6px 12px; font-size: 0.8rem; background-color: var(--secondary); color: #000; margin-right: 4px;">Update</a>
+                                            <form method="POST" action="{{ route('admin.users.delete', $p->id_user) }}" class="js-confirm-form" data-confirm-title="Hapus Pengajar" data-confirm-message="Yakin ingin menghapus pengajar {{ $p->nama_pengajar }}?" style="display: inline;">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="neo-btn neo-btn--danger" style="padding: 6px 12px; font-size: 0.8rem;">Hapus</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                @empty
                                     <tr><td colspan="5" style="text-align: center;">Belum ada data pengajar.</td></tr>
-                                @endif
+                                @endforelse
                             </tbody>
                         </table>
                     </div>
+                    @if ($listPengajar->hasPages())
+                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 16px; flex-wrap: wrap;">
+                            @if ($listPengajar->onFirstPage())
+                                <span></span>
+                            @else
+                                <a href="{{ $listPengajar->previousPageUrl() }}#section-pengajar" class="neo-btn" style="min-height: 44px; padding: 8px 14px; font-size: 0.85rem; background-color: var(--muted); color: var(--foreground);">Sebelumnya</a>
+                            @endif
+                            <span style="font-weight: 800; font-size: 0.88rem;">Halaman {{ $listPengajar->currentPage() }} dari {{ $listPengajar->lastPage() }}</span>
+                            @if ($listPengajar->hasMorePages())
+                                <a href="{{ $listPengajar->nextPageUrl() }}#section-pengajar" class="neo-btn" style="min-height: 44px; padding: 8px 14px; font-size: 0.85rem; background-color: var(--muted); color: var(--foreground);">Berikutnya</a>
+                            @else
+                                <span></span>
+                            @endif
+                        </div>
+                    @endif
                 </div>
 
                 <!-- Tabel Data Murid -->
-                <div class="neo-box">
+                <div class="neo-box" id="section-murid">
                     <h3 style="border-bottom: 3px solid var(--border); padding-bottom: 8px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
-                        <i class='bx bxs-graduation' aria-hidden="true"></i> Data Murid (Mahasiswa)
+                        <i class='bx bxs-graduation' aria-hidden="true"></i> Data Murid (Mahasiswa) ({{ $totalMuridCount }})
                     </h3>
                     <div style="overflow-x: auto;">
                         <table class="neo-table">
@@ -156,36 +183,49 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @if (count($listMurid) > 0)
-                                    @foreach ($listMurid as $m)
-                                        <tr>
-                                            <td style="font-weight: bold;">{{ $m['nim'] }}</td>
-                                            <td>{{ $m['nama_murid'] }}</td>
-                                            <td><span class="badge-kode" style="margin:0;">{{ $m['username'] }}</span></td>
-                                            <td>{{ $m['email'] }}</td>
-                                            <td style="text-align: center; white-space: nowrap;">
-                                                <a href="{{ route('admin.users.edit', $m['id_user']) }}" class="neo-btn" style="padding: 6px 12px; font-size: 0.8rem; background-color: var(--secondary); color: #000; margin-right: 4px;">Update</a>
-                                                <form method="POST" action="{{ route('admin.users.delete', $m['id_user']) }}" class="js-confirm-form" data-confirm-title="Hapus Murid" data-confirm-message="Yakin ingin menghapus murid {{ $m['nama_murid'] }}?" style="display: inline;">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="neo-btn neo-btn--danger" style="padding: 6px 12px; font-size: 0.8rem;">Hapus</button>
-                                                </form>
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                @else
+                                @forelse ($listMurid as $m)
+                                    <tr>
+                                        <td style="font-weight: bold;">{{ $m->nim }}</td>
+                                        <td>{{ $m->nama_murid }}</td>
+                                        <td><span class="badge-kode" style="margin:0;">{{ $m->username }}</span></td>
+                                        <td>{{ $m->email }}</td>
+                                        <td style="text-align: center; white-space: nowrap;">
+                                            <a href="{{ route('admin.users.edit', $m->id_user) }}" class="neo-btn" style="padding: 6px 12px; font-size: 0.8rem; background-color: var(--secondary); color: #000; margin-right: 4px;">Update</a>
+                                            <form method="POST" action="{{ route('admin.users.delete', $m->id_user) }}" class="js-confirm-form" data-confirm-title="Hapus Murid" data-confirm-message="Yakin ingin menghapus murid {{ $m->nama_murid }}?" style="display: inline;">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="neo-btn neo-btn--danger" style="padding: 6px 12px; font-size: 0.8rem;">Hapus</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                @empty
                                     <tr><td colspan="5" style="text-align: center;">Belum ada data murid.</td></tr>
-                                @endif
+                                @endforelse
                             </tbody>
                         </table>
                     </div>
+                    @if ($listMurid->hasPages())
+                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 16px; flex-wrap: wrap;">
+                            @if ($listMurid->onFirstPage())
+                                <span></span>
+                            @else
+                                <a href="{{ $listMurid->previousPageUrl() }}#section-murid" class="neo-btn" style="min-height: 44px; padding: 8px 14px; font-size: 0.85rem; background-color: var(--muted); color: var(--foreground);">Sebelumnya</a>
+                            @endif
+                            <span style="font-weight: 800; font-size: 0.88rem;">Halaman {{ $listMurid->currentPage() }} dari {{ $listMurid->lastPage() }}</span>
+                            @if ($listMurid->hasMorePages())
+                                <a href="{{ $listMurid->nextPageUrl() }}#section-murid" class="neo-btn" style="min-height: 44px; padding: 8px 14px; font-size: 0.85rem; background-color: var(--muted); color: var(--foreground);">Berikutnya</a>
+                            @else
+                                <span></span>
+                            @endif
+                        </div>
+                    @endif
                 </div>
 
                 <!-- Manajemen Kelas (Admin CRUD) -->
-                <div class="neo-box" style="margin-top: 28px;">
+                <div class="neo-box" id="section-kelas" style="margin-top: 28px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid var(--border); padding-bottom: 10px; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
                         <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
-                            <i class='bx bxs-book-content' aria-hidden="true"></i> Manajemen Kelas ({{ count($listKelas) }})
+                            <i class='bx bxs-book-content' aria-hidden="true"></i> Manajemen Kelas ({{ $totalKelasCount }})
                         </h3>
                         <button type="button" class="neo-btn" style="min-height: 44px; padding: 6px 14px; font-size: 0.85rem; background-color: var(--accent); color: var(--accent-foreground);" onclick="const f = document.getElementById('form-tambah-kelas'); f.style.display = f.style.display === 'none' ? 'block' : 'none';">
                             <i class='bx bx-plus' aria-hidden="true"></i> Buat Kelas Baru
@@ -203,8 +243,8 @@
                                 <label class="neo-label" for="new-kelas-nidn">Dosen Pengampu</label>
                                 <select id="new-kelas-nidn" name="nidn" class="neo-input">
                                     <option value="">-- Belum ditentukan --</option>
-                                    @foreach ($listPengajar as $p)
-                                        <option value="{{ $p['nidn'] }}">{{ $p['nama_pengajar'] }} ({{ $p['nidn'] }})</option>
+                                    @foreach ($allPengajarOptions as $p)
+                                        <option value="{{ $p->nidn }}">{{ $p->nama_pengajar }} ({{ $p->nidn }})</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -235,36 +275,36 @@
                                 @forelse ($listKelas as $k)
                                     <tr>
                                         <td>
-                                            <span class="badge-kode" style="margin:0;">KLS-{{ $k['id_kelas'] }}</span>
+                                            <span class="badge-kode" style="margin:0;">KLS-{{ $k->id_kelas }}</span>
                                             <div style="margin-top: 8px;">
                                                 <label style="font-size: 0.78rem; font-weight: 900; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
-                                                    <input type="checkbox" form="edit-kelas-{{ $k['id_kelas'] }}" name="is_premium" value="1" {{ !empty($k['is_premium']) ? 'checked' : '' }}>
-                                                    <span class="neo-status-pill {{ !empty($k['is_premium']) ? 'neo-status-pill--pro' : 'neo-status-pill--success' }}" style="padding: 2px 6px; font-size: 0.7rem;">
-                                                        {{ !empty($k['is_premium']) ? 'PRO' : 'GRATIS' }}
+                                                    <input type="checkbox" form="edit-kelas-{{ $k->id_kelas }}" name="is_premium" value="1" {{ !empty($k->is_premium) ? 'checked' : '' }}>
+                                                    <span class="neo-status-pill {{ !empty($k->is_premium) ? 'neo-status-pill--pro' : 'neo-status-pill--success' }}" style="padding: 2px 6px; font-size: 0.7rem;">
+                                                        {{ !empty($k->is_premium) ? 'PRO' : 'GRATIS' }}
                                                     </span>
                                                 </label>
                                             </div>
-                                            <form method="POST" action="{{ route('admin.kelas.update', $k['id_kelas']) }}" id="edit-kelas-{{ $k['id_kelas'] }}" style="display: none;">
+                                            <form method="POST" action="{{ route('admin.kelas.update', $k->id_kelas) }}" id="edit-kelas-{{ $k->id_kelas }}" style="display: none;">
                                                 @csrf
                                             </form>
                                         </td>
                                         <td>
-                                            <input type="text" form="edit-kelas-{{ $k['id_kelas'] }}" name="nama_kelas" class="neo-input" value="{{ $k['nama_kelas'] }}" maxlength="100" required aria-label="Nama kelas {{ $k['nama_kelas'] }}" style="margin-bottom: 6px; padding: 6px 8px; font-weight: bold;">
-                                            <input type="text" form="edit-kelas-{{ $k['id_kelas'] }}" name="deskripsi" class="neo-input" value="{{ $k['deskripsi'] }}" maxlength="2000" placeholder="Deskripsi..." aria-label="Deskripsi kelas {{ $k['nama_kelas'] }}" style="margin-bottom: 0; padding: 6px 8px; font-size: 0.85rem;">
+                                            <input type="text" form="edit-kelas-{{ $k->id_kelas }}" name="nama_kelas" class="neo-input" value="{{ $k->nama_kelas }}" maxlength="100" required aria-label="Nama kelas {{ $k->nama_kelas }}" style="margin-bottom: 6px; padding: 6px 8px; font-weight: bold;">
+                                            <input type="text" form="edit-kelas-{{ $k->id_kelas }}" name="deskripsi" class="neo-input" value="{{ $k->deskripsi }}" maxlength="2000" placeholder="Deskripsi..." aria-label="Deskripsi kelas {{ $k->nama_kelas }}" style="margin-bottom: 0; padding: 6px 8px; font-size: 0.85rem;">
                                         </td>
                                         <td>
-                                            <select form="edit-kelas-{{ $k['id_kelas'] }}" name="nidn" class="neo-input" aria-label="Pengajar kelas {{ $k['nama_kelas'] }}" style="margin-bottom: 0; padding: 6px 8px;">
+                                            <select form="edit-kelas-{{ $k->id_kelas }}" name="nidn" class="neo-input" aria-label="Pengajar kelas {{ $k->nama_kelas }}" style="margin-bottom: 0; padding: 6px 8px;">
                                                 <option value="">-- Belum ditentukan --</option>
-                                                @foreach ($listPengajar as $p)
-                                                    <option value="{{ $p['nidn'] }}" {{ $k['nidn'] === $p['nidn'] ? 'selected' : '' }}>{{ $p['nama_pengajar'] }}</option>
+                                                @foreach ($allPengajarOptions as $p)
+                                                    <option value="{{ $p->nidn }}" {{ $k->nidn === $p->nidn ? 'selected' : '' }}>{{ $p->nama_pengajar }}</option>
                                                 @endforeach
                                             </select>
                                         </td>
-                                        <td style="text-align: center; font-weight: 900;">{{ $k['jumlah_murid'] }}</td>
+                                        <td style="text-align: center; font-weight: 900;">{{ $k->jumlah_murid }}</td>
                                         <td style="text-align: center; white-space: nowrap;">
-                                            <a href="{{ route('kelas.show', ['id' => $k['id_kelas']]) }}" class="neo-btn" style="padding: 6px 10px; font-size: 0.78rem; background-color: var(--muted); color: var(--foreground); margin-right: 4px;">Buka</a>
-                                            <button type="submit" form="edit-kelas-{{ $k['id_kelas'] }}" class="neo-btn" style="padding: 6px 10px; font-size: 0.78rem; background-color: var(--secondary); color: #000; margin-right: 4px;">Simpan</button>
-                                            <form method="POST" action="{{ route('admin.kelas.delete', $k['id_kelas']) }}" class="js-confirm-form" data-confirm-title="Hapus Kelas" data-confirm-message="Yakin ingin menghapus kelas {{ $k['nama_kelas'] }} beserta materi/tugas di dalamnya?" style="display: inline;">
+                                            <a href="{{ route('kelas.show', ['id' => $k->id_kelas]) }}" class="neo-btn" style="padding: 6px 10px; font-size: 0.78rem; background-color: var(--muted); color: var(--foreground); margin-right: 4px;">Buka</a>
+                                            <button type="submit" form="edit-kelas-{{ $k->id_kelas }}" class="neo-btn" style="padding: 6px 10px; font-size: 0.78rem; background-color: var(--secondary); color: #000; margin-right: 4px;">Simpan</button>
+                                            <form method="POST" action="{{ route('admin.kelas.delete', $k->id_kelas) }}" class="js-confirm-form" data-confirm-title="Hapus Kelas" data-confirm-message="Yakin ingin menghapus kelas {{ $k->nama_kelas }} beserta materi/tugas di dalamnya?" style="display: inline;">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="neo-btn neo-btn--danger" style="padding: 6px 10px; font-size: 0.78rem;">Hapus</button>
@@ -277,6 +317,21 @@
                             </tbody>
                         </table>
                     </div>
+                    @if ($listKelas->hasPages())
+                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 16px; flex-wrap: wrap;">
+                            @if ($listKelas->onFirstPage())
+                                <span></span>
+                            @else
+                                <a href="{{ $listKelas->previousPageUrl() }}#section-kelas" class="neo-btn" style="min-height: 44px; padding: 8px 14px; font-size: 0.85rem; background-color: var(--muted); color: var(--foreground);">Sebelumnya</a>
+                            @endif
+                            <span style="font-weight: 800; font-size: 0.88rem;">Halaman {{ $listKelas->currentPage() }} dari {{ $listKelas->lastPage() }}</span>
+                            @if ($listKelas->hasMorePages())
+                                <a href="{{ $listKelas->nextPageUrl() }}#section-kelas" class="neo-btn" style="min-height: 44px; padding: 8px 14px; font-size: 0.85rem; background-color: var(--muted); color: var(--foreground);">Berikutnya</a>
+                            @else
+                                <span></span>
+                            @endif
+                        </div>
+                    @endif
                 </div>
 
             @elseif (strtolower($role) === 'pimpinan')

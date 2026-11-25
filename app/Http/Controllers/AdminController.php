@@ -4,8 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Kelas;
 use App\Models\Langganan;
+use App\Models\Materi;
 use App\Models\Murid;
 use App\Models\Pengajar;
+use App\Models\Submission;
+use App\Models\Tugas;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -37,7 +40,7 @@ class AdminController extends Controller
         $password_baru = (string) $request->input('password');
         $nomor_induk = trim((string) $request->input('nomor_induk'));
         $nama_lengkap = trim((string) $request->input('nama_lengkap'));
-        $email = trim((string) $request->input('email'));
+        $email = strtolower(trim((string) $request->input('email')));
 
         if (!in_array($role_baru, ['Murid', 'Pengajar'], true)) {
             return redirect()->route('admin.users.create')
@@ -51,6 +54,8 @@ class AdminController extends Controller
             strlen($password_baru) < 8 ||
             $nomor_induk === '' || strlen($nomor_induk) > 20 ||
             $nama_lengkap === '' || mb_strlen($nama_lengkap) > 100 ||
+            mb_strlen($email) > 100 ||
+            preg_match('/[\r\n]/', $email) ||
             !filter_var($email, FILTER_VALIDATE_EMAIL)
         ) {
             return redirect()->route('admin.users.create')
@@ -66,6 +71,7 @@ class AdminController extends Controller
                 'username' => $username_baru,
                 'password' => Hash::make($password_baru),
                 'role' => $role_baru,
+                'email_verified_at' => now(),
             ]);
 
             if ($role_baru === 'Pengajar') {
@@ -165,12 +171,14 @@ class AdminController extends Controller
         $username_baru = trim((string) $request->input('username'));
         $password_baru = (string) $request->input('password');
         $nama_baru = trim((string) $request->input('nama_lengkap'));
-        $email_baru = trim((string) $request->input('email'));
+        $email_baru = strtolower(trim((string) $request->input('email')));
 
         if (
             !preg_match('/^[a-zA-Z0-9_.-]{3,50}$/', $username_baru) ||
             ($password_baru !== '' && strlen($password_baru) < 8) ||
             $nama_baru === '' || mb_strlen($nama_baru) > 100 ||
+            mb_strlen($email_baru) > 100 ||
+            preg_match('/[\r\n]/', $email_baru) ||
             !filter_var($email_baru, FILTER_VALIDATE_EMAIL)
         ) {
             return redirect()->route('admin.users.edit', ['id' => $id_target])
@@ -220,16 +228,18 @@ class AdminController extends Controller
         if ((int) $id !== (int) $user->id_user) {
             $buktiFiles = Langganan::where('id_user', (int) $id)
                 ->whereNotNull('bukti_bayar')
-                ->pluck('bukti_bayar');
+                ->pluck('bukti_bayar')
+                ->all();
+
+            $nim = Murid::where('id_user', (int) $id)->value('nim');
+            $submissionFiles = $nim
+                ? Submission::where('nim', $nim)->whereNotNull('file_jawaban')->pluck('file_jawaban')->all()
+                : [];
 
             User::where('id_user', (int) $id)->delete();
 
-            foreach ($buktiFiles as $file) {
-                $safeName = basename((string) $file);
-                if ($safeName !== '' && $safeName !== '.' && $safeName !== '..') {
-                    Storage::disk('local')->delete('private/bukti_bayar/' . $safeName);
-                }
-            }
+            $this->deletePrivateFiles('bukti_bayar', $buktiFiles);
+            $this->deletePrivateFiles('submission', $submissionFiles);
         }
 
         return redirect()->route('dashboard', ['msg' => 'deleted']);
@@ -312,10 +322,37 @@ class AdminController extends Controller
 
         $kelas = Kelas::findOrFail((int) $id);
         $nama = $kelas->nama_kelas;
+
+        $materiFiles = Materi::where('id_kelas', $kelas->id_kelas)
+            ->whereNotNull('file_materi')
+            ->pluck('file_materi')
+            ->all();
+
+        $tugasRows = Tugas::where('id_kelas', $kelas->id_kelas)->get(['id_tugas', 'file_tugas']);
+        $tugasIds = $tugasRows->pluck('id_tugas')->all();
+        $tugasFiles = $tugasRows->pluck('file_tugas')->filter()->all();
+        $submissionFiles = !empty($tugasIds)
+            ? Submission::whereIn('id_tugas', $tugasIds)->whereNotNull('file_jawaban')->pluck('file_jawaban')->all()
+            : [];
+
         $kelas->delete();
+
+        $this->deletePrivateFiles('materi', $materiFiles);
+        $this->deletePrivateFiles('tugas', $tugasFiles);
+        $this->deletePrivateFiles('submission', $submissionFiles);
 
         return redirect()->route('dashboard')
             ->with('pesan', "Kelas '{$nama}' berhasil dihapus.")
             ->with('tipe_pesan', 'success');
+    }
+
+    private function deletePrivateFiles(string $folder, array $files): void
+    {
+        foreach ($files as $file) {
+            $safeName = basename((string) $file);
+            if ($safeName !== '' && $safeName !== '.' && $safeName !== '..') {
+                Storage::disk('local')->delete('private/' . $folder . '/' . $safeName);
+            }
+        }
     }
 }

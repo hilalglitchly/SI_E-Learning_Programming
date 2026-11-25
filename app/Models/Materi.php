@@ -15,6 +15,7 @@ class Materi extends Model
         'judul_materi',
         'deskripsi',
         'file_materi',
+        'video_url',
         'tgl_upload',
     ];
 

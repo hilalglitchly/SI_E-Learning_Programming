@@ -19,6 +19,7 @@ class User extends Authenticatable
         'username',
         'password',
         'role',
+        'email_verified_at',
     ];
 
     protected $hidden = [
@@ -28,6 +29,7 @@ class User extends Authenticatable
 
     protected $casts = [
         'password' => 'hashed',
+        'email_verified_at' => 'datetime',
     ];
 
     public function pengajar()
@@ -113,5 +115,21 @@ class User extends Authenticatable
             return $this->murid->nama_murid;
         }
         return $this->username;
+    }
+
+    public function getEmailAddress(): ?string
+    {
+        if ($this->isMurid()) {
+            return $this->murid?->email;
+        }
+        if ($this->isPengajar()) {
+            return $this->pengajar?->email;
+        }
+        return null;
+    }
+
+    public function hasVerifiedEmail(): bool
+    {
+        return $this->email_verified_at !== null;
     }
 }

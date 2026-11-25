@@ -42,11 +42,28 @@
                     </div>
                     <div>
                         <div style="font-size: 0.8rem; color: var(--muted-foreground); font-weight: 800; text-transform: uppercase;">Status Akun</div>
-                        <div style="margin-top: 6px;">
+                        <div style="margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
                             <span class="neo-status-pill neo-status-pill--success">Aktif</span>
+                            @if (in_array(strtolower($role), ['murid', 'pengajar']))
+                                @if (!empty($isEmailVerified))
+                                    <span class="neo-status-pill neo-status-pill--success">Email Terverifikasi</span>
+                                @else
+                                    <span class="neo-status-pill neo-status-pill--pending">Email Belum Verifikasi</span>
+                                @endif
+                            @endif
                         </div>
                     </div>
                 </div>
+
+                @if (in_array(strtolower($role), ['murid', 'pengajar']) && empty($isEmailVerified))
+                    <div style="margin-bottom: 18px; padding: 14px 16px; border: 3px solid var(--border); background-color: #FEF9C3; color: #000; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
+                        <span style="font-weight: 700; font-size: 0.9rem;">Alamat email Anda belum diverifikasi. Kirim ulang tautan verifikasi ke <strong>{{ $email }}</strong>.</span>
+                        <form method="POST" action="{{ route('verification.send') }}" style="margin: 0;">
+                            @csrf
+                            <button type="submit" class="neo-btn" style="min-height: 44px; padding: 8px 14px; font-size: 0.82rem; background-color: var(--accent); color: #FFF;">Kirim Link Verifikasi</button>
+                        </form>
+                    </div>
+                @endif
 
                 <div style="border-top: 2px dashed var(--border); padding-top: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
                     <span style="font-weight: 800; font-size: 0.92rem;">Kelola akun Anda:</span>

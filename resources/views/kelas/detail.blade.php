@@ -511,13 +511,18 @@
                         <div id="editor_materi" style="height: 200px;"></div>
                     </div>
                     
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Link Video Pembelajaran — YouTube / Vimeo (Opsional)</label>
+                        <input type="url" name="video_url" class="neo-input neo-box" maxlength="255" placeholder="https://www.youtube.com/watch?v=...">
+                    </div>
+                    
                     <div style="margin-bottom: 2rem;">
-                        <label style="display: block; font-weight: bold; margin-bottom: 0.5rem; text-transform: uppercase;">Lampiran File (Opsional)</label>
+                        <label style="display: block; font-weight: bold; margin-bottom: 0.5rem; text-transform: uppercase;">Lampiran File Dokumen / Arsip (Opsional, maks. 10 MB)</label>
                         <div id="drop-zone-materi" class="neo-drop-zone brutal-hover">
                             <div id="drop-icon-materi" style="font-size: 4rem; margin-bottom: 1rem;"><i class='bx bx-cloud-upload'></i></div>
                             <div id="drop-text-materi" style="font-size: 1.2rem; font-weight: 800; color: var(--foreground); margin-bottom: 0.5rem; line-height: 1.5;">Seret & Lepaskan File Materi di Sini<br>Atau Klik untuk Memilih</div>
                             <div id="file-name-display-materi" style="font-size: 1rem; font-weight: 600; color: var(--primary); display: none; background-color: var(--foreground); color: var(--background); padding: 0.5rem; margin-top: 1rem; border: 2px solid var(--border);">Tidak ada file yang dipilih</div>
-                            <input type="file" id="file_materi" name="file_materi" style="display: none;" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.rar">
+                            <input type="file" id="file_materi" name="file_materi" style="display: none;" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.rar,.jpg,.jpeg,.png,.txt">
                         </div>
                     </div>
                     
@@ -530,9 +535,17 @@
                     <div class="brutal-card">
                         <div class="feed-title" style="font-size: 1.5rem; margin-bottom: 0.5rem;">{{ $materi['judul_materi'] }}</div>
                         <div style="font-size: 1rem; margin-bottom: 1rem; line-height: 1.5;" class="ql-editor-content">{!! sanitize_rich_text($materi['deskripsi']) !!}</div>
+                        @php
+                            $safeEmbed = extract_video_embed_url($materi['video_url'] ?? null);
+                        @endphp
+                        @if ($safeEmbed)
+                            <div style="margin-bottom: 1rem; border: 3px solid var(--border); box-shadow: 4px 4px 0 var(--shadow-color); aspect-ratio: 16 / 9; max-width: 720px; background: #000;">
+                                <iframe src="{{ $safeEmbed }}" title="Video materi {{ $materi['judul_materi'] }}" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen style="width: 100%; height: 100%; border: 0; display: block;"></iframe>
+                            </div>
+                        @endif
                         @if (!empty($materi['file_materi']))
                             <div style="margin-bottom: 1rem;">
-                                <a href="{{ route('files.materi', ['id' => $materi['id_materi']]) }}" target="_blank" rel="noopener" class="btn-accent" style="text-decoration: none; padding: 0.5rem 1rem; font-size: 0.9rem;">📥 Unduh File</a>
+                                <a href="{{ route('files.materi', ['id' => $materi['id_materi']]) }}" target="_blank" rel="noopener" class="btn-accent" style="text-decoration: none; padding: 0.5rem 1rem; font-size: 0.9rem;">Unduh File</a>
                             </div>
                         @endif
                         <small style="color: var(--muted-foreground); font-weight: bold;">Diupload: {{ $materi['tgl_upload'] }}</small>
@@ -551,8 +564,12 @@
                                             <textarea name="deskripsi" rows="3" class="neo-input" style="margin: 0;">{{ $materi['deskripsi'] }}</textarea>
                                         </div>
                                         <div style="margin-bottom: 0.75rem;">
+                                            <label style="display: block; font-weight: bold; font-size: 0.85rem; margin-bottom: 4px;">Link Video YouTube / Vimeo (Opsional)</label>
+                                            <input type="url" name="video_url" class="neo-input" value="{{ $materi['video_url'] ?? '' }}" maxlength="255" placeholder="https://www.youtube.com/watch?v=..." style="margin: 0;">
+                                        </div>
+                                        <div style="margin-bottom: 0.75rem;">
                                             <label style="display: block; font-weight: bold; font-size: 0.85rem; margin-bottom: 4px;">Ganti Lampiran (Opsional)</label>
-                                            <input type="file" name="file_materi" class="neo-input" style="margin: 0;">
+                                            <input type="file" name="file_materi" class="neo-input" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.rar,.jpg,.jpeg,.png,.txt" style="margin: 0;">
                                         </div>
                                         <button type="submit" class="btn-small" style="background-color: var(--accent); color: var(--accent-foreground);">Simpan Perubahan</button>
                                     </form>
@@ -792,8 +809,10 @@
                     
                     <!-- Input Khusus Materi -->
                     <div id="input_materi" style="margin-bottom: 1.5rem;">
-                        <label style="display: block; font-weight: bold; text-transform: uppercase; margin-bottom: 0.5rem;">File Materi (Opsional)</label>
-                        <input type="file" name="file_materi" class="neo-input neo-box">
+                        <label style="display: block; font-weight: bold; text-transform: uppercase; margin-bottom: 0.5rem;">Link Video YouTube / Vimeo (Opsional)</label>
+                        <input type="url" name="video_url" class="neo-input neo-box" maxlength="255" placeholder="https://www.youtube.com/watch?v=..." style="margin-bottom: 1rem;">
+                        <label style="display: block; font-weight: bold; text-transform: uppercase; margin-bottom: 0.5rem;">File Materi Dokumen / Arsip (Opsional)</label>
+                        <input type="file" name="file_materi" class="neo-input neo-box" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.rar,.jpg,.jpeg,.png,.txt">
                     </div>
                     
                     <!-- Input Khusus Tugas -->

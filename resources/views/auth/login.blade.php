@@ -25,10 +25,15 @@
                     </div>
                 @endif
 
-                @if (request()->query('msg') == 'register_success' || session('msg') == 'register_success')
+                @if (session('status'))
                     <div class="auth-alert auth-alert--success" role="status">
                         <i class='bx bxs-check-circle' aria-hidden="true"></i>
-                        <span>Registrasi berhasil! Silakan masuk dengan akun baru Anda.</span>
+                        <span>{{ session('status') }}</span>
+                    </div>
+                @elseif (request()->query('msg') == 'register_success' || session('msg') == 'register_success')
+                    <div class="auth-alert auth-alert--success" role="status">
+                        <i class='bx bxs-check-circle' aria-hidden="true"></i>
+                        <span>Registrasi berhasil! Silakan cek email untuk verifikasi dan masuk dengan akun baru Anda.</span>
                     </div>
                 @endif
 
@@ -91,7 +96,7 @@
                             <span role="img" aria-label="Error">!</span> Masukkan password akun Anda.
                         </div>
                         <div class="auth-helper-row">
-                            <a href="{{ route('home') }}#kontak" class="auth-link auth-link--neutral">Lupa password? Hubungi Admin</a>
+                            <a href="{{ route('password.request') }}" class="auth-link auth-link--neutral">Lupa password?</a>
                         </div>
                     </div>
 
