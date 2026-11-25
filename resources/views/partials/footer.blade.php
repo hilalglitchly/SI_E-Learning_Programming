@@ -38,13 +38,13 @@
                 Platform belajar pemrograman interaktif dengan pendekatan praktis. Bangun portofolio nyata, diskusikan arsitektur kode di E-FORVM, dan raih karir impianmu di industri teknologi.
             </p>
             <div class="neo-footer-socials">
-                <a href="https://www.instagram.com/hilal_s28" target="_blank" rel="noopener" title="Instagram" class="neo-footer-social-btn" style="box-shadow: 4px 4px 0px #FF4C4C;">
+                <a href="https://www.instagram.com/p/CGh4a0iASGS/?hl=en" target="_blank" rel="noopener" title="Instagram" class="neo-footer-social-btn" style="box-shadow: 4px 4px 0px #FF4C4C;">
                     <i class='bx bxl-instagram'></i>
                 </a>
                 <a href="https://github.com/hilalglitchly/SI_E-Learning_Programming" target="_blank" rel="noopener" title="GitHub Repository" class="neo-footer-social-btn" style="box-shadow: 4px 4px 0px #3B82F6;">
                     <i class='bx bxl-github'></i>
                 </a>
-                <a href="https://youtube.com/@hilal_k?si=R1T3G98B7C280_1M" target="_blank" rel="noopener" title="YouTube" class="neo-footer-social-btn" style="box-shadow: 4px 4px 0px #10B981;">
+                <a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" target="_blank" rel="noopener" title="YouTube" class="neo-footer-social-btn" style="box-shadow: 4px 4px 0px #10B981;">
                     <i class='bx bxl-youtube'></i>
                 </a>
             </div>
