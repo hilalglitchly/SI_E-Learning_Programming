@@ -13,8 +13,8 @@ $username = $user ? $user->username : 'Guest';
 
 <!-- TOP NAVBAR (Floating Neo-Brutalism Style) -->
 <nav class="neo-navbar" style="width: 96%; max-width: 1400px; margin: 20px auto; position: sticky; top: 20px; z-index: 1000; border: 3px solid #000; box-shadow: 8px 8px 0px #000; border-radius: 0; background-color: #FFD700; color: #000;">
-    <a href="{{ $is_logged_in ? route('dashboard') : route('home') }}" class="neo-navbar-brand" style="font-weight: 900; color: #000; display: flex; align-items: center; gap: 8px; text-decoration: none; line-height: 1.1;">
-        <span style="font-size: 1.8rem; font-family: monospace; font-weight: 900;">&lt;/&gt;</span>
+    <a href="{{ $is_logged_in ? route('dashboard') : route('home') }}" class="neo-navbar-brand" style="font-weight: 900; color: #000; display: flex; align-items: center; gap: 7px; text-decoration: none; line-height: 1.05;">
+        <span style="font-size: 1.4rem; font-family: monospace; font-weight: 900;">&lt;/&gt;</span>
         <div style="display: flex; flex-direction: column;">
             <span>E-LEARNING</span>
             <span>PROGRAMMING</span>
@@ -54,14 +54,14 @@ $username = $user ? $user->username : 'Guest';
     </ul>
 
     <div class="neo-navbar-user">
-        <button title="Ganti Tema" id="theme-toggle" onclick="toggleDarkMode()" class="neo-navbar-btn brutal-hover" style="padding: 8px; font-size: 1.2rem; line-height: 1; background-color: #FFF; border: 3px solid #000; box-shadow: 3px 3px 0px #000; color: #000; margin-right: 10px;">
+        <button title="Ganti Tema" id="theme-toggle" onclick="toggleDarkMode()" class="neo-navbar-btn brutal-hover" style="width: 42px; height: 42px; padding: 0; display: inline-flex; align-items: center; justify-content: center; font-size: 1.15rem; line-height: 1; background-color: #FFF; border: 3px solid #000; box-shadow: 3px 3px 0px #000; color: #000; cursor: pointer;">
             <i class='bx bxs-moon' id='theme-icon'></i>
         </button>
         
         @if ($is_logged_in)
             <!-- NOTIFICATION DROPDOWN -->
-            <div class="neo-notif-dropdown" style="position: relative; display: inline-block; margin-right: 15px;">
-                <button id="notif-btn" title="Notifikasi" class="neo-navbar-btn brutal-hover" style="padding: 8px; font-size: 1.2rem; line-height: 1; background-color: #FFF; border: 3px solid #000; box-shadow: 3px 3px 0px #000; color: #000; position: relative; cursor: pointer;">
+            <div class="neo-notif-dropdown" style="position: relative; display: inline-flex;">
+                <button id="notif-btn" title="Notifikasi" class="neo-navbar-btn brutal-hover" style="width: 42px; height: 42px; padding: 0; display: inline-flex; align-items: center; justify-content: center; font-size: 1.15rem; line-height: 1; background-color: #FFF; border: 3px solid #000; box-shadow: 3px 3px 0px #000; color: #000; position: relative; cursor: pointer;">
                     <i class='bx bxs-bell'></i>
                     <span id="notif-badge" style="display: none; position: absolute; top: -8px; right: -8px; background-color: #FF0000; color: #FFF; font-size: 0.7rem; font-weight: 900; padding: 2px 6px; border: 2px solid #000; border-radius: 50%; box-shadow: 1px 1px 0px #000;">0</span>
                 </button>
@@ -80,11 +80,11 @@ $username = $user ? $user->username : 'Guest';
                 </div>
             </div>
 
-            <div class="neo-user-dropdown" style="position: relative; display: inline-block;">
-                <div class="neo-user-badge" style="cursor: pointer; display: flex; flex-direction: column; align-items: flex-start; line-height: 1.2; background-color: #FFF; padding: 8px 14px; border: 3px solid #000; box-shadow: 3px 3px 0px #000; transition: transform 0.1s, box-shadow 0.1s, background-color 0.2s;">
-                    <strong style="font-size: 1em; color: #000;">{{ strtoupper($username) }}</strong>
-                    <span style="font-size: 0.85em; color: #000; font-weight: 500; display: flex; align-items: center; gap: 4px;">
-                        {{ $user->role ?? 'Guest' }} <i class='bx bxs-chevron-down' style="font-size: 1.1em;"></i>
+            <div class="neo-user-dropdown" style="position: relative; display: inline-flex;">
+                <div class="neo-user-badge" style="cursor: pointer; height: 42px; box-sizing: border-box; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; line-height: 1.15; background-color: #FFF; padding: 0 12px; border: 3px solid #000; box-shadow: 3px 3px 0px #000; transition: transform 0.1s, box-shadow 0.1s, background-color 0.2s;">
+                    <strong style="font-size: 0.85rem; color: #000; white-space: nowrap;">{{ strtoupper($username) }}</strong>
+                    <span style="font-size: 0.75rem; color: #000; font-weight: 600; display: flex; align-items: center; gap: 3px; white-space: nowrap;">
+                        {{ $user->role ?? 'Guest' }} <i class='bx bxs-chevron-down' style="font-size: 1.05em;"></i>
                     </span>
                 </div>
                 
@@ -98,8 +98,8 @@ $username = $user ? $user->username : 'Guest';
                 </div>
             </div>
         @else
-            <a href="{{ route('login') }}" class="brutal-hover" style="padding: 8px 16px; font-weight: 900; background-color: #FFF; color: #000; border: 3px solid #000; box-shadow: 3px 3px 0px #000; text-decoration: none; text-transform: uppercase; margin-right: 10px; font-size: 0.9rem;">Masuk</a>
-            <a href="{{ route('register') }}" class="brutal-hover" style="padding: 8px 16px; font-weight: 900; background-color: var(--primary); color: #FFF; border: 3px solid #000; box-shadow: 3px 3px 0px #000; text-decoration: none; text-transform: uppercase; font-size: 0.9rem;">Daftar</a>
+            <a href="{{ route('login') }}" class="brutal-hover" style="height: 42px; box-sizing: border-box; display: inline-flex; align-items: center; padding: 0 14px; font-weight: 900; background-color: #FFF; color: #000; border: 3px solid #000; box-shadow: 3px 3px 0px #000; text-decoration: none; text-transform: uppercase; font-size: 0.85rem; white-space: nowrap;">Masuk</a>
+            <a href="{{ route('register') }}" class="brutal-hover" style="height: 42px; box-sizing: border-box; display: inline-flex; align-items: center; padding: 0 14px; font-weight: 900; background-color: var(--primary); color: #FFF; border: 3px solid #000; box-shadow: 3px 3px 0px #000; text-decoration: none; text-transform: uppercase; font-size: 0.85rem; white-space: nowrap;">Daftar</a>
         @endif
     </div>
 </nav>
