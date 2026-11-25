@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ForumPost;
 use App\Models\Kelas;
+use App\Models\Materi;
 use App\Models\Murid;
 use App\Models\Notifikasi;
+use App\Models\PaketLangganan;
 use App\Models\Pengajar;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -22,15 +25,34 @@ class HomeController extends Controller
                 'peserta as total_peserta',
                 'materi as total_materi',
             ])
+            ->orderByDesc('is_premium')
             ->orderBy('id_kelas', 'desc')
-            ->limit(6)
             ->get();
 
         $totalKelas = Kelas::count();
         $totalMurid = Murid::count();
         $totalPengajar = Pengajar::count();
+        $totalMateri = Materi::count();
 
-        return view('home', compact('daftarKelas', 'totalKelas', 'totalMurid', 'totalPengajar'));
+        $paketList = PaketLangganan::where('is_active', true)
+            ->orderBy('harga', 'asc')
+            ->get();
+
+        $recentPosts = ForumPost::with(['user', 'tags'])
+            ->withCount('jawaban')
+            ->orderByDesc('tgl_post')
+            ->limit(3)
+            ->get();
+
+        return view('home', compact(
+            'daftarKelas',
+            'totalKelas',
+            'totalMurid',
+            'totalPengajar',
+            'totalMateri',
+            'paketList',
+            'recentPosts'
+        ));
     }
 
     public function sendKontak(Request $request)
