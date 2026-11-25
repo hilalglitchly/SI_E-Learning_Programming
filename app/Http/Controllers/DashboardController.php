@@ -22,6 +22,7 @@ class DashboardController extends Controller
         $listPengajar = [];
         $listMurid = [];
         $listKelas = [];
+        $activeSubscription = null;
         $statKelas = 0;
         $statPengajar = 0;
         $statMurid = 0;
@@ -46,7 +47,7 @@ class DashboardController extends Controller
             $listMurid = array_map(fn($r) => (array) $r, $listMurid);
 
             $listKelas = DB::select("
-                SELECT k.id_kelas, k.nama_kelas, k.deskripsi, k.nidn, p.nama_pengajar,
+                SELECT k.id_kelas, k.nama_kelas, k.deskripsi, k.nidn, k.is_premium, p.nama_pengajar,
                        (SELECT COUNT(*) FROM tb_peserta_kelas pk WHERE pk.id_kelas = k.id_kelas) AS jumlah_murid
                 FROM tb_kelas k
                 LEFT JOIN tb_pengajar p ON k.nidn = p.nidn
@@ -82,6 +83,7 @@ class DashboardController extends Controller
             $daftarKelas = array_map(fn($r) => (array) $r, $rows);
 
         } elseif (strtolower($role) === 'murid') {
+            $activeSubscription = $user->activeSubscription();
             $rows = DB::select("
                 SELECT k.*, p.nama_pengajar, m.nim,
                        (SELECT COUNT(*) FROM tb_tugas t WHERE t.id_kelas = k.id_kelas) as total_tugas_kelas,
@@ -105,6 +107,7 @@ class DashboardController extends Controller
             'listPengajar',
             'listMurid',
             'listKelas',
+            'activeSubscription',
             'statKelas',
             'statPengajar',
             'statMurid',

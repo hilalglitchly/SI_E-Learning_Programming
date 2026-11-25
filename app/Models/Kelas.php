@@ -14,6 +14,11 @@ class Kelas extends Model
         'nama_kelas',
         'deskripsi',
         'nidn',
+        'is_premium',
+    ];
+
+    protected $casts = [
+        'is_premium' => 'boolean',
     ];
 
     public function pengajar()
@@ -73,9 +78,19 @@ class Kelas extends Model
 
         if ($user->isMurid()) {
             $nim = Murid::where('id_user', $user->id_user)->value('nim');
-            return $nim !== null && PesertaKelas::where('id_kelas', $this->id_kelas)
+            $enrolled = $nim !== null && PesertaKelas::where('id_kelas', $this->id_kelas)
                 ->where('nim', $nim)
                 ->exists();
+
+            if (!$enrolled) {
+                return false;
+            }
+
+            if ($this->is_premium && !$user->hasActiveSubscription()) {
+                return false;
+            }
+
+            return true;
         }
 
         return false;

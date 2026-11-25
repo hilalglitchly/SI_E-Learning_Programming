@@ -31,10 +31,12 @@ $username = $user ? $user->username : 'Guest';
         @if ($role === 'murid')
             <li><a href="{{ route('tugas.index') }}" style="color: #000;" class="{{ request()->routeIs('tugas.index') ? 'active' : '' }}"><i class='bx bx-task'></i> TUGAS</a></li>
             <li><a href="{{ route('enroll.index') }}" style="color: #000;" class="{{ request()->routeIs('enroll.*') ? 'active' : '' }}"><i class='bx bx-search'></i> CARI KELAS</a></li>
+            <li><a href="{{ route('langganan.index') }}" style="color: #000;" class="{{ request()->routeIs('langganan.*') ? 'active' : '' }}"><i class='bx bxs-crown'></i> PRO</a></li>
         @elseif ($role === 'pengajar')
             <li><a href="{{ route('tugas.index') }}" style="color: #000;" class="{{ request()->routeIs('tugas.index') || request()->routeIs('penilaian.*') ? 'active' : '' }}"><i class='bx bx-task'></i> NILAI TUGAS</a></li>
         @elseif ($role === 'admin')
             <li><a href="{{ route('admin.users.create') }}" style="color: #000;" class="{{ request()->routeIs('admin.users.*') ? 'active' : '' }}"><i class='bx bxs-user-plus'></i> TAMBAH USER</a></li>
+            <li><a href="{{ route('admin.langganan.index') }}" style="color: #000;" class="{{ request()->routeIs('admin.langganan.*') ? 'active' : '' }}"><i class='bx bx-credit-card'></i> PEMBAYARAN</a></li>
             <li><a href="{{ route('laporan.index') }}" style="color: #000;" class="{{ request()->routeIs('laporan.*') ? 'active' : '' }}"><i class='bx bxs-report'></i> LAPORAN</a></li>
         @elseif ($role === 'pimpinan')
             <li><a href="{{ route('laporan.index') }}" style="color: #000;" class="{{ request()->routeIs('laporan.*') ? 'active' : '' }}"><i class='bx bxs-report'></i> LAPORAN</a></li>

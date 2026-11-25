@@ -27,7 +27,14 @@
                     @foreach ($kelasTersedia as $kelas)
                         <div class="neo-card kelas-item" style="display: flex; flex-direction: column; justify-content: space-between;">
                             <div>
-                                <span class="badge-kode">KODE: KLS-{{ $kelas['id_kelas'] }}</span>
+                                <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px;">
+                                    <span class="badge-kode" style="margin: 0;">KODE: KLS-{{ $kelas['id_kelas'] }}</span>
+                                    @if (!empty($kelas['is_premium']))
+                                        <span class="badge-kode" style="margin: 0; background-color: #7C3AED; color: #fff; border: 2px solid #000;">👑 PREMIUM (PRO)</span>
+                                    @else
+                                        <span class="badge-kode" style="margin: 0; background-color: #BBF7D0; color: #000; border: 2px solid #000;">✓ GRATIS</span>
+                                    @endif
+                                </div>
                                 <h3 class="nama-kelas">{{ $kelas['nama_kelas'] }}</h3>
                                 <div class="nama-pengajar" style="font-size: 0.9em; margin-bottom: 12px; color: var(--foreground);">
                                     👨‍🏫 Pengajar: <strong>{{ $kelas['nama_pengajar'] ?? 'Belum ditentukan' }}</strong>
@@ -37,11 +44,17 @@
                                 </p>
                             </div>
                             
-                            <form method="POST" action="{{ route('enroll.store') }}" data-kelas-nama="{{ $kelas['nama_kelas'] }}" style="margin-top: auto;" onsubmit="event.preventDefault(); NeoConfirm('Gabung Kelas', 'Yakin ingin bergabung ke kelas ' + this.dataset.kelasNama + '?', () => this.submit());">
-                                @csrf
-                                <input type="hidden" name="id_kelas" value="{{ $kelas['id_kelas'] }}">
-                                <button type="submit" class="neo-btn" style="width: 100%; background-color: var(--accent);">Gabung Kelas &rarr;</button>
-                            </form>
+                            @if (!empty($kelas['is_premium']) && empty($hasActivePro))
+                                <a href="{{ route('langganan.index') }}" class="neo-btn" style="margin-top: auto; width: 100%; text-align: center; text-decoration: none; display: block; background-color: #7C3AED; color: #fff;">
+                                    🔒 Aktifkan Pro untuk Gabung &rarr;
+                                </a>
+                            @else
+                                <form method="POST" action="{{ route('enroll.store') }}" data-kelas-nama="{{ $kelas['nama_kelas'] }}" style="margin-top: auto;" onsubmit="event.preventDefault(); NeoConfirm('Gabung Kelas', 'Yakin ingin bergabung ke kelas ' + this.dataset.kelasNama + '?', () => this.submit());">
+                                    @csrf
+                                    <input type="hidden" name="id_kelas" value="{{ $kelas['id_kelas'] }}">
+                                    <button type="submit" class="neo-btn" style="width: 100%; background-color: var(--accent);">Gabung Kelas &rarr;</button>
+                                </form>
+                            @endif
                         </div>
                     @endforeach
                 </div>

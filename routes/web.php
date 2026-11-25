@@ -10,6 +10,7 @@ use App\Http\Controllers\TugasController;
 use App\Http\Controllers\KuisController;
 use App\Http\Controllers\DiskusiController;
 use App\Http\Controllers\ForumController;
+use App\Http\Controllers\LanggananController;
 use App\Http\Controllers\NotifikasiController;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\ProfilController;
@@ -47,12 +48,14 @@ Route::middleware('auth')->group(function () {
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Enroll / Cari Kelas (Murid)
+    // Enroll / Cari Kelas & Langganan (Murid)
     Route::middleware('role:murid')->group(function () {
         Route::get('/enroll', [KelasController::class, 'enrollIndex'])->name('enroll.index');
         Route::post('/enroll', [KelasController::class, 'enrollStore'])->name('enroll.store');
         Route::get('/kuis/{id_kuis}/kerjakan', [KuisController::class, 'kerjakan'])->whereNumber('id_kuis')->name('kuis.kerjakan');
         Route::post('/kuis/{id_kuis}/kerjakan', [KuisController::class, 'submit'])->whereNumber('id_kuis')->name('kuis.submit');
+        Route::get('/langganan', [LanggananController::class, 'index'])->name('langganan.index');
+        Route::post('/langganan/checkout', [LanggananController::class, 'checkout'])->middleware('throttle:5,10')->name('langganan.checkout');
     });
 
     // Detail Kelas & Stream/Feed/Materi/Tugas/Diskusi/Kuis Actions
@@ -72,6 +75,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/files/materi/{id}', [KelasController::class, 'downloadMateri'])->whereNumber('id')->name('files.materi');
     Route::get('/files/tugas/{id}', [KelasController::class, 'downloadTugas'])->whereNumber('id')->name('files.tugas');
     Route::get('/files/submission/{id}', [KelasController::class, 'downloadSubmission'])->whereNumber('id')->name('files.submission');
+    Route::get('/files/bukti-bayar/{id}', [LanggananController::class, 'downloadBukti'])->whereNumber('id')->name('files.bukti_bayar');
 
     // Tugas Global & Penilaian
     Route::get('/tugas', [TugasController::class, 'index'])->name('tugas.index');
@@ -121,6 +125,12 @@ Route::middleware('auth')->group(function () {
         Route::post('/', [AdminController::class, 'storeKelas'])->name('store');
         Route::post('/{id}', [AdminController::class, 'updateKelas'])->whereNumber('id')->name('update');
         Route::delete('/{id}', [AdminController::class, 'deleteKelas'])->whereNumber('id')->name('delete');
+    });
+
+    Route::prefix('admin/langganan')->name('admin.langganan.')->middleware('role:admin')->group(function () {
+        Route::get('/', [LanggananController::class, 'adminIndex'])->name('index');
+        Route::post('/{id}/approve', [LanggananController::class, 'approve'])->whereNumber('id')->name('approve');
+        Route::post('/{id}/reject', [LanggananController::class, 'reject'])->whereNumber('id')->name('reject');
     });
 });
 

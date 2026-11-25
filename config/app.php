@@ -25,6 +25,12 @@ return [
         'address_line2' => env('CONTACT_ADDRESS_LINE2', 'Jl. Teknologi Raya No. 404, Jakarta Selatan'),
     ],
 
+    'payment' => [
+        'bank_name' => env('PAYMENT_BANK_NAME', 'BCA'),
+        'account_number' => env('PAYMENT_ACCOUNT_NUMBER', '1234567890'),
+        'account_holder' => env('PAYMENT_ACCOUNT_HOLDER', 'E-Learning Programming'),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Application Environment

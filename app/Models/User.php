@@ -65,6 +65,25 @@ class User extends Authenticatable
         return $this->hasMany(ForumVote::class, 'id_user', 'id_user');
     }
 
+    public function langganan()
+    {
+        return $this->hasMany(Langganan::class, 'id_user', 'id_user');
+    }
+
+    public function activeSubscription(): ?Langganan
+    {
+        return Langganan::where('id_user', $this->id_user)
+            ->where('status', 'active')
+            ->where('tgl_berakhir', '>', now())
+            ->orderByDesc('tgl_berakhir')
+            ->first();
+    }
+
+    public function hasActiveSubscription(): bool
+    {
+        return $this->activeSubscription() !== null;
+    }
+
     public function isAdmin(): bool
     {
         return strtolower($this->role) === 'admin';

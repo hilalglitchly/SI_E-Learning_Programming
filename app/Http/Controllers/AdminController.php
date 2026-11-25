@@ -248,6 +248,7 @@ class AdminController extends Controller
             'nama_kelas' => $nama,
             'deskripsi' => $deskripsi,
             'nidn' => $nidn !== '' ? $nidn : null,
+            'is_premium' => $request->boolean('is_premium'),
         ]);
 
         return redirect()->route('dashboard')
@@ -282,6 +283,7 @@ class AdminController extends Controller
             'nama_kelas' => $nama,
             'deskripsi' => $deskripsi,
             'nidn' => $nidn !== '' ? $nidn : null,
+            'is_premium' => $request->boolean('is_premium'),
         ]);
 
         return redirect()->route('dashboard')

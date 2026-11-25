@@ -188,6 +188,10 @@
                             <label class="neo-label">Deskripsi Kelas</label>
                             <textarea name="deskripsi" rows="2" class="neo-input" maxlength="2000" placeholder="Deskripsi singkat materi kelas..."></textarea>
                         </div>
+                        <div style="margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" id="new-kelas-premium" name="is_premium" value="1" style="width: 18px; height: 18px;">
+                            <label for="new-kelas-premium" style="font-weight: 800; cursor: pointer;">👑 Kelas Premium (Wajib Langganan Pro)</label>
+                        </div>
                         <button type="submit" class="neo-btn" style="background-color: var(--secondary); color: #000;">Simpan Kelas Baru</button>
                     </form>
 
@@ -207,6 +211,12 @@
                                     <tr>
                                         <td>
                                             <span class="badge-kode" style="margin:0;">KLS-{{ $k['id_kelas'] }}</span>
+                                            <div style="margin-top: 6px;">
+                                                <label style="font-size: 0.75rem; font-weight: 900; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+                                                    <input type="checkbox" form="edit-kelas-{{ $k['id_kelas'] }}" name="is_premium" value="1" {{ !empty($k['is_premium']) ? 'checked' : '' }}>
+                                                    {{ !empty($k['is_premium']) ? '👑 PRO' : 'Gratis' }}
+                                                </label>
+                                            </div>
                                             <form method="POST" action="{{ route('admin.kelas.update', $k['id_kelas']) }}" id="edit-kelas-{{ $k['id_kelas'] }}" style="display: none;">
                                                 @csrf
                                             </form>
@@ -539,7 +549,17 @@
                         </div>
                         <div>
                             <div style="font-size: 0.85rem; font-weight: 800; color: var(--muted-foreground); text-transform: uppercase;">Status Akun</div>
-                            <div style="font-size: 1.4rem; font-weight: 900; line-height: 1.2; color: #4CAF50;">AKTIF</div>
+                            @if (strtolower($role) === 'murid')
+                                @if (!empty($activeSubscription))
+                                    <div style="font-size: 1.25rem; font-weight: 900; line-height: 1.2; color: #16A34A;">👑 PRO AKTIF</div>
+                                    <small style="font-weight: 700; color: var(--muted-foreground);">s/d {{ $activeSubscription->tgl_berakhir->format('d M Y') }}</small>
+                                @else
+                                    <div style="font-size: 1.25rem; font-weight: 900; line-height: 1.2;">GRATIS</div>
+                                    <a href="{{ route('langganan.index') }}" style="font-size: 0.8rem; font-weight: 900; color: var(--primary);">Upgrade ke Pro →</a>
+                                @endif
+                            @else
+                                <div style="font-size: 1.4rem; font-weight: 900; line-height: 1.2; color: #4CAF50;">AKTIF</div>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -569,11 +589,15 @@
                             @endphp
                             <div class="neo-card" style="display: flex; flex-direction: column; justify-content: space-between;">
                                 <div>
-                                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; gap: 8px;">
                                         <span class="badge-kode" style="margin: 0; background-color: var(--secondary); color: #000; border: 2px solid #000;">
                                             KODE: KLS-{{ $kelas['id_kelas'] }}
                                         </span>
-                                        <i class='bx bx-code-block' style="font-size: 1.8rem; color: var(--muted-foreground);"></i>
+                                        @if (!empty($kelas['is_premium']))
+                                            <span class="badge-kode" style="margin: 0; background-color: #7C3AED; color: #fff; border: 2px solid #000;">👑 PRO</span>
+                                        @else
+                                            <i class='bx bx-code-block' style="font-size: 1.8rem; color: var(--muted-foreground);"></i>
+                                        @endif
                                     </div>
                                     
                                     <h3 style="font-size: 1.4rem; margin-bottom: 10px; line-height: 1.3;">{{ $kelas['nama_kelas'] }}</h3>

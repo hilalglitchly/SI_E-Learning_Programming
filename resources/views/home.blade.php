@@ -329,10 +329,13 @@
                         @foreach ($allCards as $k)
                             <div class="neo-card course-card-item" style="display: flex; flex-direction: column; justify-content: space-between; background-color: var(--card); border: 4px solid #000; box-shadow: 6px 6px 0px #000;">
                                 <div>
-                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 6px;">
                                         <span class="badge-kode" style="margin: 0; background-color: var(--secondary); color: #000; border: 2px solid #000;">
                                             <i class='bx bx-code-alt'></i> {{ $k->total_materi }} Materi
                                         </span>
+                                        @if ($k->is_premium)
+                                            <span class="badge-kode" style="margin: 0; background-color: #7C3AED; color: #fff; border: 2px solid #000;">👑 PRO</span>
+                                        @endif
                                         <span style="font-size: 0.85rem; font-weight: 800; color: var(--muted-foreground);">
                                             <i class='bx bxs-group'></i> {{ $k->total_peserta }} Siswa
                                         </span>

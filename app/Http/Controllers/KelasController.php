@@ -44,8 +44,9 @@ class KelasController extends Controller
         ", ['nim' => $nim]);
 
         $kelasTersedia = array_map(fn($r) => (array) $r, $rows);
+        $hasActivePro = $user->hasActiveSubscription();
 
-        return view('enroll', compact('kelasTersedia', 'pesan'));
+        return view('enroll', compact('kelasTersedia', 'pesan', 'hasActivePro'));
     }
 
     public function enrollStore(Request $request)
@@ -63,8 +64,15 @@ class KelasController extends Controller
         $nim = $murid->nim;
         $id_kelas_ambil = (int) $request->input('id_kelas');
 
-        if (!Kelas::where('id_kelas', $id_kelas_ambil)->exists()) {
+        $kelas = Kelas::find($id_kelas_ambil);
+        if (!$kelas) {
             abort(404, 'Kelas tidak ditemukan.');
+        }
+
+        if ($kelas->is_premium && !$user->hasActiveSubscription()) {
+            return redirect()->route('langganan.index')
+                ->with('pesan', 'Kelas ini bersifat Premium. Aktifkan langganan Pro terlebih dahulu untuk bergabung.')
+                ->with('tipe_pesan', 'error');
         }
 
         $exists = PesertaKelas::where('id_kelas', $id_kelas_ambil)
@@ -100,6 +108,15 @@ class KelasController extends Controller
         }
 
         if (!$kelasModel->canView($user)) {
+            // If enrolled in a Premium class whose Pro plan expired/inactive, guide student to subscription page
+            if ($user->isMurid() && $kelasModel->is_premium && !$user->hasActiveSubscription()) {
+                $nimCheck = Murid::where('id_user', $id_user)->value('nim');
+                if ($nimCheck && PesertaKelas::where('id_kelas', $id_kelas)->where('nim', $nimCheck)->exists()) {
+                    return redirect()->route('langganan.index')
+                        ->with('pesan', 'Akses kelas Premium membutuhkan langganan Pro aktif. Perpanjang langganan untuk melanjutkan belajar.')
+                        ->with('tipe_pesan', 'error');
+                }
+            }
             abort(403, 'Akses Ditolak. Anda tidak memiliki izin mengakses kelas ini.');
         }
 
