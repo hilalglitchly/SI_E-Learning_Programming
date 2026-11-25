@@ -21,49 +21,55 @@ $username = $user ? $user->username : 'Guest';
         </div>
     </a>
     
-    <ul class="neo-navbar-menu">
+    <ul id="neo-navbar-menu" class="neo-navbar-menu">
         <li>
             <a id="nav-beranda" href="{{ $is_logged_in ? route('dashboard') : route('home') }}" style="color: #000;" class="{{ request()->routeIs('dashboard') || request()->routeIs('home') ? 'active' : '' }}">
-                <i class='bx bxs-home'></i> BERANDA
+                <i class='bx bxs-home' aria-hidden="true"></i> BERANDA
             </a>
         </li>
         
         @if ($role === 'murid')
-            <li><a href="{{ route('tugas.index') }}" style="color: #000;" class="{{ request()->routeIs('tugas.index') ? 'active' : '' }}"><i class='bx bx-task'></i> TUGAS</a></li>
-            <li><a href="{{ route('enroll.index') }}" style="color: #000;" class="{{ request()->routeIs('enroll.*') ? 'active' : '' }}"><i class='bx bx-search'></i> CARI KELAS</a></li>
-            <li><a href="{{ route('langganan.index') }}" style="color: #000;" class="{{ request()->routeIs('langganan.*') ? 'active' : '' }}"><i class='bx bxs-crown'></i> PRO</a></li>
+            <li><a href="{{ route('tugas.index') }}" style="color: #000;" class="{{ request()->routeIs('tugas.index') ? 'active' : '' }}"><i class='bx bx-task' aria-hidden="true"></i> TUGAS</a></li>
+            <li><a href="{{ route('enroll.index') }}" style="color: #000;" class="{{ request()->routeIs('enroll.*') ? 'active' : '' }}"><i class='bx bx-search' aria-hidden="true"></i> CARI KELAS</a></li>
+            <li><a href="{{ route('langganan.index') }}" style="color: #000;" class="{{ request()->routeIs('langganan.*') ? 'active' : '' }}"><i class='bx bxs-crown' aria-hidden="true"></i> PRO</a></li>
         @elseif ($role === 'pengajar')
-            <li><a href="{{ route('tugas.index') }}" style="color: #000;" class="{{ request()->routeIs('tugas.index') || request()->routeIs('penilaian.*') ? 'active' : '' }}"><i class='bx bx-task'></i> NILAI TUGAS</a></li>
+            <li><a href="{{ route('tugas.index') }}" style="color: #000;" class="{{ request()->routeIs('tugas.index') || request()->routeIs('penilaian.*') ? 'active' : '' }}"><i class='bx bx-task' aria-hidden="true"></i> NILAI TUGAS</a></li>
         @elseif ($role === 'admin')
-            <li><a href="{{ route('admin.users.create') }}" style="color: #000;" class="{{ request()->routeIs('admin.users.*') ? 'active' : '' }}"><i class='bx bxs-user-plus'></i> TAMBAH USER</a></li>
-            <li><a href="{{ route('admin.langganan.index') }}" style="color: #000;" class="{{ request()->routeIs('admin.langganan.*') ? 'active' : '' }}"><i class='bx bx-credit-card'></i> PEMBAYARAN</a></li>
-            <li><a href="{{ route('laporan.index') }}" style="color: #000;" class="{{ request()->routeIs('laporan.*') ? 'active' : '' }}"><i class='bx bxs-report'></i> LAPORAN</a></li>
+            <li><a href="{{ route('admin.users.create') }}" style="color: #000;" class="{{ request()->routeIs('admin.users.*') ? 'active' : '' }}"><i class='bx bxs-user-plus' aria-hidden="true"></i> TAMBAH USER</a></li>
+            <li><a href="{{ route('admin.langganan.index') }}" style="color: #000;" class="{{ request()->routeIs('admin.langganan.*') ? 'active' : '' }}"><i class='bx bx-credit-card' aria-hidden="true"></i> PEMBAYARAN</a></li>
+            <li><a href="{{ route('laporan.index') }}" style="color: #000;" class="{{ request()->routeIs('laporan.*') ? 'active' : '' }}"><i class='bx bxs-report' aria-hidden="true"></i> LAPORAN</a></li>
         @elseif ($role === 'pimpinan')
-            <li><a href="{{ route('laporan.index') }}" style="color: #000;" class="{{ request()->routeIs('laporan.*') ? 'active' : '' }}"><i class='bx bxs-report'></i> LAPORAN</a></li>
+            <li><a href="{{ route('laporan.index') }}" style="color: #000;" class="{{ request()->routeIs('laporan.*') ? 'active' : '' }}"><i class='bx bxs-report' aria-hidden="true"></i> LAPORAN</a></li>
         @endif
         
-        <li><a href="{{ route('forum.index') }}" style="color: #000;" class="{{ request()->routeIs('forum.*') ? 'active' : '' }}"><i class='bx bx-message-rounded-dots'></i> FORUM</a></li>
+        <li><a href="{{ route('forum.index') }}" style="color: #000;" class="{{ request()->routeIs('forum.*') ? 'active' : '' }}"><i class='bx bx-message-rounded-dots' aria-hidden="true"></i> FORUM</a></li>
 
         @if ($is_logged_in)
-            <li><a href="{{ route('profil.index') }}" style="color: #000;" class="{{ request()->routeIs('profil.*') ? 'active' : '' }}"><i class='bx bxs-user-circle'></i> AKUN</a></li>
+            <li><a href="{{ route('profil.index') }}" style="color: #000;" class="{{ request()->routeIs('profil.*') ? 'active' : '' }}"><i class='bx bxs-user-circle' aria-hidden="true"></i> AKUN</a></li>
         @else
-            <li><a id="nav-katalog" href="{{ route('home') }}#katalog" style="color: #000;"><i class='bx bx-search'></i> KATALOG</a></li>
-            <li><a id="nav-faq" href="{{ route('home') }}#faq" style="color: #000;"><i class='bx bx-question-mark'></i> FAQ</a></li>
-            <li><a id="nav-kontak" href="{{ route('home') }}#kontak" style="color: #000;"><i class='bx bxs-contact'></i> KONTAK</a></li>
+            <li><a id="nav-katalog" href="{{ route('home') }}#katalog" style="color: #000;"><i class='bx bx-search' aria-hidden="true"></i> KATALOG</a></li>
+            <li><a id="nav-paket" href="{{ route('home') }}#paket" style="color: #000;"><i class='bx bxs-crown' aria-hidden="true"></i> HARGA</a></li>
+            <li><a id="nav-faq" href="{{ route('home') }}#faq" style="color: #000;"><i class='bx bx-question-mark' aria-hidden="true"></i> FAQ</a></li>
+            <li><a id="nav-kontak" href="{{ route('home') }}#kontak" style="color: #000;"><i class='bx bxs-contact' aria-hidden="true"></i> KONTAK</a></li>
         @endif
     </ul>
 
     <div class="neo-navbar-user">
-        <button title="Ganti Tema" id="theme-toggle" onclick="toggleDarkMode()" class="neo-navbar-btn brutal-hover" style="width: 42px; height: 42px; padding: 0; display: inline-flex; align-items: center; justify-content: center; font-size: 1.15rem; line-height: 1; background-color: #FFF; border: 3px solid #000; box-shadow: 3px 3px 0px #000; color: #000; cursor: pointer;">
-            <i class='bx bxs-moon' id='theme-icon'></i>
+        <button type="button" id="nav-mobile-toggle" class="neo-nav-toggle brutal-hover" aria-expanded="false" aria-controls="neo-navbar-menu">
+            <i class='bx bx-menu' id="nav-mobile-icon" aria-hidden="true"></i>
+            <span>MENU</span>
+        </button>
+
+        <button type="button" title="Ganti Tema" aria-label="Ganti tema gelap atau terang" id="theme-toggle" onclick="toggleDarkMode()" class="neo-navbar-btn brutal-hover" style="width: 42px; height: 42px; padding: 0; display: inline-flex; align-items: center; justify-content: center; font-size: 1.15rem; line-height: 1; background-color: #FFF; border: 3px solid #000; box-shadow: 3px 3px 0px #000; color: #000; cursor: pointer;">
+            <i class='bx bxs-moon' id='theme-icon' aria-hidden="true"></i>
         </button>
         
         @if ($is_logged_in)
             <!-- NOTIFICATION DROPDOWN -->
             <div class="neo-notif-dropdown" style="position: relative; display: inline-flex;">
-                <button id="notif-btn" title="Notifikasi" class="neo-navbar-btn brutal-hover" style="width: 42px; height: 42px; padding: 0; display: inline-flex; align-items: center; justify-content: center; font-size: 1.15rem; line-height: 1; background-color: #FFF; border: 3px solid #000; box-shadow: 3px 3px 0px #000; color: #000; position: relative; cursor: pointer;">
-                    <i class='bx bxs-bell'></i>
-                    <span id="notif-badge" style="display: none; position: absolute; top: -8px; right: -8px; background-color: #FF0000; color: #FFF; font-size: 0.7rem; font-weight: 900; padding: 2px 6px; border: 2px solid #000; border-radius: 50%; box-shadow: 1px 1px 0px #000;">0</span>
+                <button type="button" id="notif-btn" title="Notifikasi" aria-label="Buka notifikasi" class="neo-navbar-btn brutal-hover" style="width: 42px; height: 42px; padding: 0; display: inline-flex; align-items: center; justify-content: center; font-size: 1.15rem; line-height: 1; background-color: #FFF; border: 3px solid #000; box-shadow: 3px 3px 0px #000; color: #000; position: relative; cursor: pointer;">
+                    <i class='bx bxs-bell' aria-hidden="true"></i>
+                    <span id="notif-badge" style="display: none; position: absolute; top: -8px; right: -8px; background-color: #DC2626; color: #FFF; font-size: 0.7rem; font-weight: 900; padding: 2px 6px; border: 2px solid #000; border-radius: 50%; box-shadow: 1px 1px 0px #000;">0</span>
                 </button>
                 
                 <div id="notif-menu" style="position: absolute; top: 120%; right: 0; width: 320px; background-color: var(--card); border: 4px solid #000; box-shadow: 6px 6px 0px #000; z-index: 1002; display: none; color: var(--foreground);">
@@ -99,7 +105,7 @@ $username = $user ? $user->username : 'Guest';
             </div>
         @else
             <a href="{{ route('login') }}" class="brutal-hover" style="height: 42px; box-sizing: border-box; display: inline-flex; align-items: center; padding: 0 14px; font-weight: 900; background-color: #FFF; color: #000; border: 3px solid #000; box-shadow: 3px 3px 0px #000; text-decoration: none; text-transform: uppercase; font-size: 0.85rem; white-space: nowrap;">Masuk</a>
-            <a href="{{ route('register') }}" class="brutal-hover" style="height: 42px; box-sizing: border-box; display: inline-flex; align-items: center; padding: 0 14px; font-weight: 900; background-color: var(--primary); color: #FFF; border: 3px solid #000; box-shadow: 3px 3px 0px #000; text-decoration: none; text-transform: uppercase; font-size: 0.85rem; white-space: nowrap;">Daftar</a>
+            <a href="{{ route('register') }}" class="brutal-hover" style="height: 42px; box-sizing: border-box; display: inline-flex; align-items: center; padding: 0 14px; font-weight: 900; background-color: #DC2626; color: #FFF; border: 3px solid #000; box-shadow: 3px 3px 0px #000; text-decoration: none; text-transform: uppercase; font-size: 0.85rem; white-space: nowrap;">Daftar</a>
         @endif
     </div>
 </nav>
@@ -147,9 +153,46 @@ $username = $user ? $user->username : 'Guest';
             });
         }
 
+        // Mobile Collapsible Navigation Menu
+        const mobileToggle = document.getElementById("nav-mobile-toggle");
+        const mobileMenu = document.getElementById("neo-navbar-menu");
+        const mobileIcon = document.getElementById("nav-mobile-icon");
+        if (mobileToggle && mobileMenu) {
+            const setMenuOpen = (open) => {
+                mobileMenu.classList.toggle("is-open", open);
+                mobileToggle.setAttribute("aria-expanded", open ? "true" : "false");
+                if (mobileIcon) {
+                    mobileIcon.className = open ? "bx bx-x" : "bx bx-menu";
+                }
+            };
+
+            mobileToggle.addEventListener("click", (e) => {
+                e.stopPropagation();
+                setMenuOpen(!mobileMenu.classList.contains("is-open"));
+            });
+
+            mobileMenu.querySelectorAll("a").forEach((link) => {
+                link.addEventListener("click", () => setMenuOpen(false));
+            });
+
+            document.addEventListener("click", (e) => {
+                if (mobileMenu.classList.contains("is-open") && !mobileMenu.contains(e.target) && !mobileToggle.contains(e.target)) {
+                    setMenuOpen(false);
+                }
+            });
+
+            document.addEventListener("keydown", (e) => {
+                if (e.key === "Escape" && mobileMenu.classList.contains("is-open")) {
+                    setMenuOpen(false);
+                    mobileToggle.focus();
+                }
+            });
+        }
+
         // ScrollSpy for Landing Page Navigation
         const sections = [
             { id: 'katalog', nav: document.getElementById('nav-katalog') },
+            { id: 'paket', nav: document.getElementById('nav-paket') },
             { id: 'faq', nav: document.getElementById('nav-faq') },
             { id: 'kontak', nav: document.getElementById('nav-kontak') }
         ];

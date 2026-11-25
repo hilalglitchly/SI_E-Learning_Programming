@@ -594,7 +594,34 @@ a.neo-card:hover {
 /* ========================================
    RESPONSIVE (MOBILE)
    ======================================== */
-@media (max-width: 1120px) {
+.neo-nav-toggle {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    min-height: 44px;
+    padding: 0 12px;
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    background-color: #FFFFFF;
+    color: #000000;
+    border: 3px solid #000000;
+    box-shadow: 3px 3px 0px #000000;
+    cursor: pointer;
+}
+
+.neo-nav-toggle i {
+    font-size: 1.25rem;
+}
+
+.neo-nav-toggle:focus-visible {
+    outline: 3px solid #000000;
+    outline-offset: 2px;
+}
+
+@media (max-width: 1180px) {
     .neo-navbar {
         flex-wrap: wrap;
         row-gap: 10px;
@@ -617,28 +644,54 @@ a.neo-card:hover {
     }
 }
 
+@media (max-width: 960px) {
+    .neo-nav-toggle {
+        display: inline-flex;
+    }
+
+    .neo-navbar {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.65rem 0.9rem;
+        gap: 10px;
+    }
+
+    .neo-navbar-menu {
+        display: none;
+        order: 3;
+        flex: 1 0 100%;
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+        gap: 6px;
+        padding-top: 10px;
+        border-top: 3px solid #000000;
+    }
+
+    .neo-navbar-menu.is-open {
+        display: flex;
+    }
+
+    .neo-navbar-menu li {
+        width: 100%;
+    }
+
+    .neo-navbar-menu a {
+        width: 100%;
+        min-height: 44px;
+        padding: 10px 14px;
+        justify-content: flex-start;
+    }
+}
+
 @media (max-width: 768px) {
     .neo-navbar {
-        flex-direction: column;
-        height: auto;
-        padding: 1rem;
-        gap: 0.75rem;
+        margin: 10px auto !important;
+        top: 10px !important;
     }
-    
-    .neo-navbar-menu {
-        order: 0;
-        flex: 0 1 auto;
-        width: 100%;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 0.5rem;
-        padding-top: 8px;
-    }
-    
-    .neo-navbar-menu a {
-        padding: 6px 10px;
-    }
-    
+
     .neo-layout-container {
         padding: 1.25rem 1rem 2.5rem 1rem;
         margin-top: 0;
