@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Kelas;
+use App\Models\Langganan;
 use App\Models\Murid;
 use App\Models\Pengajar;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 
 class AdminController extends Controller
 {
@@ -216,7 +218,18 @@ class AdminController extends Controller
         }
 
         if ((int) $id !== (int) $user->id_user) {
-            User::where('id_user', $id)->delete();
+            $buktiFiles = Langganan::where('id_user', (int) $id)
+                ->whereNotNull('bukti_bayar')
+                ->pluck('bukti_bayar');
+
+            User::where('id_user', (int) $id)->delete();
+
+            foreach ($buktiFiles as $file) {
+                $safeName = basename((string) $file);
+                if ($safeName !== '' && $safeName !== '.' && $safeName !== '..') {
+                    Storage::disk('local')->delete('private/bukti_bayar/' . $safeName);
+                }
+            }
         }
 
         return redirect()->route('dashboard', ['msg' => 'deleted']);

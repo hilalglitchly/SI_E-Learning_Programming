@@ -9,6 +9,7 @@ use App\Models\Murid;
 use App\Models\Notifikasi;
 use App\Models\Pengajar;
 use App\Models\PesertaKelas;
+use App\Models\Tugas;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -31,6 +32,7 @@ class SubscriptionTest extends TestCase
         $kelasGratis = Kelas::create(['nama_kelas' => 'Dasar HTML', 'deskripsi' => 'Gratis', 'nidn' => '7001', 'is_premium' => false]);
         $kelasPro = Kelas::create(['nama_kelas' => 'Cybersecurity Pro', 'deskripsi' => 'Premium', 'nidn' => '7001', 'is_premium' => true]);
         $materiPro = Materi::create(['id_kelas' => $kelasPro->id_kelas, 'judul_materi' => 'Modul Pro', 'deskripsi' => 'Isi', 'file_materi' => 'pro.pdf']);
+        Tugas::create(['id_kelas' => $kelasPro->id_kelas, 'judul_tugas' => 'Tugas Rahasia Pro', 'deskripsi' => 'Konten Premium', 'deadline' => now()->addDays(5)]);
         Storage::disk('local')->put('private/materi/pro.pdf', 'pdf-bytes');
 
         $u1 = User::create(['username' => 'mrd_sub1', 'password' => Hash::make('StrongPass123!'), 'role' => 'Murid']);
@@ -66,9 +68,12 @@ class SubscriptionTest extends TestCase
         ])->assertRedirect(route('langganan.index'));
         $this->assertDatabaseCount('tb_langganan', 1);
 
-        // 3. Proof privacy: u2 blocked (403), u1 & admin allowed (200)
+        // 3. Proof privacy & no-store cache headers: u2 blocked (403), u1 & admin allowed (200)
         $this->actingAs($u2)->get(route('files.bukti_bayar', $order->id_langganan))->assertStatus(403);
-        $this->actingAs($u1)->get(route('files.bukti_bayar', $order->id_langganan))->assertStatus(200);
+        $proofResp = $this->actingAs($u1)->get(route('files.bukti_bayar', $order->id_langganan))
+            ->assertStatus(200)
+            ->assertHeader('X-Content-Type-Options', 'nosniff');
+        $this->assertStringContainsString('no-store', (string) $proofResp->headers->get('Cache-Control'));
         $this->actingAs($admin)->get(route('files.bukti_bayar', $order->id_langganan))->assertStatus(200);
 
         // 4. Non-admin cannot access admin payment verification or approve
@@ -90,18 +95,26 @@ class SubscriptionTest extends TestCase
             ->assertRedirect(route('admin.langganan.index'));
         $this->assertSame($firstExpiry, $order->fresh()->tgl_berakhir->timestamp);
 
-        // 6. Active Pro student can now enroll, open Premium class, and download Premium materi
+        // 6. Active Pro student can now enroll, open Premium class, see Premium tasks, and download Premium materi
         $this->actingAs($u1)->post(route('enroll.store'), ['id_kelas' => $kelasPro->id_kelas])
             ->assertRedirect(route('dashboard'));
         $this->actingAs($u1)->get(route('kelas.show', ['id' => $kelasPro->id_kelas]))->assertStatus(200);
+        $this->actingAs($u1)->get(route('tugas.index'))->assertStatus(200)->assertSee('Tugas Rahasia Pro');
         $this->actingAs($u1)->get(route('files.materi', ['id' => $materiPro->id_materi]))->assertStatus(200);
 
-        // 7. Once subscription expires, access to Premium class & file is revoked immediately
+        // 7. Once subscription expires, access to Premium class, global tasks, & file is revoked immediately
         $order->update(['tgl_berakhir' => now()->subMinute()]);
         $this->actingAs($u1)->get(route('kelas.show', ['id' => $kelasPro->id_kelas]))
             ->assertRedirect(route('langganan.index'));
+        $this->actingAs($u1)->get(route('tugas.index'))->assertStatus(200)->assertDontSee('Tugas Rahasia Pro');
         $this->actingAs($u1)->get(route('files.materi', ['id' => $materiPro->id_materi]))
             ->assertStatus(403);
+
+        // 8. Deleting user cleans up stored proof file
+        $proofFile = 'private/bukti_bayar/' . $order->bukti_bayar;
+        $this->actingAs($admin)->delete(route('admin.users.delete', $u1->id_user))
+            ->assertRedirect(route('dashboard', ['msg' => 'deleted']));
+        Storage::disk('local')->assertMissing($proofFile);
     }
 
     public function test_admin_rejection_notifies_student_and_keeps_premium_locked(): void

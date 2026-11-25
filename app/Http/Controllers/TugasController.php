@@ -18,6 +18,7 @@ class TugasController extends Controller
         $daftarTugas = [];
 
         if (strtolower($role) === 'murid') {
+            $premiumFilter = $user->hasActiveSubscription() ? '' : 'AND k.is_premium = 0';
             $rows = DB::select("
                 SELECT t.*, k.nama_kelas 
                 FROM tb_tugas t
@@ -25,6 +26,7 @@ class TugasController extends Controller
                 JOIN tb_peserta_kelas pk ON k.id_kelas = pk.id_kelas
                 JOIN tb_murid m ON pk.nim = m.nim
                 WHERE m.id_user = :id_user
+                {$premiumFilter}
                 AND t.id_tugas NOT IN (
                     SELECT id_tugas FROM tb_submission WHERE nim = m.nim
                 )

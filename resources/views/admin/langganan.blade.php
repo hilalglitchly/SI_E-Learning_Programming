@@ -109,6 +109,22 @@
                         </tbody>
                     </table>
                 </div>
+
+                @if ($orders->hasPages())
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 16px; flex-wrap: wrap;">
+                        @if ($orders->onFirstPage())
+                            <span></span>
+                        @else
+                            <a href="{{ $orders->previousPageUrl() }}" class="neo-btn" style="padding: 8px 14px; font-size: 0.85rem; background-color: var(--muted); color: var(--foreground);">← Sebelumnya</a>
+                        @endif
+                        <span style="font-weight: 800; font-size: 0.88rem;">Halaman {{ $orders->currentPage() }} dari {{ $orders->lastPage() }}</span>
+                        @if ($orders->hasMorePages())
+                            <a href="{{ $orders->nextPageUrl() }}" class="neo-btn" style="padding: 8px 14px; font-size: 0.85rem; background-color: var(--muted); color: var(--foreground);">Berikutnya →</a>
+                        @else
+                            <span></span>
+                        @endif
+                    </div>
+                @endif
             </div>
 
         </div>

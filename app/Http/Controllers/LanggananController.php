@@ -49,7 +49,7 @@ class LanggananController extends Controller
 
         $validator = Validator::make($request->all(), [
             'id_paket' => ['required', 'integer'],
-            'bukti_bayar' => ['required', 'file', 'max:5120', 'mimes:jpg,jpeg,png,pdf'],
+            'bukti_bayar' => ['required', 'file', 'max:5120', 'mimes:jpg,jpeg,png,pdf', 'mimetypes:image/jpeg,image/png,application/pdf'],
         ]);
 
         if ($validator->fails()) {
@@ -69,7 +69,7 @@ class LanggananController extends Controller
         }
 
         $file = $request->file('bukti_bayar');
-        $ext = strtolower($file->getClientOriginalExtension());
+        $ext = strtolower((string) ($file->extension() ?: $file->getClientOriginalExtension()));
         if (!in_array($ext, ['jpg', 'jpeg', 'png', 'pdf'], true)) {
             return redirect()->route('langganan.index')
                 ->with('pesan', 'Gagal: Ekstensi bukti transfer hanya boleh JPG, PNG, atau PDF.')
@@ -84,28 +84,36 @@ class LanggananController extends Controller
                 ->with('tipe_pesan', 'error');
         }
 
-        $created = DB::transaction(function () use ($user, $paket, $safeName) {
-            $alreadyPending = Langganan::where('id_user', $user->id_user)
-                ->where('status', 'pending')
-                ->lockForUpdate()
-                ->exists();
+        try {
+            $created = DB::transaction(function () use ($user, $paket, $safeName) {
+                // Lock parent user row to serialize concurrent checkouts even when 0 pending rows exist
+                User::where('id_user', $user->id_user)->lockForUpdate()->first();
 
-            if ($alreadyPending) {
-                return null;
-            }
+                $alreadyPending = Langganan::where('id_user', $user->id_user)
+                    ->where('status', 'pending')
+                    ->lockForUpdate()
+                    ->exists();
 
-            $invoice = 'INV-' . date('Ymd') . '-' . strtoupper(Str::random(6));
+                if ($alreadyPending) {
+                    return null;
+                }
 
-            return Langganan::create([
-                'kode_invoice' => $invoice,
-                'id_user' => $user->id_user,
-                'id_paket' => $paket->id_paket,
-                'nominal' => $paket->harga, // Always snapshot server-side price, never trust client input
-                'status' => 'pending',
-                'bukti_bayar' => $safeName,
-                'created_at' => now(),
-            ]);
-        });
+                $invoice = 'INV-' . date('Ymd') . '-' . strtoupper(Str::random(6));
+
+                return Langganan::create([
+                    'kode_invoice' => $invoice,
+                    'id_user' => $user->id_user,
+                    'id_paket' => $paket->id_paket,
+                    'nominal' => $paket->harga, // Always snapshot server-side price, never trust client input
+                    'status' => 'pending',
+                    'bukti_bayar' => $safeName,
+                    'created_at' => now(),
+                ]);
+            });
+        } catch (\Throwable $e) {
+            Storage::disk('local')->delete('private/bukti_bayar/' . $safeName);
+            throw $e;
+        }
 
         if (!$created) {
             Storage::disk('local')->delete('private/bukti_bayar/' . $safeName);
@@ -138,11 +146,13 @@ class LanggananController extends Controller
         $orders = Langganan::with(['user.murid', 'paket', 'verifier'])
             ->orderByRaw("CASE WHEN status = 'pending' THEN 0 ELSE 1 END")
             ->orderByDesc('id_langganan')
-            ->get();
+            ->paginate(25);
 
-        $pendingCount = $orders->where('status', 'pending')->count();
-        $activeCount = $orders->filter(fn($o) => $o->isCurrentlyActive())->count();
-        $totalRevenue = $orders->where('status', 'active')->sum('nominal');
+        $pendingCount = Langganan::where('status', 'pending')->count();
+        $activeCount = Langganan::where('status', 'active')
+            ->where('tgl_berakhir', '>', now())
+            ->count();
+        $totalRevenue = (int) Langganan::where('status', 'active')->sum('nominal');
 
         return view('admin.langganan', [
             'orders' => $orders,
@@ -274,6 +284,7 @@ class LanggananController extends Controller
 
         return response()->download(Storage::disk('local')->path($relPath), $safeName, [
             'X-Content-Type-Options' => 'nosniff',
+            'Cache-Control' => 'private, no-store',
         ]);
     }
 }
