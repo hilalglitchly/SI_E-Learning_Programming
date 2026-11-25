@@ -1763,3 +1763,335 @@ html.dark-mode .neo-site-footer {
         border-radius: 0;
     }
 }
+
+/* ========================================
+   AUTH PAGES (LOGIN & REGISTER)
+   ======================================== */
+.visually-hidden:where(:not(:focus-within, :active)) {
+    position: absolute !important;
+    clip-path: inset(50%) !important;
+    overflow: hidden !important;
+    width: 1px !important;
+    height: 1px !important;
+    margin: -1px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    white-space: nowrap !important;
+}
+
+.auth-page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem 3.5rem;
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 470px;
+    background-color: var(--card);
+    color: var(--card-foreground);
+    border: 4px solid var(--border);
+    box-shadow: 8px 8px 0px var(--shadow-color);
+    padding: 0;
+}
+
+.auth-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-bottom: 4px solid var(--border);
+}
+
+.auth-tab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 50px;
+    padding: 12px 16px;
+    font-weight: 900;
+    font-size: 0.95rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    text-decoration: none;
+    background-color: var(--muted);
+    color: var(--foreground);
+    transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.auth-tab + .auth-tab {
+    border-left: 4px solid var(--border);
+}
+
+.auth-tab:hover:not(.is-active) {
+    background-color: var(--card);
+}
+
+.auth-tab.is-active {
+    background-color: var(--secondary);
+    color: #000000;
+}
+
+.auth-body {
+    padding: 32px 30px 28px;
+}
+
+.auth-title {
+    font-size: clamp(1.6rem, 4.2vw, 2.1rem);
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: -0.03em;
+    margin-bottom: 6px;
+    color: var(--foreground);
+}
+
+.auth-subtitle {
+    font-size: 0.98rem;
+    font-weight: 600;
+    color: var(--muted-foreground);
+    margin-bottom: 24px;
+}
+
+.auth-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    border: 3px solid var(--border);
+    box-shadow: 4px 4px 0px var(--shadow-color);
+    padding: 12px 14px;
+    margin-bottom: 20px;
+    font-weight: 800;
+    font-size: 0.9rem;
+    line-height: 1.45;
+}
+
+.auth-alert i {
+    font-size: 1.25rem;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.auth-alert--error {
+    background-color: #DC2626;
+    color: #FFFFFF;
+}
+
+.auth-alert--success {
+    background-color: #a8e6cf;
+    color: #000000;
+}
+
+.auth-field {
+    margin-bottom: 1.25rem;
+}
+
+.auth-label-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 0.35rem;
+    flex-wrap: wrap;
+}
+
+.auth-label-row .neo-label {
+    margin-bottom: 0;
+}
+
+.auth-hint {
+    display: block;
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: var(--muted-foreground);
+    margin-bottom: 0.45rem;
+    line-height: 1.4;
+}
+
+.auth-input {
+    scroll-margin-bottom: 120px;
+}
+
+.auth-pw-wrap {
+    position: relative;
+    display: flex;
+    align-items: stretch;
+}
+
+.auth-pw-wrap .neo-input {
+    padding-right: 54px;
+}
+
+.auth-pw-toggle {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    bottom: 3px;
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: transparent;
+    color: var(--foreground);
+    border: none;
+    border-left: 2px solid var(--border);
+    font-size: 1.25rem;
+    cursor: pointer;
+    transition: background-color 0.12s ease;
+}
+
+.auth-pw-toggle:hover {
+    background-color: var(--muted);
+}
+
+.auth-input:focus-visible,
+.auth-pw-toggle:focus-visible,
+.auth-tab:focus-visible,
+.auth-submit:focus-visible,
+.auth-link:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 2px;
+}
+
+html.dark-mode .auth-input:focus-visible,
+html.dark-mode .auth-pw-toggle:focus-visible,
+html.dark-mode .auth-tab:focus-visible,
+html.dark-mode .auth-submit:focus-visible,
+html.dark-mode .auth-link:focus-visible {
+    outline-color: var(--secondary);
+}
+
+/* Validation feedback strictly after user interaction */
+.auth-input:is(:user-invalid, .user-invalid-fallback) {
+    border-color: #B91C1C;
+    background-color: #FEF2F2;
+    box-shadow: 3px 3px 0px #B91C1C;
+}
+
+html.dark-mode .auth-input:is(:user-invalid, .user-invalid-fallback) {
+    border-color: #fca5a5;
+    background-color: #3b181b;
+    box-shadow: 3px 3px 0px #fca5a5;
+}
+
+.auth-input:is(:user-valid, .user-valid-fallback) {
+    border-color: #15803d;
+}
+
+html.dark-mode .auth-input:is(:user-valid, .user-valid-fallback) {
+    border-color: #4ade80;
+}
+
+.auth-field-error {
+    display: none;
+    margin-top: 0.45rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #B91C1C;
+    line-height: 1.4;
+}
+
+html.dark-mode .auth-field-error {
+    color: #fca5a5;
+}
+
+.auth-field:has(.auth-input:is(:user-invalid, .user-invalid-fallback)) .auth-field-error,
+.auth-input.user-invalid-fallback ~ .auth-field-error {
+    display: block;
+}
+
+.auth-submit {
+    width: 100%;
+    min-height: 52px;
+    margin-top: 0.5rem;
+    font-size: 1.05rem;
+    padding: 14px 20px;
+}
+
+.auth-submit--register {
+    background-color: var(--secondary);
+    color: #000000;
+}
+
+.auth-submit--register:hover {
+    background-color: #DC2626;
+    color: #FFFFFF !important;
+}
+
+.auth-submit:disabled {
+    opacity: 0.7;
+    cursor: not-allowed !important;
+    transform: none !important;
+}
+
+.auth-helper-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 0.5rem;
+}
+
+.auth-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 4px 2px;
+    font-weight: 800;
+    font-size: 0.9rem;
+    color: #B91C1C;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    text-decoration-thickness: 2px;
+}
+
+html.dark-mode .auth-link {
+    color: #f87171;
+}
+
+.auth-link--neutral {
+    color: var(--foreground);
+}
+
+html.dark-mode .auth-link--neutral {
+    color: var(--secondary);
+}
+
+.auth-footer {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 2px dashed var(--border);
+    text-align: center;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--muted-foreground);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+@media (max-width: 520px) {
+    .auth-page {
+        padding: 1.25rem 0.75rem 2.5rem;
+    }
+    .auth-card {
+        box-shadow: 5px 5px 0px var(--shadow-color);
+    }
+    .auth-body {
+        padding: 24px 18px 22px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .neo-input,
+    .neo-btn,
+    .auth-tab,
+    .auth-pw-toggle {
+        transition: none !important;
+    }
+    .neo-input:focus,
+    .neo-btn:hover,
+    .neo-btn:active {
+        transform: none !important;
+    }
+}

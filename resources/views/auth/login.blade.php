@@ -1,98 +1,114 @@
 @extends('layouts.app')
 
-@section('title', 'Login - E-Learning')
-
-@section('styles')
-    <style>
-        .login-wrapper {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 40px 15px;
-            min-height: calc(100vh - 380px);
-        }
-        .login-box {
-            width: 100%;
-            max-width: 450px;
-            background-color: var(--card);
-            border: 4px solid var(--border);
-            box-shadow: 8px 8px 0px var(--shadow-color);
-            padding: 40px 30px;
-            border-radius: 0;
-            position: relative;
-        }
-        .login-title {
-            font-size: 2.2rem;
-            font-weight: 900;
-            text-transform: uppercase;
-            margin-bottom: 10px;
-            color: var(--foreground);
-            letter-spacing: -0.04em;
-        }
-        .login-subtitle {
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--muted-foreground);
-            margin-bottom: 30px;
-        }
-        .error-alert {
-            background-color: var(--primary);
-            color: var(--primary-foreground);
-            border: 3px solid var(--border);
-            box-shadow: 4px 4px 0px var(--shadow-color);
-            padding: 12px 15px;
-            font-weight: 800;
-            margin-bottom: 20px;
-            text-transform: uppercase;
-            font-size: 0.9rem;
-        }
-    </style>
-@endsection
+@section('title', 'Masuk - E-Learning Programming')
 
 @section('content')
-    <div class="neo-container login-wrapper">
-        <div class="login-box">
-            <div class="login-title">Selamat Datang</div>
-            <div class="login-subtitle">Silakan masuk ke akun E-Learning Anda</div>
+    <main class="neo-container auth-page">
+        <section class="auth-card" aria-labelledby="auth-heading">
+            <nav class="auth-tabs" aria-label="Navigasi autentikasi">
+                <a href="{{ route('login') }}" class="auth-tab is-active" aria-current="page">
+                    <i class='bx bx-log-in' aria-hidden="true"></i> Masuk
+                </a>
+                <a href="{{ route('register') }}" class="auth-tab">
+                    <i class='bx bx-user-plus' aria-hidden="true"></i> Daftar
+                </a>
+            </nav>
 
-            @if (!empty($error))
-                <div class="error-alert">
-                    <i class='bx bxs-error-alt'></i> {{ $error }}
-                </div>
-            @endif
+            <div class="auth-body">
+                <h1 id="auth-heading" class="auth-title">Selamat Datang</h1>
+                <p class="auth-subtitle">Masuk ke akun E-Learning Programming Anda.</p>
 
-            @if (request()->query('msg') == 'register_success' || session('msg') == 'register_success')
-                <div class="error-alert" style="background-color: #a8e6cf; color: #000;">
-                    <i class='bx bxs-check-circle'></i> Registrasi berhasil! Silakan login dengan akun baru Anda.
-                </div>
-            @endif
-
-            <form method="POST" action="{{ route('login') }}">
-                @csrf
-                @if (request()->query('redirect') === 'enroll')
-                    <input type="hidden" name="redirect" value="enroll">
+                @if (!empty($error))
+                    <div class="auth-alert auth-alert--error" role="alert">
+                        <i class='bx bxs-error-alt' aria-hidden="true"></i>
+                        <span>{{ $error }}</span>
+                    </div>
                 @endif
-                
-                <div class="neo-form-group">
-                    <label class="neo-label" for="username">Username</label>
-                    <input type="text" id="username" name="username" class="neo-input" placeholder="Masukkan username..." value="{{ old('username') }}" required autocomplete="off">
+
+                @if (request()->query('msg') == 'register_success' || session('msg') == 'register_success')
+                    <div class="auth-alert auth-alert--success" role="status">
+                        <i class='bx bxs-check-circle' aria-hidden="true"></i>
+                        <span>Registrasi berhasil! Silakan masuk dengan akun baru Anda.</span>
+                    </div>
+                @endif
+
+                <form method="POST" action="{{ route('login') }}" data-auth-form>
+                    @csrf
+                    @if (request()->query('redirect') === 'enroll' || old('redirect') === 'enroll')
+                        <input type="hidden" name="redirect" value="enroll">
+                    @endif
+
+                    <div class="auth-field">
+                        <label class="neo-label" for="username">Username</label>
+                        <input
+                            type="text"
+                            id="username"
+                            name="username"
+                            class="neo-input auth-input"
+                            placeholder="Contoh: student_adit"
+                            value="{{ old('username') }}"
+                            required
+                            autocomplete="username"
+                            autocapitalize="none"
+                            autocorrect="off"
+                            spellcheck="false"
+                            enterkeyhint="next"
+                            data-error="username-error"
+                        >
+                        <div id="username-error" class="auth-field-error">
+                            <span role="img" aria-label="Error">!</span> Masukkan username akun Anda.
+                        </div>
+                    </div>
+
+                    <div class="auth-field">
+                        <div class="auth-label-row">
+                            <label class="neo-label" for="password">Password</label>
+                        </div>
+                        <div class="auth-pw-wrap">
+                            <input
+                                type="password"
+                                id="password"
+                                name="password"
+                                class="neo-input auth-input"
+                                placeholder="Masukkan password Anda"
+                                required
+                                autocomplete="current-password"
+                                enterkeyhint="done"
+                                data-error="password-error"
+                            >
+                            <button
+                                type="button"
+                                class="auth-pw-toggle"
+                                data-toggle-password
+                                aria-controls="password"
+                                aria-pressed="false"
+                                aria-label="Tampilkan password"
+                            >
+                                <i class='bx bx-show' aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <div id="password-error" class="auth-field-error">
+                            <span role="img" aria-label="Error">!</span> Masukkan password akun Anda.
+                        </div>
+                        <div class="auth-helper-row">
+                            <a href="{{ route('home') }}#kontak" class="auth-link auth-link--neutral">Lupa password? Hubungi Admin</a>
+                        </div>
+                    </div>
+
+                    <button type="submit" name="login" class="neo-btn auth-submit" data-loading-text="Sedang masuk...">
+                        Masuk ke Akun
+                    </button>
+                </form>
+
+                <div class="auth-footer">
+                    <span>Belum punya akun?</span>
+                    <a href="{{ route('register') }}" class="auth-link">Daftar di sini</a>
                 </div>
-
-                <div class="neo-form-group" style="margin-bottom: 30px;">
-                    <label class="neo-label" for="password">Password</label>
-                    <input type="password" id="password" name="password" class="neo-input" placeholder="Masukkan password..." required>
-                </div>
-
-                <button type="submit" name="login" class="neo-btn" style="width: 100%; font-size: 1.1rem; padding: 15px;">
-                    MASUK SEKARANG &rarr;
-                </button>
-            </form>
-
-            <!-- Link ke Halaman Registrasi -->
-            <div style="margin-top: 25px; text-align: center; border-top: 2px dashed var(--border); padding-top: 20px;">
-                <span style="font-weight: 600; color: var(--muted-foreground);">Belum punya akun?</span>
-                <a href="{{ route('register') }}" style="font-weight: 900; color: var(--primary); text-decoration: none; text-transform: uppercase; margin-left: 5px; border-bottom: 2px solid var(--primary);">Daftar di sini</a>
             </div>
-        </div>
-    </div>
+        </section>
+    </main>
+@endsection
+
+@section('scripts')
+    <script src="{{ asset('assets/js/auth-form.js') }}?v={{ file_exists(public_path('assets/js/auth-form.js')) ? filemtime(public_path('assets/js/auth-form.js')) : time() }}"></script>
 @endsection

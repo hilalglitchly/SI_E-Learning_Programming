@@ -1,94 +1,183 @@
 @extends('layouts.app')
 
-@section('title', 'Daftar Akun - E-Learning')
-
-@section('styles')
-    <style>
-        .login-wrapper {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: calc(100vh - 380px);
-            padding: 40px 15px;
-        }
-        .login-box {
-            width: 100%;
-            max-width: 450px;
-            background-color: var(--card);
-            border: 4px solid var(--border);
-            box-shadow: 8px 8px 0px var(--shadow-color);
-            padding: 40px 30px;
-            border-radius: 0;
-            position: relative;
-        }
-        .login-title {
-            font-size: 2.2rem;
-            font-weight: 900;
-            text-transform: uppercase;
-            margin-bottom: 10px;
-            color: var(--foreground);
-            letter-spacing: -0.04em;
-        }
-        .login-subtitle {
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--muted-foreground);
-            margin-bottom: 30px;
-        }
-        .error-alert {
-            background-color: var(--primary);
-            color: var(--primary-foreground);
-            border: 3px solid var(--border);
-            box-shadow: 4px 4px 0px var(--shadow-color);
-            padding: 12px 15px;
-            font-weight: 800;
-            margin-bottom: 20px;
-            text-transform: uppercase;
-            font-size: 0.9rem;
-        }
-    </style>
-@endsection
+@section('title', 'Daftar Akun - E-Learning Programming')
 
 @section('content')
-    <div class="neo-container login-wrapper">
-        <div class="login-box">
-            <div class="login-title">Buat Akun</div>
-            <div class="login-subtitle">Daftar sekarang untuk mulai belajar</div>
+    <main class="neo-container auth-page">
+        <section class="auth-card" aria-labelledby="auth-heading">
+            <nav class="auth-tabs" aria-label="Navigasi autentikasi">
+                <a href="{{ route('login') }}" class="auth-tab">
+                    <i class='bx bx-log-in' aria-hidden="true"></i> Masuk
+                </a>
+                <a href="{{ route('register') }}" class="auth-tab is-active" aria-current="page">
+                    <i class='bx bx-user-plus' aria-hidden="true"></i> Daftar
+                </a>
+            </nav>
 
-            @if (!empty($error))
-                <div class="error-alert">
-                    <i class='bx bxs-error-alt'></i> {{ $error }}
+            <div class="auth-body">
+                <h1 id="auth-heading" class="auth-title">Buat Akun Murid</h1>
+                <p class="auth-subtitle">Lengkapi data di bawah untuk mulai belajar di kelas gratis maupun Pro.</p>
+
+                @if (!empty($error))
+                    <div class="auth-alert auth-alert--error" role="alert">
+                        <i class='bx bxs-error-alt' aria-hidden="true"></i>
+                        <span>{{ $error }}</span>
+                    </div>
+                @endif
+
+                <form method="POST" action="{{ route('register') }}" data-auth-form>
+                    @csrf
+
+                    <div class="auth-field">
+                        <label class="neo-label" for="nama_lengkap">Nama Lengkap</label>
+                        <input
+                            type="text"
+                            id="nama_lengkap"
+                            name="nama_lengkap"
+                            class="neo-input auth-input"
+                            placeholder="Contoh: Adit Pratama"
+                            value="{{ old('nama_lengkap') }}"
+                            minlength="2"
+                            maxlength="100"
+                            required
+                            autocomplete="name"
+                            enterkeyhint="next"
+                            data-error="nama-error"
+                        >
+                        <div id="nama-error" class="auth-field-error">
+                            <span role="img" aria-label="Error">!</span> Masukkan nama lengkap Anda (2–100 karakter).
+                        </div>
+                    </div>
+
+                    <div class="auth-field">
+                        <label class="neo-label" for="email">Alamat Email</label>
+                        <span id="email-hint" class="auth-hint">Format: nama@domain.com</span>
+                        <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            class="neo-input auth-input"
+                            placeholder="nama@email.com"
+                            value="{{ old('email') }}"
+                            maxlength="100"
+                            required
+                            autocomplete="email"
+                            spellcheck="false"
+                            enterkeyhint="next"
+                            aria-describedby="email-hint"
+                            data-error="email-error"
+                        >
+                        <div id="email-error" class="auth-field-error">
+                            <span role="img" aria-label="Error">!</span> Masukkan alamat email aktif dengan format nama@domain.com.
+                        </div>
+                    </div>
+
+                    <div class="auth-field">
+                        <label class="neo-label" for="username">Username</label>
+                        <span id="username-hint" class="auth-hint">3–50 karakter: huruf, angka, titik (.), garis bawah (_), atau tanda hubung (-).</span>
+                        <input
+                            type="text"
+                            id="username"
+                            name="username"
+                            class="neo-input auth-input"
+                            placeholder="Contoh: adit.pratama"
+                            value="{{ old('username') }}"
+                            pattern="[a-zA-Z0-9_.-]{3,50}"
+                            minlength="3"
+                            maxlength="50"
+                            required
+                            autocomplete="username"
+                            autocapitalize="none"
+                            autocorrect="off"
+                            spellcheck="false"
+                            enterkeyhint="next"
+                            aria-describedby="username-hint"
+                            data-error="username-error"
+                        >
+                        <div id="username-error" class="auth-field-error">
+                            <span role="img" aria-label="Error">!</span> Gunakan 3–50 karakter (huruf, angka, titik, garis bawah, atau tanda hubung tanpa spasi).
+                        </div>
+                    </div>
+
+                    <div class="auth-field">
+                        <label class="neo-label" for="password">Password</label>
+                        <span id="password-hint" class="auth-hint">Minimal 8 karakter.</span>
+                        <div class="auth-pw-wrap">
+                            <input
+                                type="password"
+                                id="password"
+                                name="password"
+                                class="neo-input auth-input"
+                                placeholder="Minimal 8 karakter"
+                                minlength="8"
+                                required
+                                autocomplete="new-password"
+                                enterkeyhint="next"
+                                aria-describedby="password-hint"
+                                data-error="password-error"
+                            >
+                            <button
+                                type="button"
+                                class="auth-pw-toggle"
+                                data-toggle-password
+                                aria-controls="password"
+                                aria-pressed="false"
+                                aria-label="Tampilkan password"
+                            >
+                                <i class='bx bx-show' aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <div id="password-error" class="auth-field-error">
+                            <span role="img" aria-label="Error">!</span> Password minimal harus 8 karakter.
+                        </div>
+                    </div>
+
+                    <div class="auth-field">
+                        <label class="neo-label" for="konfirmasi_password">Konfirmasi Password</label>
+                        <div class="auth-pw-wrap">
+                            <input
+                                type="password"
+                                id="konfirmasi_password"
+                                name="konfirmasi_password"
+                                class="neo-input auth-input"
+                                placeholder="Ulangi password di atas"
+                                minlength="8"
+                                required
+                                autocomplete="new-password"
+                                enterkeyhint="done"
+                                data-match-password="password"
+                                data-error="konfirmasi-error"
+                            >
+                            <button
+                                type="button"
+                                class="auth-pw-toggle"
+                                data-toggle-password
+                                aria-controls="konfirmasi_password"
+                                aria-pressed="false"
+                                aria-label="Tampilkan konfirmasi password"
+                            >
+                                <i class='bx bx-show' aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <div id="konfirmasi-error" class="auth-field-error">
+                            <span role="img" aria-label="Error">!</span> Konfirmasi password harus sama dengan password di atas.
+                        </div>
+                    </div>
+
+                    <button type="submit" name="register" class="neo-btn auth-submit auth-submit--register" data-loading-text="Mendaftarkan akun...">
+                        Buat Akun Sekarang
+                    </button>
+                </form>
+
+                <div class="auth-footer">
+                    <span>Sudah punya akun?</span>
+                    <a href="{{ route('login') }}" class="auth-link auth-link--neutral">Masuk di sini</a>
                 </div>
-            @endif
-
-            <form method="POST" action="{{ route('register') }}">
-                @csrf
-                
-                <div class="neo-form-group">
-                    <label class="neo-label" for="username">Username</label>
-                    <input type="text" id="username" name="username" class="neo-input" placeholder="Pilih username unik (3–50 karakter)..." value="{{ old('username') }}" pattern="[a-zA-Z0-9_.-]{3,50}" minlength="3" maxlength="50" required autocomplete="off">
-                </div>
-
-                <div class="neo-form-group">
-                    <label class="neo-label" for="password">Password</label>
-                    <input type="password" id="password" name="password" class="neo-input" placeholder="Buat password (min. 8 karakter)..." minlength="8" required autocomplete="new-password">
-                </div>
-
-                <div class="neo-form-group" style="margin-bottom: 30px;">
-                    <label class="neo-label" for="konfirmasi_password">Konfirmasi Password</label>
-                    <input type="password" id="konfirmasi_password" name="konfirmasi_password" class="neo-input" placeholder="Ulangi password..." minlength="8" required autocomplete="new-password">
-                </div>
-
-                <button type="submit" name="register" class="neo-btn" style="width: 100%; font-size: 1.1rem; padding: 15px; background-color: var(--secondary); color: #000;">
-                    DAFTAR SEKARANG &rarr;
-                </button>
-            </form>
-
-            <!-- Link kembali ke Login -->
-            <div style="margin-top: 25px; text-align: center; border-top: 2px dashed var(--border); padding-top: 20px;">
-                <span style="font-weight: 600; color: var(--muted-foreground);">Sudah punya akun?</span>
-                <a href="{{ route('login') }}" style="font-weight: 900; color: var(--foreground); text-decoration: none; text-transform: uppercase; margin-left: 5px; border-bottom: 2px solid var(--foreground);">Login di sini</a>
             </div>
-        </div>
-    </div>
+        </section>
+    </main>
+@endsection
+
+@section('scripts')
+    <script src="{{ asset('assets/js/auth-form.js') }}?v={{ file_exists(public_path('assets/js/auth-form.js')) ? filemtime(public_path('assets/js/auth-form.js')) : time() }}"></script>
 @endsection

@@ -18,7 +18,7 @@ class AuthController extends Controller
             return redirect()->route('dashboard');
         }
 
-        $error = session('login_error', '');
+        $error = session('auth_error', session('login_error', ''));
         return view('auth.login', compact('error'));
     }
 
@@ -26,10 +26,12 @@ class AuthController extends Controller
     {
         $username = trim((string) $request->input('username'));
         $password = (string) $request->input('password');
+        $redirectParam = $request->input('redirect') === 'enroll' ? ['redirect' => 'enroll'] : [];
 
         if ($username === '' || $password === '') {
-            $error = "Username dan password wajib diisi!";
-            return view('auth.login', compact('error'));
+            return redirect()->route('login', $redirectParam)
+                ->withInput($request->only('username'))
+                ->with('auth_error', 'Username dan password wajib diisi!');
         }
 
         $userKey = 'login:' . strtolower($username) . '|' . $request->ip();
@@ -38,8 +40,9 @@ class AuthController extends Controller
         if (RateLimiter::tooManyAttempts($userKey, 5) || RateLimiter::tooManyAttempts($ipKey, 20)) {
             $seconds = max(RateLimiter::availableIn($userKey), RateLimiter::availableIn($ipKey));
             $sisa_waktu = max(1, (int) ceil($seconds / 60));
-            $error = "Terlalu banyak percobaan gagal! Silakan tunggu {$sisa_waktu} menit lagi.";
-            return view('auth.login', compact('error'));
+            return redirect()->route('login', $redirectParam)
+                ->withInput($request->only('username'))
+                ->with('auth_error', "Terlalu banyak percobaan gagal! Silakan tunggu {$sisa_waktu} menit lagi.");
         }
 
         $user = User::where('username', $username)->first();
@@ -66,9 +69,10 @@ class AuthController extends Controller
         RateLimiter::hit($ipKey, 900);
 
         $sisa_percobaan = max(0, 5 - RateLimiter::attempts($userKey));
-        $error = "Username atau password salah! (Sisa percobaan: {$sisa_percobaan})";
 
-        return view('auth.login', compact('error'));
+        return redirect()->route('login', $redirectParam)
+            ->withInput($request->only('username'))
+            ->with('auth_error', "Username atau password salah! (Sisa percobaan: {$sisa_percobaan})");
     }
 
     public function showRegister()
@@ -77,40 +81,54 @@ class AuthController extends Controller
             return redirect()->route('dashboard');
         }
 
-        $error = '';
+        $error = session('auth_error', '');
         return view('auth.register', compact('error'));
     }
 
     public function register(Request $request)
     {
+        $nama_lengkap = trim((string) $request->input('nama_lengkap'));
+        $email = strtolower(trim((string) $request->input('email')));
         $username = trim((string) $request->input('username'));
         $password = (string) $request->input('password');
         $konfirmasi = (string) $request->input('konfirmasi_password');
-        $error = '';
 
-        if ($username === '' || $password === '' || $konfirmasi === '') {
-            $error = "Semua kolom wajib diisi!";
-            return view('auth.register', compact('error'));
+        $oldInput = [
+            'nama_lengkap' => $nama_lengkap,
+            'email' => $email,
+            'username' => $username,
+        ];
+
+        if ($nama_lengkap === '' || $email === '' || $username === '' || $password === '' || $konfirmasi === '') {
+            return redirect()->route('register')->withInput($oldInput)->with('auth_error', 'Semua kolom wajib diisi!');
+        }
+
+        if (mb_strlen($nama_lengkap) < 2 || mb_strlen($nama_lengkap) > 100) {
+            return redirect()->route('register')->withInput($oldInput)->with('auth_error', 'Nama lengkap harus antara 2 hingga 100 karakter.');
+        }
+
+        if (mb_strlen($email) > 100 || preg_match('/[\r\n]/', $email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return redirect()->route('register')->withInput($oldInput)->with('auth_error', 'Format alamat email tidak valid.');
         }
 
         if (!preg_match('/^[a-zA-Z0-9_.-]{3,50}$/', $username)) {
-            $error = "Username harus 3–50 karakter dan hanya boleh huruf, angka, titik, garis bawah, atau tanda hubung.";
-            return view('auth.register', compact('error'));
+            return redirect()->route('register')->withInput($oldInput)->with('auth_error', 'Username harus 3–50 karakter dan hanya boleh huruf, angka, titik, garis bawah, atau tanda hubung.');
         }
 
         if (strlen($password) < 8) {
-            $error = "Password minimal harus 8 karakter!";
-            return view('auth.register', compact('error'));
+            return redirect()->route('register')->withInput($oldInput)->with('auth_error', 'Password minimal harus 8 karakter!');
         }
 
         if ($password !== $konfirmasi) {
-            $error = "Konfirmasi password tidak cocok!";
-            return view('auth.register', compact('error'));
+            return redirect()->route('register')->withInput($oldInput)->with('auth_error', 'Konfirmasi password tidak cocok!');
         }
 
         if (User::where('username', $username)->exists()) {
-            $error = "Username sudah digunakan, silakan pilih yang lain!";
-            return view('auth.register', compact('error'));
+            return redirect()->route('register')->withInput($oldInput)->with('auth_error', 'Username sudah digunakan, silakan pilih yang lain!');
+        }
+
+        if (Murid::whereRaw('LOWER(email) = ?', [$email])->exists()) {
+            return redirect()->route('register')->withInput($oldInput)->with('auth_error', 'Alamat email sudah terdaftar, silakan gunakan email lain atau langsung masuk.');
         }
 
         try {
@@ -122,13 +140,12 @@ class AuthController extends Controller
                 'role' => 'Murid',
             ]);
 
-            $nim_dummy = 'NIM' . date('ymd') . random_int(100000, 999999);
-            $email_dummy = strtolower($username) . '@student.local';
+            $nim_auto = 'NIM' . date('ymd') . random_int(100000, 999999);
 
             Murid::create([
-                'nim' => $nim_dummy,
-                'nama_murid' => $username,
-                'email' => $email_dummy,
+                'nim' => $nim_auto,
+                'nama_murid' => $nama_lengkap,
+                'email' => $email,
                 'id_user' => $user->id_user,
             ]);
 
@@ -138,8 +155,7 @@ class AuthController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             report($e);
-            $error = "Gagal mendaftar. Silakan coba lagi beberapa saat.";
-            return view('auth.register', compact('error'));
+            return redirect()->route('register')->withInput($oldInput)->with('auth_error', 'Gagal mendaftar. Silakan coba lagi beberapa saat.');
         }
     }
 
