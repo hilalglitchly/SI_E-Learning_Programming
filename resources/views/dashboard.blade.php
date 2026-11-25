@@ -418,6 +418,42 @@
                         </div>
                     </div>
 
+                    <!-- RINGKASAN KEUANGAN LANGGANAN PRO -->
+                    <div class="neo-box" style="margin-bottom: 28px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid var(--border); padding-bottom: 10px; margin-bottom: 18px; flex-wrap: wrap; gap: 8px;">
+                            <h3 style="margin: 0; font-size: 1.15rem; font-weight: 900; text-transform: uppercase; display: flex; align-items: center; gap: 8px;">
+                                <i class='bx bxs-crown' style="color: #D97706;" aria-hidden="true"></i> Ringkasan Keuangan Langganan Pro
+                            </h3>
+                            <a href="{{ route('laporan.index') }}" class="pimpinan-no-print auth-link auth-link--neutral" style="min-height: 36px; font-size: 0.85rem;">Buka Laporan Lengkap</a>
+                        </div>
+                        <div class="pimpinan-stat-grid" style="margin-bottom: 0;">
+                            <div class="pimpinan-stat-card" style="background-color: #EDE9FE; color: #000;">
+                                <div>
+                                    <div class="pimpinan-stat-label">Pendapatan Disetujui</div>
+                                    <div style="font-size: 1.55rem; font-weight: 900; line-height: 1.15;">Rp {{ number_format($statProRevenue, 0, ',', '.') }}</div>
+                                </div>
+                            </div>
+                            <div class="pimpinan-stat-card" style="background-color: #DCFCE7; color: #000;">
+                                <div>
+                                    <div class="pimpinan-stat-label">Member Pro Aktif</div>
+                                    <div style="font-size: 1.85rem; font-weight: 900; line-height: 1.1;">{{ $statProAktif }}</div>
+                                </div>
+                            </div>
+                            <div class="pimpinan-stat-card" style="background-color: #FEF9C3; color: #000;">
+                                <div>
+                                    <div class="pimpinan-stat-label">Menunggu Verifikasi</div>
+                                    <div style="font-size: 1.85rem; font-weight: 900; line-height: 1.1;">{{ $statProPending }}</div>
+                                </div>
+                            </div>
+                            <div class="pimpinan-stat-card" style="background-color: #FEE2E2; color: #000;">
+                                <div>
+                                    <div class="pimpinan-stat-label">Pembayaran Ditolak</div>
+                                    <div style="font-size: 1.85rem; font-weight: 900; line-height: 1.1;">{{ $statProDitolak }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="neo-box" style="margin-bottom: 28px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid var(--border); padding-bottom: 12px; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
                             <h3 style="margin: 0; font-size: 1.25rem; font-weight: 900; text-transform: uppercase;">
@@ -448,7 +484,12 @@
                                             <tr>
                                                 <td style="text-align: center; font-weight: 900;">{{ $idx + 1 }}</td>
                                                 <td><span class="badge-kode" style="margin: 0;">KLS-{{ $rk['id_kelas'] }}</span></td>
-                                                <td style="font-weight: 800;">{{ $rk['nama_kelas'] }}</td>
+                                                <td style="font-weight: 800;">
+                                                    {{ $rk['nama_kelas'] }}
+                                                    @if (!empty($rk['is_premium']))
+                                                        <span class="neo-status-pill neo-status-pill--pro" style="margin-left: 6px; padding: 1px 6px; font-size: 0.68rem;">PRO</span>
+                                                    @endif
+                                                </td>
                                                 <td>
                                                     @if ($rk['nama_pengajar'])
                                                         <span style="font-weight: 600;">{{ $rk['nama_pengajar'] }}</span>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Kelas;
+use App\Models\Langganan;
 use App\Models\Murid;
 use App\Models\Pengajar;
 use App\Models\Submission;
@@ -27,6 +28,10 @@ class DashboardController extends Controller
         $statPengajar = 0;
         $statMurid = 0;
         $statSubmission = 0;
+        $statProRevenue = 0;
+        $statProAktif = 0;
+        $statProPending = 0;
+        $statProDitolak = 0;
         $rekapKelas = [];
 
         if (strtolower($role) === 'admin') {
@@ -60,9 +65,13 @@ class DashboardController extends Controller
             $statPengajar = Pengajar::count();
             $statMurid = Murid::count();
             $statSubmission = Submission::count();
+            $statProRevenue = (int) Langganan::where('status', 'active')->sum('nominal');
+            $statProAktif = Langganan::where('status', 'active')->where('tgl_berakhir', '>', now())->count();
+            $statProPending = Langganan::where('status', 'pending')->count();
+            $statProDitolak = Langganan::where('status', 'rejected')->count();
 
             $rows = DB::select("
-                SELECT k.id_kelas, k.nama_kelas, k.deskripsi, p.nama_pengajar,
+                SELECT k.id_kelas, k.nama_kelas, k.deskripsi, k.is_premium, p.nama_pengajar,
                        (SELECT COUNT(*) FROM tb_peserta_kelas pk WHERE pk.id_kelas = k.id_kelas) AS jumlah_murid,
                        (SELECT COUNT(*) FROM tb_materi m WHERE m.id_kelas = k.id_kelas) AS jumlah_materi,
                        (SELECT COUNT(*) FROM tb_tugas t WHERE t.id_kelas = k.id_kelas) AS jumlah_tugas,
@@ -112,6 +121,10 @@ class DashboardController extends Controller
             'statPengajar',
             'statMurid',
             'statSubmission',
+            'statProRevenue',
+            'statProAktif',
+            'statProPending',
+            'statProDitolak',
             'rekapKelas'
         ));
     }

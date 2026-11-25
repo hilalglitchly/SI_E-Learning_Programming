@@ -140,4 +140,88 @@ class SubscriptionTest extends TestCase
         $this->assertFalse($u1->fresh()->hasActiveSubscription());
         $this->assertTrue(Notifikasi::where('id_user', $u1->id_user)->where('judul', 'Pembayaran Pro Ditolak')->exists());
     }
+
+    public function test_student_cancel_pending_invoice_access_admin_package_edit_and_pimpinan_finance(): void
+    {
+        Storage::fake('local');
+
+        $admin = User::create(['username' => 'adm_fin', 'password' => Hash::make('StrongPass123!'), 'role' => 'Admin']);
+        $pimpinan = User::create(['username' => 'pmp_fin', 'password' => Hash::make('StrongPass123!'), 'role' => 'Pimpinan']);
+        $u1 = User::create(['username' => 'mrd_fin1', 'password' => Hash::make('StrongPass123!'), 'role' => 'Murid']);
+        $u2 = User::create(['username' => 'mrd_fin2', 'password' => Hash::make('StrongPass123!'), 'role' => 'Murid']);
+        Murid::create(['nim' => '8101', 'nama_murid' => 'Murid Fin 1', 'email' => 'mf1@test.local', 'id_user' => $u1->id_user]);
+        Murid::create(['nim' => '8102', 'nama_murid' => 'Murid Fin 2', 'email' => 'mf2@test.local', 'id_user' => $u2->id_user]);
+
+        // 1. Submit pending order, u2 cannot cancel u1's order, u1 can cancel own pending order & proof is deleted
+        $this->actingAs($u1)->post(route('langganan.checkout'), [
+            'id_paket' => 1,
+            'bukti_bayar' => UploadedFile::fake()->create('wrong.pdf', 50, 'application/pdf'),
+        ])->assertRedirect(route('langganan.index'));
+
+        $firstOrder = Langganan::where('id_user', $u1->id_user)->firstOrFail();
+        $firstProof = 'private/bukti_bayar/' . $firstOrder->bukti_bayar;
+        Storage::disk('local')->assertExists($firstProof);
+
+        // Pending order cannot open invoice yet
+        $this->actingAs($u1)->get(route('langganan.invoice', $firstOrder->id_langganan))->assertStatus(403);
+
+        // Other student cannot cancel u1's order
+        $this->actingAs($u2)->delete(route('langganan.cancel', $firstOrder->id_langganan))
+            ->assertRedirect(route('langganan.index'));
+        $this->assertDatabaseHas('tb_langganan', ['id_langganan' => $firstOrder->id_langganan]);
+
+        // Owning student cancels pending order cleanly
+        $this->actingAs($u1)->delete(route('langganan.cancel', $firstOrder->id_langganan))
+            ->assertRedirect(route('langganan.index'));
+        $this->assertDatabaseCount('tb_langganan', 0);
+        Storage::disk('local')->assertMissing($firstProof);
+
+        // 2. Resubmit & admin approves; owner & admin can view printable invoice, u2 gets 403
+        $this->actingAs($u1)->post(route('langganan.checkout'), [
+            'id_paket' => 1,
+            'bukti_bayar' => UploadedFile::fake()->create('valid.pdf', 80, 'application/pdf'),
+        ])->assertRedirect(route('langganan.index'));
+
+        $order = Langganan::where('id_user', $u1->id_user)->firstOrFail();
+        $this->actingAs($admin)->get(route('admin.langganan.index', ['status' => 'pending', 'q' => $order->kode_invoice]))
+            ->assertStatus(200)
+            ->assertSee($order->kode_invoice);
+
+        $this->actingAs($admin)->post(route('admin.langganan.approve', $order->id_langganan))
+            ->assertRedirect(route('admin.langganan.index'));
+
+        $this->actingAs($u1)->get(route('langganan.invoice', $order->id_langganan))
+            ->assertStatus(200)
+            ->assertSee($order->kode_invoice)
+            ->assertSee('49.000');
+        $this->actingAs($admin)->get(route('langganan.invoice', $order->id_langganan))->assertStatus(200);
+        $this->actingAs($u2)->get(route('langganan.invoice', $order->id_langganan))->assertStatus(403);
+
+        // 3. Admin updates package price; non-admin blocked (403); existing invoice nominal snapshot unchanged
+        $this->actingAs($u1)->post(route('admin.langganan.paket.update', 1), [
+            'nama_paket' => 'Hack', 'harga' => 1000, 'durasi_hari' => 30,
+        ])->assertStatus(403);
+
+        $this->actingAs($admin)->post(route('admin.langganan.paket.update', 1), [
+            'nama_paket' => 'Pro Bulanan Plus',
+            'harga' => 59000,
+            'durasi_hari' => 30,
+            'deskripsi' => 'Paket Pro diperbarui',
+            'is_active' => 1,
+        ])->assertRedirect(route('admin.langganan.index'));
+
+        $this->assertDatabaseHas('tb_paket_langganan', ['id_paket' => 1, 'nama_paket' => 'Pro Bulanan Plus', 'harga' => 59000]);
+        $this->assertSame(49000, $order->fresh()->nominal);
+
+        // 4. Pimpinan sees Pro finance summary on both dashboard & laporan
+        $this->actingAs($pimpinan)->get(route('dashboard'))
+            ->assertStatus(200)
+            ->assertSee('Ringkasan Keuangan Langganan Pro')
+            ->assertSee('Rp 49.000');
+
+        $this->actingAs($pimpinan)->get(route('laporan.index'))
+            ->assertStatus(200)
+            ->assertSee('Ringkasan Keuangan Langganan Pro')
+            ->assertSee('Rp 49.000');
+    }
 }

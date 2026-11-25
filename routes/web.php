@@ -56,7 +56,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/kuis/{id_kuis}/kerjakan', [KuisController::class, 'submit'])->whereNumber('id_kuis')->name('kuis.submit');
         Route::get('/langganan', [LanggananController::class, 'index'])->name('langganan.index');
         Route::post('/langganan/checkout', [LanggananController::class, 'checkout'])->middleware('throttle:5,10')->name('langganan.checkout');
+        Route::delete('/langganan/{id}/cancel', [LanggananController::class, 'cancelPending'])->whereNumber('id')->name('langganan.cancel');
     });
+
+    Route::get('/langganan/{id}/invoice', [LanggananController::class, 'invoice'])->whereNumber('id')->name('langganan.invoice');
 
     // Detail Kelas & Stream/Feed/Materi/Tugas/Diskusi/Kuis Actions
     Route::get('/kelas/{id}', [KelasController::class, 'show'])->whereNumber('id')->name('kelas.show');
@@ -131,6 +134,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [LanggananController::class, 'adminIndex'])->name('index');
         Route::post('/{id}/approve', [LanggananController::class, 'approve'])->whereNumber('id')->name('approve');
         Route::post('/{id}/reject', [LanggananController::class, 'reject'])->whereNumber('id')->name('reject');
+        Route::post('/paket/{id}', [LanggananController::class, 'updatePaket'])->whereNumber('id')->name('paket.update');
     });
 });
 

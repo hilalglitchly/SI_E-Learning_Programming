@@ -164,11 +164,26 @@
                                         @endif
                                     </td>
                                     <td style="font-size: 0.85rem;">
-                                        @if ($row->bukti_bayar)
-                                            <a href="{{ route('files.bukti_bayar', ['id' => $row->id_langganan]) }}" target="_blank" rel="noopener" class="auth-link auth-link--neutral" style="min-height: 36px;">
-                                                <i class='bx bx-download' aria-hidden="true"></i> Unduh Bukti
-                                            </a>
-                                        @endif
+                                        <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 10px;">
+                                            @if ($row->bukti_bayar)
+                                                <a href="{{ route('files.bukti_bayar', ['id' => $row->id_langganan]) }}" target="_blank" rel="noopener" class="auth-link auth-link--neutral" style="min-height: 36px;">
+                                                    <i class='bx bx-download' aria-hidden="true"></i> Unduh Bukti
+                                                </a>
+                                            @endif
+                                            @if ($row->status === 'active')
+                                                <a href="{{ route('langganan.invoice', ['id' => $row->id_langganan]) }}" class="neo-btn" style="min-height: 36px; padding: 4px 10px; font-size: 0.76rem; background-color: var(--secondary); color: #000;">
+                                                    <i class='bx bxs-printer' aria-hidden="true"></i> Struk
+                                                </a>
+                                            @elseif ($row->status === 'pending')
+                                                <form method="POST" action="{{ route('langganan.cancel', ['id' => $row->id_langganan]) }}" onsubmit="event.preventDefault(); NeoConfirm('Batalkan Pengajuan', 'Batalkan pengajuan pembayaran {{ $row->kode_invoice }}? Anda bisa mengirim ulang bukti baru setelah dibatalkan.', () => this.submit());" style="display: inline;">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="neo-btn neo-btn--danger" style="min-height: 36px; padding: 4px 10px; font-size: 0.76rem;">
+                                                        <i class='bx bx-x' aria-hidden="true"></i> Batalkan
+                                                    </button>
+                                                </form>
+                                            @endif
+                                        </div>
                                         @if ($row->catatan_admin)
                                             <div style="color: var(--muted-foreground); margin-top: 4px;">{{ $row->catatan_admin }}</div>
                                         @endif

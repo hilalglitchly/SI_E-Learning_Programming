@@ -194,7 +194,7 @@
             text-align: center;
         }
         .badge-aktif {
-            background-color: #4CAF50;
+            background-color: #047857;
             color: #fff;
             font-weight: 900;
             font-size: 0.72rem;
@@ -379,7 +379,7 @@
          ===================================================== -->
     <div class="lap-header">
         <div>
-            <div class="lap-header-tag">📊 Sistem Informasi E-Learning Programming &bull; Semester {{ date('n') <= 6 ? 'Genap ' . (date('Y') - 1) . '/' . date('Y') : 'Ganjil ' . date('Y') . '/' . (date('Y') + 1) }}</div>
+            <div class="lap-header-tag">Sistem Informasi E-Learning Programming &bull; Semester {{ date('n') <= 6 ? 'Genap ' . (date('Y') - 1) . '/' . date('Y') : 'Ganjil ' . date('Y') . '/' . (date('Y') + 1) }}</div>
             <h1>
                 Laporan Rekapitulasi Sistem
             </h1>
@@ -452,13 +452,48 @@
 
         <!-- Total Pengumpulan -->
         <div class="lap-stat-card" style="background-color: #FED7AA; color: #000;">
-            <div class="lap-stat-icon" style="background-color: #EA580C; color: #FFF;">
-                <i class='bx bxs-file-import'></i>
+            <div class="lap-stat-icon" style="background-color: #C2410C; color: #FFF;">
+                <i class='bx bxs-file-import' aria-hidden="true"></i>
             </div>
             <div>
                 <div class="lap-stat-label">Pengumpulan</div>
                 <div class="lap-stat-num" data-target="{{ $totalSubmission }}">{{ $totalSubmission }}</div>
                 <div class="lap-stat-sub">Jawaban Masuk</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RINGKASAN KEUANGAN LANGGANAN PRO -->
+    <div class="lap-table-box" style="margin-bottom: 28px;">
+        <div class="lap-table-head">
+            <h2>
+                <i class='bx bxs-crown' style="color: #D97706;" aria-hidden="true"></i> Ringkasan Keuangan Langganan Pro
+            </h2>
+        </div>
+        <div class="neo-grid-4">
+            <div class="lap-stat-card" style="background-color: #EDE9FE; color: #000;">
+                <div>
+                    <div class="lap-stat-label">Pendapatan Disetujui</div>
+                    <div style="font-size: 1.5rem; font-weight: 900; line-height: 1.15;">Rp {{ number_format($totalPendapatanPro, 0, ',', '.') }}</div>
+                </div>
+            </div>
+            <div class="lap-stat-card" style="background-color: #DCFCE7; color: #000;">
+                <div>
+                    <div class="lap-stat-label">Member Pro Aktif</div>
+                    <div style="font-size: 1.85rem; font-weight: 900; line-height: 1.1;">{{ $totalProAktif }}</div>
+                </div>
+            </div>
+            <div class="lap-stat-card" style="background-color: #FEF9C3; color: #000;">
+                <div>
+                    <div class="lap-stat-label">Transaksi Pending</div>
+                    <div style="font-size: 1.85rem; font-weight: 900; line-height: 1.1;">{{ $totalProPending }}</div>
+                </div>
+            </div>
+            <div class="lap-stat-card" style="background-color: #FEE2E2; color: #000;">
+                <div>
+                    <div class="lap-stat-label">Transaksi Ditolak</div>
+                    <div style="font-size: 1.85rem; font-weight: 900; line-height: 1.1;">{{ $totalProDitolak }}</div>
+                </div>
             </div>
         </div>
     </div>
@@ -515,7 +550,12 @@
                                 <td>
                                     <span class="badge-kode" style="margin: 0; font-size: 0.78rem;">KLS-{{ $row['id_kelas'] }}</span>
                                 </td>
-                                <td style="font-weight: 800;">{{ $row['nama_kelas'] }}</td>
+                                <td style="font-weight: 800;">
+                                    {{ $row['nama_kelas'] }}
+                                    @if (!empty($row['is_premium']))
+                                        <span class="neo-status-pill neo-status-pill--pro" style="margin-left: 6px; padding: 1px 6px; font-size: 0.68rem;">PRO</span>
+                                    @endif
+                                </td>
                                 <td>
                                     @if ($row['nama_pengajar'])
                                         <div style="font-weight: 700;">{{ $row['nama_pengajar'] }}</div>

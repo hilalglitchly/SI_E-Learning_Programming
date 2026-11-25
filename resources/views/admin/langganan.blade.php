@@ -38,6 +38,33 @@
                 </div>
             </div>
 
+            <!-- Filter Status & Pencarian Invoice -->
+            <div class="enroll-toolbar" style="margin-bottom: 18px;">
+                <div class="enroll-filters" role="navigation" aria-label="Filter status transaksi">
+                    @foreach (['all' => 'Semua', 'pending' => 'Pending', 'active' => 'Aktif', 'rejected' => 'Ditolak'] as $key => $label)
+                        <a
+                            href="{{ route('admin.langganan.index', array_filter(['status' => $key === 'all' ? null : $key, 'q' => $searchQuery ?: null])) }}"
+                            class="enroll-filter-btn {{ $statusFilter === $key ? 'is-active' : '' }}"
+                            style="display: inline-flex; align-items: center; text-decoration: none;"
+                            @if ($statusFilter === $key) aria-current="page" @endif
+                        >
+                            {{ $label }}
+                        </a>
+                    @endforeach
+                </div>
+
+                <form method="GET" action="{{ route('admin.langganan.index') }}" style="display: flex; gap: 8px; flex: 1 1 280px; max-width: 420px;">
+                    @if ($statusFilter !== 'all')
+                        <input type="hidden" name="status" value="{{ $statusFilter }}">
+                    @endif
+                    <input type="search" name="q" value="{{ $searchQuery }}" class="neo-input" placeholder="Cari invoice, username, atau nama..." aria-label="Cari transaksi langganan" style="margin: 0; background-color: var(--card);">
+                    <button type="submit" class="neo-btn" style="min-height: 44px; padding: 8px 16px;">Cari</button>
+                    @if ($searchQuery !== '' || $statusFilter !== 'all')
+                        <a href="{{ route('admin.langganan.index') }}" class="neo-btn" style="min-height: 44px; padding: 8px 12px; background-color: var(--muted); color: var(--foreground);">Reset</a>
+                    @endif
+                </form>
+            </div>
+
             <!-- Tabel Transaksi -->
             <div class="neo-box">
                 <div style="overflow-x: auto;">
@@ -110,6 +137,13 @@
                                                 @if ($order->verifier)
                                                     <br><small>Oleh: {{ $order->verifier->username }}</small>
                                                 @endif
+                                                @if ($order->status === 'active')
+                                                    <div style="margin-top: 6px;">
+                                                        <a href="{{ route('langganan.invoice', ['id' => $order->id_langganan]) }}" class="neo-btn" style="min-height: 36px; padding: 4px 10px; font-size: 0.75rem; background-color: var(--secondary); color: #000;">
+                                                            <i class='bx bxs-printer' aria-hidden="true"></i> Struk
+                                                        </a>
+                                                    </div>
+                                                @endif
                                             </div>
                                         @endif
                                     </td>
@@ -137,6 +171,50 @@
                     </div>
                 @endif
             </div>
+
+            <!-- Kelola Paket & Harga Langganan -->
+            <details class="neo-box" style="margin-top: 24px;">
+                <summary style="font-weight: 900; font-size: 1.15rem; text-transform: uppercase; cursor: pointer; display: flex; align-items: center; justify-content: space-between; min-height: 44px;">
+                    <span style="display: inline-flex; align-items: center; gap: 8px;">
+                        <i class='bx bxs-crown' style="color: #D97706;" aria-hidden="true"></i> Kelola Paket &amp; Harga Langganan ({{ $paketList->count() }})
+                    </span>
+                    <span style="font-size: 0.8rem; color: var(--muted-foreground);">Klik untuk ubah harga / durasi</span>
+                </summary>
+
+                <div class="neo-grid-2" style="margin-top: 18px; padding-top: 18px; border-top: 3px solid var(--border);">
+                    @foreach ($paketList as $paket)
+                        <form method="POST" action="{{ route('admin.langganan.paket.update', ['id' => $paket->id_paket]) }}" style="border: 3px solid var(--border); padding: 18px; background-color: var(--muted);">
+                            @csrf
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <span class="badge-kode" style="margin: 0;">PKT-{{ $paket->id_paket }}</span>
+                                <label style="display: inline-flex; align-items: center; gap: 6px; font-weight: 800; font-size: 0.82rem; cursor: pointer;">
+                                    <input type="checkbox" name="is_active" value="1" {{ $paket->is_active ? 'checked' : '' }}>
+                                    Aktif
+                                </label>
+                            </div>
+                            <div class="neo-form-group" style="margin-bottom: 12px;">
+                                <label class="neo-label" for="paket-nama-{{ $paket->id_paket }}">Nama Paket</label>
+                                <input type="text" id="paket-nama-{{ $paket->id_paket }}" name="nama_paket" class="neo-input" value="{{ $paket->nama_paket }}" maxlength="80" required>
+                            </div>
+                            <div class="neo-grid-2" style="gap: 12px; margin-bottom: 12px;">
+                                <div>
+                                    <label class="neo-label" for="paket-harga-{{ $paket->id_paket }}">Harga (Rp)</label>
+                                    <input type="number" id="paket-harga-{{ $paket->id_paket }}" name="harga" class="neo-input" value="{{ $paket->harga }}" min="1000" max="50000000" required>
+                                </div>
+                                <div>
+                                    <label class="neo-label" for="paket-durasi-{{ $paket->id_paket }}">Durasi (Hari)</label>
+                                    <input type="number" id="paket-durasi-{{ $paket->id_paket }}" name="durasi_hari" class="neo-input" value="{{ $paket->durasi_hari }}" min="1" max="3650" required>
+                                </div>
+                            </div>
+                            <div class="neo-form-group" style="margin-bottom: 14px;">
+                                <label class="neo-label" for="paket-desc-{{ $paket->id_paket }}">Deskripsi</label>
+                                <input type="text" id="paket-desc-{{ $paket->id_paket }}" name="deskripsi" class="neo-input" value="{{ $paket->deskripsi }}" maxlength="255">
+                            </div>
+                            <button type="submit" class="neo-btn" style="width: 100%; min-height: 44px; background-color: var(--secondary); color: #000;">Simpan Perubahan Paket</button>
+                        </form>
+                    @endforeach
+                </div>
+            </details>
 
         </div>
     </main>

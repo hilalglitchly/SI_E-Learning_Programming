@@ -137,31 +137,153 @@ class LanggananController extends Controller
             ->with('tipe_pesan', 'success');
     }
 
-    public function adminIndex()
+    public function cancelPending($id)
+    {
+        $user = auth()->user();
+        if (!$user->isMurid()) {
+            abort(403, 'Akses ditolak.');
+        }
+
+        $deleted = DB::transaction(function () use ($id, $user) {
+            $order = Langganan::where('id_langganan', (int) $id)
+                ->where('id_user', $user->id_user)
+                ->lockForUpdate()
+                ->first();
+
+            if (!$order || $order->status !== 'pending') {
+                return null;
+            }
+
+            $info = ['invoice' => $order->kode_invoice, 'file' => $order->bukti_bayar];
+            $order->delete();
+            return $info;
+        });
+
+        if (!$deleted) {
+            return redirect()->route('langganan.index')
+                ->with('pesan', 'Pengajuan tidak ditemukan atau sudah diproses Admin.')
+                ->with('tipe_pesan', 'error');
+        }
+
+        $safeName = basename((string) ($deleted['file'] ?? ''));
+        if ($safeName !== '' && $safeName !== '.' && $safeName !== '..') {
+            Storage::disk('local')->delete('private/bukti_bayar/' . $safeName);
+        }
+
+        return redirect()->route('langganan.index')
+            ->with('pesan', "Pengajuan {$deleted['invoice']} dibatalkan. Anda dapat mengirim pengajuan baru.")
+            ->with('tipe_pesan', 'success');
+    }
+
+    public function invoice($id)
+    {
+        $order = Langganan::with(['user.murid', 'paket', 'verifier'])->findOrFail((int) $id);
+        $user = auth()->user();
+
+        if (!$user->isAdmin() && (int) $order->id_user !== (int) $user->id_user) {
+            abort(403, 'Akses ditolak.');
+        }
+
+        if ($order->status !== 'active') {
+            abort(403, 'Struk invoice hanya tersedia untuk pembayaran yang sudah disetujui.');
+        }
+
+        return view('langganan.invoice', [
+            'order' => $order,
+            'payment' => config('app.payment'),
+        ]);
+    }
+
+    public function adminIndex(Request $request)
     {
         if (!auth()->user()->isAdmin()) {
             abort(403, 'Akses ditolak.');
         }
 
-        $orders = Langganan::with(['user.murid', 'paket', 'verifier'])
+        $statusFilter = strtolower(trim((string) $request->query('status', 'all')));
+        if (!in_array($statusFilter, ['all', 'pending', 'active', 'rejected'], true)) {
+            $statusFilter = 'all';
+        }
+        $searchQuery = trim((string) $request->query('q', ''));
+
+        $query = Langganan::with(['user.murid', 'paket', 'verifier']);
+
+        if ($statusFilter !== 'all') {
+            $query->where('status', $statusFilter);
+        }
+
+        if ($searchQuery !== '') {
+            $like = '%' . $searchQuery . '%';
+            $query->where(function ($q) use ($like) {
+                $q->where('kode_invoice', 'like', $like)
+                    ->orWhereHas('user', function ($uq) use ($like) {
+                        $uq->where('username', 'like', $like)
+                            ->orWhereHas('murid', function ($mq) use ($like) {
+                                $mq->where('nama_murid', 'like', $like)
+                                    ->orWhere('nim', 'like', $like);
+                            });
+                    });
+            });
+        }
+
+        $orders = $query
             ->orderByRaw("CASE WHEN status = 'pending' THEN 0 ELSE 1 END")
             ->orderByDesc('id_langganan')
-            ->paginate(25);
+            ->paginate(25)
+            ->withQueryString();
 
         $pendingCount = Langganan::where('status', 'pending')->count();
         $activeCount = Langganan::where('status', 'active')
             ->where('tgl_berakhir', '>', now())
             ->count();
         $totalRevenue = (int) Langganan::where('status', 'active')->sum('nominal');
+        $paketList = PaketLangganan::orderBy('id_paket', 'asc')->get();
 
         return view('admin.langganan', [
             'orders' => $orders,
             'pendingCount' => $pendingCount,
             'activeCount' => $activeCount,
             'totalRevenue' => $totalRevenue,
+            'paketList' => $paketList,
+            'statusFilter' => $statusFilter,
+            'searchQuery' => $searchQuery,
             'pesan' => session('pesan', ''),
             'tipe_pesan' => session('tipe_pesan', ''),
         ]);
+    }
+
+    public function updatePaket(Request $request, $id)
+    {
+        if (!auth()->user()->isAdmin()) {
+            abort(403, 'Akses ditolak.');
+        }
+
+        $paket = PaketLangganan::findOrFail((int) $id);
+
+        $validator = Validator::make($request->all(), [
+            'nama_paket' => ['required', 'string', 'max:80'],
+            'harga' => ['required', 'integer', 'min:1000', 'max:50000000'],
+            'durasi_hari' => ['required', 'integer', 'min:1', 'max:3650'],
+            'deskripsi' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()->route('admin.langganan.index')
+                ->with('pesan', 'Gagal memperbarui paket: pastikan nama valid, harga minimal Rp 1.000, dan durasi 1–3650 hari.')
+                ->with('tipe_pesan', 'error');
+        }
+
+        $paket->update([
+            'nama_paket' => trim((string) $request->input('nama_paket')),
+            'harga' => (int) $request->input('harga'),
+            'durasi_hari' => (int) $request->input('durasi_hari'),
+            'deskripsi' => trim((string) $request->input('deskripsi', '')),
+            'is_active' => $request->boolean('is_active'),
+        ]);
+
+        return redirect()->route('admin.langganan.index')
+            ->with('pesan', "Paket '{$paket->nama_paket}' berhasil diperbarui.")
+            ->with('tipe_pesan', 'success');
     }
 
     public function approve(Request $request, $id)

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Kelas;
+use App\Models\Langganan;
 use App\Models\Murid;
 use App\Models\Pengajar;
 use App\Models\Submission;
@@ -27,11 +28,17 @@ class LaporanController extends Controller
         $totalTugas = Tugas::count();
         $totalSubmission = Submission::count();
 
+        $totalPendapatanPro = (int) Langganan::where('status', 'active')->sum('nominal');
+        $totalProAktif = Langganan::where('status', 'active')->where('tgl_berakhir', '>', now())->count();
+        $totalProPending = Langganan::where('status', 'pending')->count();
+        $totalProDitolak = Langganan::where('status', 'rejected')->count();
+
         $rows = DB::select("
             SELECT 
                 k.id_kelas,
                 k.nama_kelas,
                 k.deskripsi,
+                k.is_premium,
                 p.nama_pengajar,
                 p.nidn,
                 (SELECT COUNT(*) FROM tb_peserta_kelas pk WHERE pk.id_kelas = k.id_kelas) AS jumlah_peserta,
@@ -54,6 +61,10 @@ class LaporanController extends Controller
             'totalMurid',
             'totalTugas',
             'totalSubmission',
+            'totalPendapatanPro',
+            'totalProAktif',
+            'totalProPending',
+            'totalProDitolak',
             'dataLaporan'
         ));
     }
