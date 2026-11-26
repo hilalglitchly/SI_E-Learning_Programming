@@ -71,7 +71,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/kuis/{id_kuis}/kerjakan', [KuisController::class, 'submit'])->whereNumber('id_kuis')->name('kuis.submit');
         Route::get('/langganan', [LanggananController::class, 'index'])->name('langganan.index');
         Route::post('/langganan/checkout', [LanggananController::class, 'checkout'])->middleware('throttle:5,10')->name('langganan.checkout');
-        Route::delete('/langganan/{id}/cancel', [LanggananController::class, 'cancelPending'])->whereNumber('id')->name('langganan.cancel');
+        Route::post('/langganan/{id}/sync', [LanggananController::class, 'syncStatus'])->whereNumber('id')->middleware('throttle:15,5')->name('langganan.sync');
+        Route::post('/langganan/{id}/cancel', [LanggananController::class, 'cancel'])->whereNumber('id')->name('langganan.cancel');
     });
 
     Route::get('/langganan/{id}/invoice', [LanggananController::class, 'invoice'])->whereNumber('id')->name('langganan.invoice');
@@ -93,7 +94,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/files/materi/{id}', [KelasController::class, 'downloadMateri'])->whereNumber('id')->name('files.materi');
     Route::get('/files/tugas/{id}', [KelasController::class, 'downloadTugas'])->whereNumber('id')->name('files.tugas');
     Route::get('/files/submission/{id}', [KelasController::class, 'downloadSubmission'])->whereNumber('id')->name('files.submission');
-    Route::get('/files/bukti-bayar/{id}', [LanggananController::class, 'downloadBukti'])->whereNumber('id')->name('files.bukti_bayar');
 
     // Tugas Global & Penilaian
     Route::get('/tugas', [TugasController::class, 'index'])->name('tugas.index');
@@ -147,8 +147,7 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('admin/langganan')->name('admin.langganan.')->middleware('role:admin')->group(function () {
         Route::get('/', [LanggananController::class, 'adminIndex'])->name('index');
-        Route::post('/{id}/approve', [LanggananController::class, 'approve'])->whereNumber('id')->name('approve');
-        Route::post('/{id}/reject', [LanggananController::class, 'reject'])->whereNumber('id')->name('reject');
+        Route::post('/{id}/sync', [LanggananController::class, 'adminSyncStatus'])->whereNumber('id')->name('sync');
         Route::post('/paket/{id}', [LanggananController::class, 'updatePaket'])->whereNumber('id')->name('paket.update');
     });
 });

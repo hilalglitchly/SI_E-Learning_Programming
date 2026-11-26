@@ -87,9 +87,11 @@
             <div>
                 <div style="font-size: 0.78rem; font-weight: 900; text-transform: uppercase; color: var(--muted-foreground); margin-bottom: 4px;">Detail Pembayaran</div>
                 <div style="font-size: 0.92rem; font-weight: 700;">
-                    Metode: Transfer Bank {{ $payment['bank_name'] ?? 'BCA' }}<br>
-                    Rekening: {{ $payment['account_number'] ?? '-' }}<br>
-                    Verifikator: {{ $order->verifier->username ?? 'Admin' }}
+                    Gateway: Midtrans Snap<br>
+                    Metode: {{ $order->payment_type ? strtoupper(str_replace('_', ' ', $order->payment_type)) : 'Pembayaran Online' }}<br>
+                    @if ($order->gateway_transaction_id)
+                        ID Transaksi: {{ $order->gateway_transaction_id }}
+                    @endif
                 </div>
             </div>
         </div>

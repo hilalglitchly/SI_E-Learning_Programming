@@ -1,15 +1,20 @@
 @extends('layouts.app')
 
-@section('title', 'Verifikasi Pembayaran - Admin E-Learning')
+@section('title', 'Riwayat Pembayaran Midtrans - Admin E-Learning')
 
 @section('content')
     <main class="neo-layout-container">
         <div class="neo-content-inner" style="max-width: 1400px; margin: 0 auto; padding-top: 20px;">
 
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 24px;">
-                <h1 style="margin: 0; font-size: clamp(1.45rem, 3vw, 2rem); display: flex; align-items: center; gap: 10px; text-transform: uppercase;">
-                    <i class='bx bx-credit-card' aria-hidden="true"></i> Verifikasi Pembayaran Langganan
-                </h1>
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                    <h1 style="margin: 0; font-size: clamp(1.45rem, 3vw, 2rem); display: flex; align-items: center; gap: 10px; text-transform: uppercase;">
+                        <i class='bx bx-credit-card' aria-hidden="true"></i> Pembayaran Midtrans
+                    </h1>
+                    <span style="background: {{ $midtransIsProd ? '#047857' : '#000' }}; color: {{ $midtransIsProd ? '#fff' : '#FFD700' }}; padding: 4px 10px; font-size: 0.75rem; font-weight: 900; border: 2px solid #000;">
+                        {{ $midtransIsProd ? 'PRODUCTION' : 'SANDBOX' }}
+                    </span>
+                </div>
                 <a href="{{ route('dashboard') }}" class="neo-btn" style="min-height: 44px; background-color: var(--muted); color: var(--foreground); padding: 8px 16px; font-size: 0.85rem;">
                     <i class='bx bx-left-arrow-alt' aria-hidden="true"></i> Kembali ke Dashboard
                 </a>
@@ -22,10 +27,16 @@
                 </div>
             @endif
 
-            <!-- Ringkasan (3 Kolom Penuh — Bebas Ruang Kosong Kanan) -->
+            @if (!$midtransConfigured)
+                <div class="neo-box" role="alert" style="background-color: #FEF08A; color: #000; border-left: 10px solid #DC2626; font-weight: 700;">
+                    <code>MIDTRANS_SERVER_KEY</code> / <code>MIDTRANS_CLIENT_KEY</code> belum diisi di <code>.env</code>. Webhook Midtrans endpoint: <code>{{ url('/api/midtrans/webhook') }}</code>
+                </div>
+            @endif
+
+            <!-- Ringkasan (3 Kolom Penuh) -->
             <div class="neo-grid-3" style="margin-bottom: 28px;">
                 <div class="neo-box" style="margin: 0; background-color: #FEF08A; color: #000; border-color: #000; box-shadow: 6px 6px 0px #000;">
-                    <div style="font-size: 0.8rem; font-weight: 800; text-transform: uppercase;">Menunggu Verifikasi</div>
+                    <div style="font-size: 0.8rem; font-weight: 800; text-transform: uppercase;">Menunggu Pembayaran</div>
                     <div style="font-size: 2.1rem; font-weight: 900; line-height: 1.15;">{{ $pendingCount }}</div>
                 </div>
                 <div class="neo-box" style="margin: 0; background-color: #BBF7D0; color: #000; border-color: #000; box-shadow: 6px 6px 0px #000;">
@@ -33,7 +44,7 @@
                     <div style="font-size: 2.1rem; font-weight: 900; line-height: 1.15;">{{ $activeCount }}</div>
                 </div>
                 <div class="neo-box" style="margin: 0; background-color: #DDD6FE; color: #000; border-color: #000; box-shadow: 6px 6px 0px #000;">
-                    <div style="font-size: 0.8rem; font-weight: 800; text-transform: uppercase;">Total Pendapatan Disetujui</div>
+                    <div style="font-size: 0.8rem; font-weight: 800; text-transform: uppercase;">Total Pendapatan Lunas</div>
                     <div style="font-size: 1.85rem; font-weight: 900; line-height: 1.15;">Rp {{ number_format($totalRevenue, 0, ',', '.') }}</div>
                 </div>
             </div>
@@ -41,7 +52,7 @@
             <!-- Filter Status & Pencarian Invoice -->
             <div class="enroll-toolbar" style="margin-bottom: 18px;">
                 <div class="enroll-filters" role="navigation" aria-label="Filter status transaksi">
-                    @foreach (['all' => 'Semua', 'pending' => 'Pending', 'active' => 'Aktif', 'rejected' => 'Ditolak'] as $key => $label)
+                    @foreach (['all' => 'Semua', 'pending' => 'Pending', 'active' => 'Aktif', 'cancelled' => 'Dibatalkan', 'expired' => 'Kedaluwarsa', 'failed' => 'Gagal'] as $key => $label)
                         <a
                             href="{{ route('admin.langganan.index', array_filter(['status' => $key === 'all' ? null : $key, 'q' => $searchQuery ?: null])) }}"
                             class="enroll-filter-btn {{ $statusFilter === $key ? 'is-active' : '' }}"
@@ -74,9 +85,9 @@
                                 <th>Invoice &amp; Tanggal</th>
                                 <th>Murid</th>
                                 <th>Paket &amp; Nominal</th>
-                                <th>Bukti Transfer</th>
+                                <th>Metode Midtrans</th>
                                 <th>Status</th>
-                                <th style="width: 320px;">Aksi Verifikasi</th>
+                                <th style="width: 240px;">Sinkronisasi / Info</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -94,49 +105,43 @@
                                         <div style="font-weight: 800;">{{ $order->paket->nama_paket ?? '-' }}</div>
                                         <div style="font-weight: 900;">Rp {{ number_format($order->nominal, 0, ',', '.') }}</div>
                                     </td>
-                                    <td>
-                                        @if ($order->bukti_bayar)
-                                            <a href="{{ route('files.bukti_bayar', ['id' => $order->id_langganan]) }}" target="_blank" rel="noopener" class="neo-btn" style="min-height: 40px; padding: 6px 12px; font-size: 0.78rem; background-color: var(--accent);">
-                                                <i class='bx bx-download' aria-hidden="true"></i> Lihat Bukti
-                                            </a>
+                                    <td style="font-size: 0.82rem;">
+                                        @if ($order->payment_type)
+                                            <span style="display: inline-block; background: var(--muted); border: 2px solid var(--border); padding: 2px 6px; font-weight: 800; text-transform: uppercase;">
+                                                {{ str_replace('_', ' ', $order->payment_type) }}
+                                            </span>
                                         @else
                                             <span style="color: var(--muted-foreground);">—</span>
+                                        @endif
+                                        @if ($order->gateway_transaction_id)
+                                            <div style="font-size: 0.72rem; color: var(--muted-foreground); margin-top: 4px;">ID: {{ $order->gateway_transaction_id }}</div>
                                         @endif
                                     </td>
                                     <td>
                                         @if ($order->status === 'active')
-                                            <span class="neo-status-pill neo-status-pill--success">Aktif</span>
+                                            <span class="neo-status-pill {{ $order->isCurrentlyActive() ? 'neo-status-pill--success' : 'neo-status-pill--neutral' }}">
+                                                {{ $order->isCurrentlyActive() ? 'Aktif' : 'Berakhir' }}
+                                            </span>
                                             @if ($order->tgl_berakhir)
                                                 <div style="font-size: 0.78rem; margin-top: 4px;">s/d {{ $order->tgl_berakhir->format('d M Y') }}</div>
                                             @endif
-                                        @elseif ($order->status === 'rejected')
-                                            <span class="neo-status-pill neo-status-pill--danger">Ditolak</span>
-                                        @else
+                                        @elseif ($order->status === 'pending')
                                             <span class="neo-status-pill neo-status-pill--pending">Pending</span>
+                                        @else
+                                            <span class="neo-status-pill neo-status-pill--danger">{{ strtoupper($order->status) }}</span>
                                         @endif
                                     </td>
                                     <td>
-                                        @if ($order->status === 'pending')
-                                            <form method="POST" action="{{ route('admin.langganan.approve', ['id' => $order->id_langganan]) }}" style="margin-bottom: 8px; display: flex; gap: 6px;">
+                                        @if ($order->status === 'pending' && $midtransConfigured)
+                                            <form method="POST" action="{{ route('admin.langganan.sync', ['id' => $order->id_langganan]) }}" style="margin: 0;">
                                                 @csrf
-                                                <input type="text" name="catatan_admin" class="neo-input" placeholder="Catatan persetujuan (opsional)..." maxlength="255" aria-label="Catatan persetujuan untuk {{ $order->kode_invoice }}" style="margin: 0; padding: 6px 8px; font-size: 0.82rem;">
-                                                <button type="submit" class="neo-btn neo-btn--success" style="min-height: 40px; padding: 6px 12px; font-size: 0.78rem; white-space: nowrap;">
-                                                    <i class='bx bx-check' aria-hidden="true"></i> Setujui
-                                                </button>
-                                            </form>
-                                            <form method="POST" action="{{ route('admin.langganan.reject', ['id' => $order->id_langganan]) }}" style="display: flex; gap: 6px;">
-                                                @csrf
-                                                <input type="text" name="catatan_admin" class="neo-input" placeholder="Alasan penolakan..." maxlength="255" required aria-label="Alasan penolakan untuk {{ $order->kode_invoice }}" style="margin: 0; padding: 6px 8px; font-size: 0.82rem;">
-                                                <button type="submit" class="neo-btn neo-btn--danger" style="min-height: 40px; padding: 6px 12px; font-size: 0.78rem; white-space: nowrap;">
-                                                    <i class='bx bx-x' aria-hidden="true"></i> Tolak
+                                                <button type="submit" class="neo-btn" style="min-height: 40px; padding: 6px 12px; font-size: 0.78rem; background-color: var(--accent); color: var(--accent-foreground); white-space: nowrap;">
+                                                    <i class='bx bx-refresh' aria-hidden="true"></i> Sinkronkan Status
                                                 </button>
                                             </form>
                                         @else
                                             <div style="font-size: 0.82rem; color: var(--muted-foreground);">
-                                                {{ $order->catatan_admin ?: 'Sudah diverifikasi' }}
-                                                @if ($order->verifier)
-                                                    <br><small>Oleh: {{ $order->verifier->username }}</small>
-                                                @endif
+                                                {{ $order->catatan_admin ?: ($order->gateway_status ? 'Midtrans: ' . $order->gateway_status : '—') }}
                                                 @if ($order->status === 'active')
                                                     <div style="margin-top: 6px;">
                                                         <a href="{{ route('langganan.invoice', ['id' => $order->id_langganan]) }}" class="neo-btn" style="min-height: 36px; padding: 4px 10px; font-size: 0.75rem; background-color: var(--secondary); color: #000;">

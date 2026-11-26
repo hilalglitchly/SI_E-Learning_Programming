@@ -8,12 +8,48 @@ use App\Models\PaketLangganan;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
 class LanggananController extends Controller
 {
+    // shortcut: Midtrans HTTP calls live in this controller; extract a gateway client if a second provider or payment flow is added.
+    private function midtransServerKey(): string
+    {
+        return trim((string) config('services.midtrans.server_key', ''));
+    }
+
+    private function midtransClientKey(): string
+    {
+        return trim((string) config('services.midtrans.client_key', ''));
+    }
+
+    private function midtransIsProd(): bool
+    {
+        return (bool) config('services.midtrans.is_production', false);
+    }
+
+    private function midtransConfigured(): bool
+    {
+        return $this->midtransServerKey() !== '' && $this->midtransClientKey() !== '';
+    }
+
+    private function snapBaseUrl(): string
+    {
+        return $this->midtransIsProd()
+            ? 'https://app.midtrans.com'
+            : 'https://app.sandbox.midtrans.com';
+    }
+
+    private function coreApiBaseUrl(): string
+    {
+        return $this->midtransIsProd()
+            ? 'https://api.midtrans.com'
+            : 'https://api.sandbox.midtrans.com';
+    }
+
     public function index()
     {
         $user = auth()->user();
@@ -27,14 +63,18 @@ class LanggananController extends Controller
             ->where('id_user', $user->id_user)
             ->orderByDesc('id_langganan')
             ->get();
-        $hasPending = $riwayat->contains(fn($r) => $r->status === 'pending');
+        $pendingOrder = $riwayat->first(fn($r) => $r->status === 'pending');
 
         return view('langganan.index', [
             'activeSub' => $activeSub,
             'paketList' => $paketList,
             'riwayat' => $riwayat,
-            'hasPending' => $hasPending,
-            'payment' => config('app.payment'),
+            'pendingOrder' => $pendingOrder,
+            'midtransConfigured' => $this->midtransConfigured(),
+            'midtransClientKey' => $this->midtransClientKey(),
+            'midtransIsProd' => $this->midtransIsProd(),
+            'snapJsUrl' => $this->snapBaseUrl() . '/snap/snap.js',
+            'autoPayInvoice' => session('auto_pay_invoice', ''),
             'pesan' => session('pesan', ''),
             'tipe_pesan' => session('tipe_pesan', ''),
         ]);
@@ -47,14 +87,19 @@ class LanggananController extends Controller
             abort(403, 'Akses ditolak.');
         }
 
+        if (!$this->midtransConfigured()) {
+            return redirect()->route('langganan.index')
+                ->with('pesan', 'Payment gateway Midtrans belum dikonfigurasi. Atur MIDTRANS_SERVER_KEY dan MIDTRANS_CLIENT_KEY di .env.')
+                ->with('tipe_pesan', 'error');
+        }
+
         $validator = Validator::make($request->all(), [
             'id_paket' => ['required', 'integer'],
-            'bukti_bayar' => ['required', 'file', 'max:5120', 'mimes:jpg,jpeg,png,pdf', 'mimetypes:image/jpeg,image/png,application/pdf'],
         ]);
 
         if ($validator->fails()) {
             return redirect()->route('langganan.index')
-                ->with('pesan', 'Gagal: Pilih paket valid dan unggah bukti transfer (JPG/PNG/PDF, maks. 5 MB).')
+                ->with('pesan', 'Gagal: Pilih paket langganan yang valid.')
                 ->with('tipe_pesan', 'error');
         }
 
@@ -68,116 +113,214 @@ class LanggananController extends Controller
                 ->with('tipe_pesan', 'error');
         }
 
-        $file = $request->file('bukti_bayar');
-        $ext = strtolower((string) ($file->extension() ?: $file->getClientOriginalExtension()));
-        if (!in_array($ext, ['jpg', 'jpeg', 'png', 'pdf'], true)) {
-            return redirect()->route('langganan.index')
-                ->with('pesan', 'Gagal: Ekstensi bukti transfer hanya boleh JPG, PNG, atau PDF.')
-                ->with('tipe_pesan', 'error');
-        }
+        $order = DB::transaction(function () use ($user, $paket) {
+            // Lock parent user row to serialize concurrent checkouts even when 0 pending rows exist
+            User::where('id_user', $user->id_user)->lockForUpdate()->first();
 
-        $safeName = 'bukti_' . time() . '_' . Str::random(16) . '.' . $ext;
-        $storedPath = Storage::disk('local')->putFileAs('private/bukti_bayar', $file, $safeName);
-        if (!$storedPath) {
-            return redirect()->route('langganan.index')
-                ->with('pesan', 'Gagal menyimpan berkas bukti transfer. Silakan coba lagi.')
-                ->with('tipe_pesan', 'error');
-        }
-
-        try {
-            $created = DB::transaction(function () use ($user, $paket, $safeName) {
-                // Lock parent user row to serialize concurrent checkouts even when 0 pending rows exist
-                User::where('id_user', $user->id_user)->lockForUpdate()->first();
-
-                $alreadyPending = Langganan::where('id_user', $user->id_user)
-                    ->where('status', 'pending')
-                    ->lockForUpdate()
-                    ->exists();
-
-                if ($alreadyPending) {
-                    return null;
-                }
-
-                $invoice = 'INV-' . date('Ymd') . '-' . strtoupper(Str::random(6));
-
-                return Langganan::create([
-                    'kode_invoice' => $invoice,
-                    'id_user' => $user->id_user,
-                    'id_paket' => $paket->id_paket,
-                    'nominal' => $paket->harga, // Always snapshot server-side price, never trust client input
-                    'status' => 'pending',
-                    'bukti_bayar' => $safeName,
-                    'created_at' => now(),
-                ]);
-            });
-        } catch (\Throwable $e) {
-            Storage::disk('local')->delete('private/bukti_bayar/' . $safeName);
-            throw $e;
-        }
-
-        if (!$created) {
-            Storage::disk('local')->delete('private/bukti_bayar/' . $safeName);
-            return redirect()->route('langganan.index')
-                ->with('pesan', 'Anda masih memiliki pengajuan pembayaran yang menunggu verifikasi Admin.')
-                ->with('tipe_pesan', 'error');
-        }
-
-        $admins = User::whereRaw('LOWER(role) = ?', ['admin'])->get();
-        foreach ($admins as $admin) {
-            Notifikasi::create([
-                'id_user' => $admin->id_user,
-                'judul' => 'Verifikasi Pembayaran Pro',
-                'pesan' => "{$user->username} mengunggah bukti transfer {$paket->nama_paket} ({$created->kode_invoice}).",
-                'link' => route('admin.langganan.index', [], false),
-            ]);
-        }
-
-        return redirect()->route('langganan.index')
-            ->with('pesan', "Bukti pembayaran ({$created->kode_invoice}) berhasil dikirim! Menunggu verifikasi Admin.")
-            ->with('tipe_pesan', 'success');
-    }
-
-    public function cancelPending($id)
-    {
-        $user = auth()->user();
-        if (!$user->isMurid()) {
-            abort(403, 'Akses ditolak.');
-        }
-
-        $deleted = DB::transaction(function () use ($id, $user) {
-            $order = Langganan::where('id_langganan', (int) $id)
-                ->where('id_user', $user->id_user)
+            $alreadyPending = Langganan::where('id_user', $user->id_user)
+                ->where('status', 'pending')
                 ->lockForUpdate()
-                ->first();
+                ->exists();
 
-            if (!$order || $order->status !== 'pending') {
+            if ($alreadyPending) {
                 return null;
             }
 
-            $info = ['invoice' => $order->kode_invoice, 'file' => $order->bukti_bayar];
-            $order->delete();
-            return $info;
+            $invoice = 'SUB-' . date('Ymd') . '-' . strtoupper(Str::random(6));
+
+            return Langganan::create([
+                'kode_invoice' => $invoice,
+                'id_user' => $user->id_user,
+                'id_paket' => $paket->id_paket,
+                'nominal' => $paket->harga, // Always snapshot server-side price, never trust client input
+                'status' => 'pending',
+                'gateway_status' => 'pending',
+                'created_at' => now(),
+            ]);
         });
 
-        if (!$deleted) {
+        if (!$order) {
             return redirect()->route('langganan.index')
-                ->with('pesan', 'Pengajuan tidak ditemukan atau sudah diproses Admin.')
+                ->with('pesan', 'Anda masih memiliki transaksi yang menunggu pembayaran. Selesaikan atau batalkan terlebih dahulu.')
                 ->with('tipe_pesan', 'error');
         }
 
-        $safeName = basename((string) ($deleted['file'] ?? ''));
-        if ($safeName !== '' && $safeName !== '.' && $safeName !== '..') {
-            Storage::disk('local')->delete('private/bukti_bayar/' . $safeName);
+        $murid = $user->murid;
+        $customerEmail = ($murid && filter_var($murid->email, FILTER_VALIDATE_EMAIL))
+            ? $murid->email
+            : ($user->username . '@student.local');
+
+        $payload = [
+            'transaction_details' => [
+                'order_id' => $order->kode_invoice,
+                'gross_amount' => (int) $order->nominal,
+            ],
+            'item_details' => [[
+                'id' => 'PAKET-' . $paket->id_paket,
+                'price' => (int) $order->nominal,
+                'quantity' => 1,
+                'name' => mb_substr($paket->nama_paket, 0, 50),
+            ]],
+            'customer_details' => [
+                'first_name' => mb_substr($murid->nama_murid ?? $user->username, 0, 50),
+                'email' => $customerEmail,
+            ],
+            'callbacks' => [
+                'finish' => route('langganan.index'),
+            ],
+        ];
+
+        try {
+            $response = Http::withBasicAuth($this->midtransServerKey(), '')
+                ->acceptJson()
+                ->timeout(15)
+                ->post($this->snapBaseUrl() . '/snap/v1/transactions', $payload);
+        } catch (\Throwable $e) {
+            $order->delete();
+            Log::warning('Midtrans Snap request failed', ['invoice' => $order->kode_invoice, 'error' => $e->getMessage()]);
+
+            return redirect()->route('langganan.index')
+                ->with('pesan', 'Gagal terhubung ke Midtrans. Periksa koneksi internet dan konfigurasi API key.')
+                ->with('tipe_pesan', 'error');
         }
 
+        $snapToken = trim((string) $response->json('token', ''));
+        $redirectUrl = trim((string) $response->json('redirect_url', ''));
+
+        if (!$response->successful() || $snapToken === '') {
+            $order->delete();
+            Log::warning('Midtrans Snap non-2xx response', [
+                'invoice' => $order->kode_invoice,
+                'status' => $response->status(),
+                'body' => $response->json(),
+            ]);
+
+            return redirect()->route('langganan.index')
+                ->with('pesan', 'Midtrans menolak pembuatan transaksi (HTTP ' . $response->status() . '). Periksa MIDTRANS_SERVER_KEY.')
+                ->with('tipe_pesan', 'error');
+        }
+
+        $order->update([
+            'snap_token' => $snapToken,
+            'payment_url' => $redirectUrl !== '' ? $redirectUrl : null,
+        ]);
+
         return redirect()->route('langganan.index')
-            ->with('pesan', "Pengajuan {$deleted['invoice']} dibatalkan. Anda dapat mengirim pengajuan baru.")
+            ->with('auto_pay_invoice', $order->kode_invoice)
+            ->with('pesan', "Transaksi {$order->kode_invoice} siap dibayar melalui Midtrans.")
+            ->with('tipe_pesan', 'success');
+    }
+
+    public function webhook(Request $request)
+    {
+        $serverKey = $this->midtransServerKey();
+        if ($serverKey === '') {
+            return response()->json(['message' => 'Payment gateway not configured'], 503);
+        }
+
+        $orderId = (string) $request->input('order_id', '');
+        $statusCode = (string) $request->input('status_code', '');
+        $grossAmount = (string) $request->input('gross_amount', '');
+        $signatureKey = (string) $request->input('signature_key', '');
+
+        if ($orderId === '' || $statusCode === '' || $grossAmount === '' || $signatureKey === '') {
+            return response()->json(['message' => 'Incomplete payload'], 400);
+        }
+
+        $expectedSignature = hash('sha512', $orderId . $statusCode . $grossAmount . $serverKey);
+        if (!hash_equals($expectedSignature, $signatureKey)) {
+            return response()->json(['message' => 'Invalid signature'], 403);
+        }
+
+        $order = Langganan::where('kode_invoice', $orderId)->first();
+        if (!$order) {
+            return response()->json(['message' => 'Order not found'], 404);
+        }
+
+        $outcome = $this->applyMidtransStatus($order, $request->all());
+        if ($outcome === 'amount_mismatch') {
+            Log::warning('Midtrans webhook gross_amount mismatch', [
+                'invoice' => $orderId,
+                'expected' => $order->nominal,
+                'received' => $grossAmount,
+            ]);
+
+            return response()->json(['message' => 'Amount mismatch'], 400);
+        }
+
+        return response()->json(['message' => 'OK', 'status' => $outcome]);
+    }
+
+    public function syncStatus($id)
+    {
+        $user = auth()->user();
+        $order = Langganan::findOrFail((int) $id);
+
+        if (!$user->isMurid() || (int) $order->id_user !== (int) $user->id_user) {
+            abort(403, 'Akses ditolak.');
+        }
+
+        [$ok, $message] = $this->fetchAndSyncOrder($order);
+
+        return redirect()->route('langganan.index')
+            ->with('pesan', $message)
+            ->with('tipe_pesan', $ok ? 'success' : 'error');
+    }
+
+    public function cancel($id)
+    {
+        $user = auth()->user();
+        $order = Langganan::findOrFail((int) $id);
+
+        if (!$user->isMurid() || (int) $order->id_user !== (int) $user->id_user) {
+            abort(403, 'Akses ditolak.');
+        }
+
+        if ($order->status !== 'pending') {
+            return redirect()->route('langganan.index')
+                ->with('pesan', 'Hanya transaksi berstatus menunggu pembayaran yang dapat dibatalkan.')
+                ->with('tipe_pesan', 'error');
+        }
+
+        if ($this->midtransConfigured()) {
+            try {
+                $res = Http::withBasicAuth($this->midtransServerKey(), '')
+                    ->acceptJson()
+                    ->timeout(10)
+                    ->post($this->coreApiBaseUrl() . '/v2/' . urlencode($order->kode_invoice) . '/cancel');
+
+                // HTTP 412 from Midtrans means the transaction already settled/changed state; sync instead of cancelling
+                if ($res->status() === 412 || (string) $res->json('status_code') === '412') {
+                    [$ok, $message] = $this->fetchAndSyncOrder($order);
+
+                    return redirect()->route('langganan.index')
+                        ->with('pesan', $message)
+                        ->with('tipe_pesan', $ok ? 'success' : 'error');
+                }
+            } catch (\Throwable $e) {
+                Log::info('Midtrans cancel best-effort skipped', ['invoice' => $order->kode_invoice, 'error' => $e->getMessage()]);
+            }
+        }
+
+        DB::transaction(function () use ($order) {
+            $locked = Langganan::where('id_langganan', $order->id_langganan)->lockForUpdate()->first();
+            if ($locked && $locked->status === 'pending') {
+                $locked->update([
+                    'status' => 'cancelled',
+                    'gateway_status' => 'cancel',
+                    'catatan_admin' => 'Dibatalkan oleh pengguna.',
+                ]);
+            }
+        });
+
+        return redirect()->route('langganan.index')
+            ->with('pesan', "Transaksi {$order->kode_invoice} dibatalkan.")
             ->with('tipe_pesan', 'success');
     }
 
     public function invoice($id)
     {
-        $order = Langganan::with(['user.murid', 'paket', 'verifier'])->findOrFail((int) $id);
+        $order = Langganan::with(['user.murid', 'paket'])->findOrFail((int) $id);
         $user = auth()->user();
 
         if (!$user->isAdmin() && (int) $order->id_user !== (int) $user->id_user) {
@@ -185,12 +328,11 @@ class LanggananController extends Controller
         }
 
         if ($order->status !== 'active') {
-            abort(403, 'Struk invoice hanya tersedia untuk pembayaran yang sudah disetujui.');
+            abort(403, 'Struk invoice hanya tersedia untuk pembayaran yang sudah lunas.');
         }
 
         return view('langganan.invoice', [
             'order' => $order,
-            'payment' => config('app.payment'),
         ]);
     }
 
@@ -201,12 +343,13 @@ class LanggananController extends Controller
         }
 
         $statusFilter = strtolower(trim((string) $request->query('status', 'all')));
-        if (!in_array($statusFilter, ['all', 'pending', 'active', 'rejected'], true)) {
+        $allowedStatuses = ['all', 'pending', 'active', 'cancelled', 'expired', 'failed', 'refunded'];
+        if (!in_array($statusFilter, $allowedStatuses, true)) {
             $statusFilter = 'all';
         }
         $searchQuery = trim((string) $request->query('q', ''));
 
-        $query = Langganan::with(['user.murid', 'paket', 'verifier']);
+        $query = Langganan::with(['user.murid', 'paket']);
 
         if ($statusFilter !== 'all') {
             $query->where('status', $statusFilter);
@@ -216,6 +359,7 @@ class LanggananController extends Controller
             $like = '%' . $searchQuery . '%';
             $query->where(function ($q) use ($like) {
                 $q->where('kode_invoice', 'like', $like)
+                    ->orWhere('gateway_transaction_id', 'like', $like)
                     ->orWhereHas('user', function ($uq) use ($like) {
                         $uq->where('username', 'like', $like)
                             ->orWhereHas('murid', function ($mq) use ($like) {
@@ -247,6 +391,8 @@ class LanggananController extends Controller
             'paketList' => $paketList,
             'statusFilter' => $statusFilter,
             'searchQuery' => $searchQuery,
+            'midtransConfigured' => $this->midtransConfigured(),
+            'midtransIsProd' => $this->midtransIsProd(),
             'pesan' => session('pesan', ''),
             'tipe_pesan' => session('tipe_pesan', ''),
         ]);
@@ -286,127 +432,179 @@ class LanggananController extends Controller
             ->with('tipe_pesan', 'success');
     }
 
-    public function approve(Request $request, $id)
+    public function adminSyncStatus($id)
     {
-        $admin = auth()->user();
-        if (!$admin->isAdmin()) {
+        if (!auth()->user()->isAdmin()) {
             abort(403, 'Akses ditolak.');
         }
 
-        $catatan = mb_substr(trim((string) $request->input('catatan_admin', '')), 0, 255);
+        $order = Langganan::findOrFail((int) $id);
+        [$ok, $message] = $this->fetchAndSyncOrder($order);
 
-        $result = DB::transaction(function () use ($id, $admin, $catatan) {
-            $order = Langganan::with('paket')->where('id_langganan', (int) $id)->lockForUpdate()->firstOrFail();
-            if ($order->status !== 'pending') {
-                return ['ok' => false, 'order' => $order];
-            }
+        return redirect()->route('admin.langganan.index')
+            ->with('pesan', $message)
+            ->with('tipe_pesan', $ok ? 'success' : 'error');
+    }
 
-            $existingActive = Langganan::where('id_user', $order->id_user)
-                ->where('status', 'active')
-                ->where('tgl_berakhir', '>', now())
-                ->orderByDesc('tgl_berakhir')
+    private function fetchAndSyncOrder(Langganan $order): array
+    {
+        if (!$this->midtransConfigured()) {
+            return [false, 'Midtrans belum dikonfigurasi di .env.'];
+        }
+
+        try {
+            $res = Http::withBasicAuth($this->midtransServerKey(), '')
+                ->acceptJson()
+                ->timeout(15)
+                ->get($this->coreApiBaseUrl() . '/v2/' . urlencode($order->kode_invoice) . '/status');
+        } catch (\Throwable $e) {
+            Log::warning('Midtrans status check failed', ['invoice' => $order->kode_invoice, 'error' => $e->getMessage()]);
+            return [false, 'Gagal terhubung ke server Midtrans untuk mengecek status.'];
+        }
+
+        $body = $res->json();
+        $code = (string) ($body['status_code'] ?? $res->status());
+
+        if ($code === '404') {
+            return [false, "Transaksi {$order->kode_invoice} belum dipilih metode pembayarannya di popup Midtrans."];
+        }
+
+        if (!$res->successful() && $code !== '200' && $code !== '201') {
+            return [false, 'Gagal mengecek status Midtrans (HTTP ' . $res->status() . ').'];
+        }
+
+        $outcome = $this->applyMidtransStatus($order, is_array($body) ? $body : []);
+
+        return match ($outcome) {
+            'active' => [true, "Pembayaran {$order->kode_invoice} lunas! Langganan Pro Anda sudah aktif."],
+            'pending' => [true, "Transaksi {$order->kode_invoice} masih menunggu pembayaran."],
+            'amount_mismatch' => [false, 'Nominal pembayaran Midtrans tidak cocok dengan tagihan.'],
+            default => [true, "Status transaksi {$order->kode_invoice}: " . strtoupper($outcome) . '.'],
+        };
+    }
+
+    private function applyMidtransStatus(Langganan $order, array $payload): string
+    {
+        $txStatus = strtolower((string) ($payload['transaction_status'] ?? ''));
+        $fraudStatus = strtolower((string) ($payload['fraud_status'] ?? 'accept'));
+        $paymentType = isset($payload['payment_type']) ? mb_substr((string) $payload['payment_type'], 0, 40) : null;
+        $txId = isset($payload['transaction_id']) ? mb_substr((string) $payload['transaction_id'], 0, 100) : null;
+        $grossAmountRaw = $payload['gross_amount'] ?? null;
+
+        $isPaid = ($txStatus === 'settlement') || ($txStatus === 'capture' && $fraudStatus === 'accept');
+        $isPending = $txStatus === 'pending' || ($txStatus === 'capture' && $fraudStatus === 'challenge');
+        $isRefunded = in_array($txStatus, ['refund', 'partial_refund', 'chargeback'], true);
+
+        $closedStatus = match ($txStatus) {
+            'expire' => 'expired',
+            'cancel' => 'cancelled',
+            'deny', 'failure' => 'failed',
+            default => null,
+        };
+
+        return DB::transaction(function () use ($order, $txStatus, $paymentType, $txId, $grossAmountRaw, $isPaid, $isPending, $isRefunded, $closedStatus) {
+            $locked = Langganan::with('paket')
+                ->where('id_langganan', $order->id_langganan)
                 ->lockForUpdate()
                 ->first();
 
-            // Stack renewal period if student already has remaining active time
-            $start = $existingActive ? $existingActive->tgl_berakhir->copy() : now();
-            $durasi = max(1, (int) ($order->paket->durasi_hari ?? 30));
-            $end = $start->copy()->addDays($durasi);
-
-            $order->update([
-                'status' => 'active',
-                'tgl_mulai' => $start,
-                'tgl_berakhir' => $end,
-                'catatan_admin' => $catatan !== '' ? $catatan : 'Pembayaran diverifikasi.',
-                'verified_by' => $admin->id_user,
-                'verified_at' => now(),
-            ]);
-
-            Notifikasi::create([
-                'id_user' => $order->id_user,
-                'judul' => 'Langganan Pro Aktif!',
-                'pesan' => "Invoice {$order->kode_invoice} disetujui. Akses Pro aktif hingga " . $end->format('d M Y H:i') . '.',
-                'link' => route('langganan.index', [], false),
-            ]);
-
-            return ['ok' => true, 'order' => $order];
-        });
-
-        if (!$result['ok']) {
-            return redirect()->route('admin.langganan.index')
-                ->with('pesan', 'Transaksi ini sudah diproses sebelumnya.')
-                ->with('tipe_pesan', 'error');
-        }
-
-        return redirect()->route('admin.langganan.index')
-            ->with('pesan', "Invoice {$result['order']->kode_invoice} berhasil disetujui dan langganan Pro diaktifkan!")
-            ->with('tipe_pesan', 'success');
-    }
-
-    public function reject(Request $request, $id)
-    {
-        $admin = auth()->user();
-        if (!$admin->isAdmin()) {
-            abort(403, 'Akses ditolak.');
-        }
-
-        $catatan = mb_substr(trim((string) $request->input('catatan_admin', '')), 0, 255);
-        if ($catatan === '') {
-            $catatan = 'Bukti transfer tidak valid atau nominal tidak sesuai.';
-        }
-
-        $result = DB::transaction(function () use ($id, $admin, $catatan) {
-            $order = Langganan::where('id_langganan', (int) $id)->lockForUpdate()->firstOrFail();
-            if ($order->status !== 'pending') {
-                return ['ok' => false, 'order' => $order];
+            if (!$locked) {
+                return 'missing';
             }
 
-            $order->update([
-                'status' => 'rejected',
-                'catatan_admin' => $catatan,
-                'verified_by' => $admin->id_user,
-                'verified_at' => now(),
-            ]);
+            if ($isPaid) {
+                if ($grossAmountRaw !== null && (int) round((float) $grossAmountRaw) !== (int) $locked->nominal) {
+                    return 'amount_mismatch';
+                }
 
-            Notifikasi::create([
-                'id_user' => $order->id_user,
-                'judul' => 'Pembayaran Pro Ditolak',
-                'pesan' => "Invoice {$order->kode_invoice} ditolak: {$catatan}",
-                'link' => route('langganan.index', [], false),
-            ]);
+                if ($locked->status === 'active') {
+                    return 'active';
+                }
 
-            return ['ok' => true, 'order' => $order];
+                $existingActive = Langganan::where('id_user', $locked->id_user)
+                    ->where('status', 'active')
+                    ->where('tgl_berakhir', '>', now())
+                    ->orderByDesc('tgl_berakhir')
+                    ->lockForUpdate()
+                    ->first();
+
+                // Stack renewal period if student already has remaining active Pro time
+                $start = $existingActive ? $existingActive->tgl_berakhir->copy() : now();
+                $durasi = max(1, (int) ($locked->paket->durasi_hari ?? 30));
+                $end = $start->copy()->addDays($durasi);
+
+                $locked->update([
+                    'status' => 'active',
+                    'tgl_mulai' => $start,
+                    'tgl_berakhir' => $end,
+                    'payment_type' => $paymentType ?? $locked->payment_type,
+                    'gateway_transaction_id' => $txId ?? $locked->gateway_transaction_id,
+                    'gateway_status' => $txStatus,
+                    'catatan_admin' => 'Lunas via Midtrans' . ($paymentType ? ' (' . strtoupper($paymentType) . ')' : ''),
+                    'verified_at' => now(),
+                ]);
+
+                Notifikasi::create([
+                    'id_user' => $locked->id_user,
+                    'judul' => 'Langganan Pro Aktif!',
+                    'pesan' => "Pembayaran {$locked->kode_invoice} berhasil. Akses Pro aktif hingga " . $end->format('d M Y H:i') . '.',
+                    'link' => route('langganan.index', [], false),
+                ]);
+
+                return 'active';
+            }
+
+            if ($isRefunded) {
+                $locked->update([
+                    'status' => 'refunded',
+                    'tgl_berakhir' => now(),
+                    'payment_type' => $paymentType ?? $locked->payment_type,
+                    'gateway_transaction_id' => $txId ?? $locked->gateway_transaction_id,
+                    'gateway_status' => $txStatus,
+                    'catatan_admin' => 'Transaksi di-refund melalui Midtrans.',
+                ]);
+
+                return 'refunded';
+            }
+
+            // Never downgrade an already settled subscription from delayed pending/expire callbacks
+            if ($locked->status === 'active') {
+                return 'active';
+            }
+
+            if ($isPending) {
+                $locked->update([
+                    'payment_type' => $paymentType ?? $locked->payment_type,
+                    'gateway_transaction_id' => $txId ?? $locked->gateway_transaction_id,
+                    'gateway_status' => $txStatus,
+                ]);
+
+                return 'pending';
+            }
+
+            if ($closedStatus !== null) {
+                $wasPending = $locked->status === 'pending';
+                $locked->update([
+                    'status' => $closedStatus,
+                    'payment_type' => $paymentType ?? $locked->payment_type,
+                    'gateway_transaction_id' => $txId ?? $locked->gateway_transaction_id,
+                    'gateway_status' => $txStatus,
+                    'catatan_admin' => 'Status Midtrans: ' . $txStatus,
+                ]);
+
+                if ($wasPending) {
+                    Notifikasi::create([
+                        'id_user' => $locked->id_user,
+                        'judul' => 'Pembayaran Pro Tidak Berhasil',
+                        'pesan' => "Transaksi {$locked->kode_invoice} berstatus {$closedStatus}. Anda dapat membuat transaksi baru.",
+                        'link' => route('langganan.index', [], false),
+                    ]);
+                }
+
+                return $closedStatus;
+            }
+
+            return $locked->status;
         });
-
-        if (!$result['ok']) {
-            return redirect()->route('admin.langganan.index')
-                ->with('pesan', 'Transaksi ini sudah diproses sebelumnya.')
-                ->with('tipe_pesan', 'error');
-        }
-
-        return redirect()->route('admin.langganan.index')
-            ->with('pesan', "Invoice {$result['order']->kode_invoice} ditolak.")
-            ->with('tipe_pesan', 'success');
-    }
-
-    public function downloadBukti($id)
-    {
-        $order = Langganan::findOrFail((int) $id);
-        $user = auth()->user();
-
-        if (!$user->isAdmin() && (int) $order->id_user !== (int) $user->id_user) {
-            abort(403, 'Akses ditolak.');
-        }
-
-        $safeName = basename((string) $order->bukti_bayar);
-        $relPath = 'private/bukti_bayar/' . $safeName;
-        if ($safeName === '' || !Storage::disk('local')->exists($relPath)) {
-            abort(404, 'Berkas bukti bayar tidak ditemukan.');
-        }
-
-        return response()->download(Storage::disk('local')->path($relPath), $safeName, [
-            'X-Content-Type-Options' => 'nosniff',
-            'Cache-Control' => 'private, no-store',
-        ]);
     }
 }

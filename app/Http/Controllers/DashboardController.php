@@ -86,7 +86,7 @@ class DashboardController extends Controller
             $statProRevenue = (int) Langganan::where('status', 'active')->sum('nominal');
             $statProAktif = Langganan::where('status', 'active')->where('tgl_berakhir', '>', now())->count();
             $statProPending = Langganan::where('status', 'pending')->count();
-            $statProDitolak = Langganan::where('status', 'rejected')->count();
+            $statProDitolak = Langganan::whereIn('status', ['rejected', 'cancelled', 'expired', 'failed', 'refunded'])->count();
 
             $rows = DB::select("
                 SELECT k.id_kelas, k.nama_kelas, k.deskripsi, k.is_premium, p.nama_pengajar,

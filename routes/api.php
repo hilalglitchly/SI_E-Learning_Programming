@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\LanggananController;
 use App\Http\Controllers\ProfilController;
 use Illuminate\Support\Facades\Route;
 
@@ -15,3 +16,6 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::middleware('auth:sanctum')->get('/user', [ProfilController::class, 'apiUser']);
+Route::post('/midtrans/webhook', [LanggananController::class, 'webhook'])
+    ->middleware('throttle:120,1')
+    ->name('midtrans.webhook');

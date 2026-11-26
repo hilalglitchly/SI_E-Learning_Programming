@@ -31,7 +31,7 @@ class LaporanController extends Controller
         $totalPendapatanPro = (int) Langganan::where('status', 'active')->sum('nominal');
         $totalProAktif = Langganan::where('status', 'active')->where('tgl_berakhir', '>', now())->count();
         $totalProPending = Langganan::where('status', 'pending')->count();
-        $totalProDitolak = Langganan::where('status', 'rejected')->count();
+        $totalProDitolak = Langganan::whereIn('status', ['rejected', 'cancelled', 'expired', 'failed', 'refunded'])->count();
 
         $rows = DB::select("
             SELECT 

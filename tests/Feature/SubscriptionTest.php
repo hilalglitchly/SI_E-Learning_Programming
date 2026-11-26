@@ -12,8 +12,8 @@ use App\Models\PesertaKelas;
 use App\Models\Tugas;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -21,9 +21,33 @@ class SubscriptionTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_full_subscription_checkout_verification_gating_and_expiry(): void
+    private string $serverKey = 'SB-Mid-server-TESTKEY123';
+    private string $clientKey = 'SB-Mid-client-TESTKEY123';
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        config([
+            'services.midtrans.server_key' => $this->serverKey,
+            'services.midtrans.client_key' => $this->clientKey,
+            'services.midtrans.is_production' => false,
+        ]);
+    }
+
+    private function midtransSignature(string $orderId, string $statusCode, string $grossAmount): string
+    {
+        return hash('sha512', $orderId . $statusCode . $grossAmount . $this->serverKey);
+    }
+
+    public function test_full_midtrans_checkout_webhook_gating_and_expiry(): void
     {
         Storage::fake('local');
+        Http::fake([
+            'https://app.sandbox.midtrans.com/snap/v1/transactions' => Http::response([
+                'token' => 'snap-token-abc123',
+                'redirect_url' => 'https://app.sandbox.midtrans.com/snap/v4/redirection/snap-token-abc123',
+            ], 201),
+        ]);
 
         $admin = User::create(['username' => 'adm_sub', 'password' => Hash::make('StrongPass123!'), 'role' => 'Admin']);
         $uDosen = User::create(['username' => 'dsn_sub', 'password' => Hash::make('StrongPass123!'), 'role' => 'Pengajar']);
@@ -47,157 +71,184 @@ class SubscriptionTest extends TestCase
             ->assertRedirect(route('langganan.index'));
         $this->assertFalse(PesertaKelas::where('id_kelas', $kelasPro->id_kelas)->where('nim', '8001')->exists());
 
-        // 2. Checkout ignores tampered nominal & stores proof privately
-        $proof = UploadedFile::fake()->create('transfer.pdf', 120, 'application/pdf');
+        // 2. Checkout ignores tampered nominal & requests Snap token using server-side plan price
         $this->actingAs($u1)->post(route('langganan.checkout'), [
             'id_paket' => 1, // Pro Bulanan = 49000
             'nominal' => 1,  // Tampered client value must be ignored
-            'bukti_bayar' => $proof,
         ])->assertRedirect(route('langganan.index'));
 
         $order = Langganan::where('id_user', $u1->id_user)->firstOrFail();
         $this->assertSame(49000, $order->nominal);
         $this->assertSame('pending', $order->status);
-        Storage::disk('local')->assertExists('private/bukti_bayar/' . $order->bukti_bayar);
-        $this->assertTrue(Notifikasi::where('id_user', $admin->id_user)->where('judul', 'Verifikasi Pembayaran Pro')->exists());
+        $this->assertSame('snap-token-abc123', $order->snap_token);
+
+        Http::assertSent(function ($request) use ($order) {
+            return $request->url() === 'https://app.sandbox.midtrans.com/snap/v1/transactions'
+                && ($request['transaction_details']['order_id'] ?? null) === $order->kode_invoice
+                && ($request['transaction_details']['gross_amount'] ?? null) === 49000;
+        });
 
         // Duplicate pending submission is blocked
-        $this->actingAs($u1)->post(route('langganan.checkout'), [
-            'id_paket' => 2,
-            'bukti_bayar' => UploadedFile::fake()->create('dup.pdf', 50, 'application/pdf'),
-        ])->assertRedirect(route('langganan.index'));
+        $this->actingAs($u1)->post(route('langganan.checkout'), ['id_paket' => 2])
+            ->assertRedirect(route('langganan.index'));
         $this->assertDatabaseCount('tb_langganan', 1);
 
-        // 3. Proof privacy & no-store cache headers: u2 blocked (403), u1 & admin allowed (200)
-        $this->actingAs($u2)->get(route('files.bukti_bayar', $order->id_langganan))->assertStatus(403);
-        $proofResp = $this->actingAs($u1)->get(route('files.bukti_bayar', $order->id_langganan))
-            ->assertStatus(200)
-            ->assertHeader('X-Content-Type-Options', 'nosniff');
-        $this->assertStringContainsString('no-store', (string) $proofResp->headers->get('Cache-Control'));
-        $this->actingAs($admin)->get(route('files.bukti_bayar', $order->id_langganan))->assertStatus(200);
+        // 3. Forged webhook signature is rejected (403)
+        $this->postJson(route('midtrans.webhook'), [
+            'order_id' => $order->kode_invoice,
+            'status_code' => '200',
+            'gross_amount' => '49000.00',
+            'transaction_status' => 'settlement',
+            'signature_key' => 'forged-signature',
+        ])->assertStatus(403);
+        $this->assertSame('pending', $order->fresh()->status);
 
-        // 4. Non-admin cannot access admin payment verification or approve
-        $this->actingAs($u1)->get(route('admin.langganan.index'))->assertStatus(403);
-        $this->actingAs($u1)->post(route('admin.langganan.approve', $order->id_langganan))->assertStatus(403);
+        // 4. Tampered gross_amount with valid signature is rejected (400)
+        $this->postJson(route('midtrans.webhook'), [
+            'order_id' => $order->kode_invoice,
+            'status_code' => '200',
+            'gross_amount' => '1000.00',
+            'transaction_status' => 'settlement',
+            'signature_key' => $this->midtransSignature($order->kode_invoice, '200', '1000.00'),
+        ])->assertStatus(400);
+        $this->assertSame('pending', $order->fresh()->status);
 
-        // 5. Admin approves once; second approve is rejected (idempotent)
-        $this->actingAs($admin)->get(route('admin.langganan.index'))->assertStatus(200)->assertSee($order->kode_invoice);
-        $this->actingAs($admin)->post(route('admin.langganan.approve', $order->id_langganan), [
-            'catatan_admin' => 'Mutasi BCA cocok',
-        ])->assertRedirect(route('admin.langganan.index'));
+        // 5. Valid Midtrans settlement webhook activates Pro & is idempotent on replay
+        $settlementPayload = [
+            'order_id' => $order->kode_invoice,
+            'status_code' => '200',
+            'gross_amount' => '49000.00',
+            'transaction_status' => 'settlement',
+            'fraud_status' => 'accept',
+            'payment_type' => 'qris',
+            'transaction_id' => 'mid-tx-999',
+            'signature_key' => $this->midtransSignature($order->kode_invoice, '200', '49000.00'),
+        ];
 
+        $this->postJson(route('midtrans.webhook'), $settlementPayload)->assertOk();
         $order->refresh();
         $this->assertSame('active', $order->status);
+        $this->assertSame('qris', $order->payment_type);
+        $this->assertSame('mid-tx-999', $order->gateway_transaction_id);
         $firstExpiry = $order->tgl_berakhir->timestamp;
 
-        // Second approve must NOT extend expiry again
-        $this->actingAs($admin)->post(route('admin.langganan.approve', $order->id_langganan))
-            ->assertRedirect(route('admin.langganan.index'));
+        // Replaying webhook must NOT extend expiry again
+        $this->postJson(route('midtrans.webhook'), $settlementPayload)->assertOk();
         $this->assertSame($firstExpiry, $order->fresh()->tgl_berakhir->timestamp);
+        $this->assertTrue(Notifikasi::where('id_user', $u1->id_user)->where('judul', 'Langganan Pro Aktif!')->exists());
 
-        // 6. Active Pro student can now enroll, open Premium class, see Premium tasks, and download Premium materi
+        // 6. Active Pro student can enroll, open Premium class, see Premium tasks, and download Premium materi
         $this->actingAs($u1)->post(route('enroll.store'), ['id_kelas' => $kelasPro->id_kelas])
             ->assertRedirect(route('dashboard'));
         $this->actingAs($u1)->get(route('kelas.show', ['id' => $kelasPro->id_kelas]))->assertStatus(200);
         $this->actingAs($u1)->get(route('tugas.index'))->assertStatus(200)->assertSee('Tugas Rahasia Pro');
         $this->actingAs($u1)->get(route('files.materi', ['id' => $materiPro->id_materi]))->assertStatus(200);
 
-        // 7. Once subscription expires, access to Premium class, global tasks, & file is revoked immediately
+        // 7. Admin dashboard lists transaction & filter/search works; non-admin blocked (403)
+        $this->actingAs($u2)->get(route('admin.langganan.index'))->assertStatus(403);
+        $this->actingAs($admin)->get(route('admin.langganan.index', ['status' => 'active', 'q' => $order->kode_invoice]))
+            ->assertStatus(200)
+            ->assertSee($order->kode_invoice);
+
+        // 8. Once subscription expires, access to Premium class, global tasks, & file is revoked immediately
         $order->update(['tgl_berakhir' => now()->subMinute()]);
         $this->actingAs($u1)->get(route('kelas.show', ['id' => $kelasPro->id_kelas]))
             ->assertRedirect(route('langganan.index'));
         $this->actingAs($u1)->get(route('tugas.index'))->assertStatus(200)->assertDontSee('Tugas Rahasia Pro');
         $this->actingAs($u1)->get(route('files.materi', ['id' => $materiPro->id_materi]))
             ->assertStatus(403);
-
-        // 8. Deleting user cleans up stored proof file
-        $proofFile = 'private/bukti_bayar/' . $order->bukti_bayar;
-        $this->actingAs($admin)->delete(route('admin.users.delete', $u1->id_user))
-            ->assertRedirect(route('dashboard', ['msg' => 'deleted']));
-        Storage::disk('local')->assertMissing($proofFile);
     }
 
-    public function test_admin_rejection_notifies_student_and_keeps_premium_locked(): void
+    public function test_sync_cancel_idor_webhook_expire_invoice_package_edit_and_pimpinan_finance(): void
     {
-        Storage::fake('local');
+        $admin = User::create(['username' => 'adm_sync', 'password' => Hash::make('StrongPass123!'), 'role' => 'Admin']);
+        $pimpinan = User::create(['username' => 'pmp_sync', 'password' => Hash::make('StrongPass123!'), 'role' => 'Pimpinan']);
+        $u1 = User::create(['username' => 'mrd_sync1', 'password' => Hash::make('StrongPass123!'), 'role' => 'Murid']);
+        $u2 = User::create(['username' => 'mrd_sync2', 'password' => Hash::make('StrongPass123!'), 'role' => 'Murid']);
+        Murid::create(['nim' => '8101', 'nama_murid' => 'Sync 1', 'email' => 's1@test.local', 'id_user' => $u1->id_user]);
+        Murid::create(['nim' => '8102', 'nama_murid' => 'Sync 2', 'email' => 's2@test.local', 'id_user' => $u2->id_user]);
 
-        $admin = User::create(['username' => 'adm_rej', 'password' => Hash::make('StrongPass123!'), 'role' => 'Admin']);
-        $u1 = User::create(['username' => 'mrd_rej', 'password' => Hash::make('StrongPass123!'), 'role' => 'Murid']);
-        Murid::create(['nim' => '8099', 'nama_murid' => 'Murid Rej', 'email' => 'm8099@test.local', 'id_user' => $u1->id_user]);
-
-        $this->actingAs($u1)->post(route('langganan.checkout'), [
+        $order = Langganan::create([
+            'kode_invoice' => 'SUB-20261126-SYNC01',
+            'id_user' => $u1->id_user,
             'id_paket' => 2,
-            'bukti_bayar' => UploadedFile::fake()->create('fake.pdf', 80, 'application/pdf'),
-        ])->assertRedirect(route('langganan.index'));
+            'nominal' => 490000,
+            'status' => 'pending',
+            'snap_token' => 'tok-sync',
+            'created_at' => now(),
+        ]);
 
-        $order = Langganan::where('id_user', $u1->id_user)->firstOrFail();
+        // Pending order cannot open invoice yet; IDOR: u2 cannot sync or cancel u1's order
+        $this->actingAs($u1)->get(route('langganan.invoice', $order->id_langganan))->assertStatus(403);
+        $this->actingAs($u2)->post(route('langganan.sync', $order->id_langganan))->assertStatus(403);
+        $this->actingAs($u2)->post(route('langganan.cancel', $order->id_langganan))->assertStatus(403);
 
-        $this->actingAs($admin)->post(route('admin.langganan.reject', $order->id_langganan), [
-            'catatan_admin' => 'Bukti buram',
-        ])->assertRedirect(route('admin.langganan.index'));
+        // Admin sync settles order via Midtrans Core API
+        Http::fake([
+            'https://api.sandbox.midtrans.com/v2/SUB-20261126-SYNC01/status' => Http::response([
+                'status_code' => '200',
+                'order_id' => 'SUB-20261126-SYNC01',
+                'gross_amount' => '490000.00',
+                'transaction_status' => 'settlement',
+                'payment_type' => 'bank_transfer',
+                'transaction_id' => 'mid-va-123',
+            ], 200),
+            'https://api.sandbox.midtrans.com/v2/SUB-20261126-CANC02/cancel' => Http::response(['status_code' => '200'], 200),
+        ]);
 
-        $this->assertSame('rejected', $order->fresh()->status);
-        $this->assertFalse($u1->fresh()->hasActiveSubscription());
-        $this->assertTrue(Notifikasi::where('id_user', $u1->id_user)->where('judul', 'Pembayaran Pro Ditolak')->exists());
-    }
-
-    public function test_student_cancel_pending_invoice_access_admin_package_edit_and_pimpinan_finance(): void
-    {
-        Storage::fake('local');
-
-        $admin = User::create(['username' => 'adm_fin', 'password' => Hash::make('StrongPass123!'), 'role' => 'Admin']);
-        $pimpinan = User::create(['username' => 'pmp_fin', 'password' => Hash::make('StrongPass123!'), 'role' => 'Pimpinan']);
-        $u1 = User::create(['username' => 'mrd_fin1', 'password' => Hash::make('StrongPass123!'), 'role' => 'Murid']);
-        $u2 = User::create(['username' => 'mrd_fin2', 'password' => Hash::make('StrongPass123!'), 'role' => 'Murid']);
-        Murid::create(['nim' => '8101', 'nama_murid' => 'Murid Fin 1', 'email' => 'mf1@test.local', 'id_user' => $u1->id_user]);
-        Murid::create(['nim' => '8102', 'nama_murid' => 'Murid Fin 2', 'email' => 'mf2@test.local', 'id_user' => $u2->id_user]);
-
-        // 1. Submit pending order, u2 cannot cancel u1's order, u1 can cancel own pending order & proof is deleted
-        $this->actingAs($u1)->post(route('langganan.checkout'), [
-            'id_paket' => 1,
-            'bukti_bayar' => UploadedFile::fake()->create('wrong.pdf', 50, 'application/pdf'),
-        ])->assertRedirect(route('langganan.index'));
-
-        $firstOrder = Langganan::where('id_user', $u1->id_user)->firstOrFail();
-        $firstProof = 'private/bukti_bayar/' . $firstOrder->bukti_bayar;
-        Storage::disk('local')->assertExists($firstProof);
-
-        // Pending order cannot open invoice yet
-        $this->actingAs($u1)->get(route('langganan.invoice', $firstOrder->id_langganan))->assertStatus(403);
-
-        // Other student cannot cancel u1's order
-        $this->actingAs($u2)->delete(route('langganan.cancel', $firstOrder->id_langganan))
-            ->assertRedirect(route('langganan.index'));
-        $this->assertDatabaseHas('tb_langganan', ['id_langganan' => $firstOrder->id_langganan]);
-
-        // Owning student cancels pending order cleanly
-        $this->actingAs($u1)->delete(route('langganan.cancel', $firstOrder->id_langganan))
-            ->assertRedirect(route('langganan.index'));
-        $this->assertDatabaseCount('tb_langganan', 0);
-        Storage::disk('local')->assertMissing($firstProof);
-
-        // 2. Resubmit & admin approves; owner & admin can view printable invoice, u2 gets 403
-        $this->actingAs($u1)->post(route('langganan.checkout'), [
-            'id_paket' => 1,
-            'bukti_bayar' => UploadedFile::fake()->create('valid.pdf', 80, 'application/pdf'),
-        ])->assertRedirect(route('langganan.index'));
-
-        $order = Langganan::where('id_user', $u1->id_user)->firstOrFail();
-        $this->actingAs($admin)->get(route('admin.langganan.index', ['status' => 'pending', 'q' => $order->kode_invoice]))
-            ->assertStatus(200)
-            ->assertSee($order->kode_invoice);
-
-        $this->actingAs($admin)->post(route('admin.langganan.approve', $order->id_langganan))
+        $this->actingAs($admin)->post(route('admin.langganan.sync', $order->id_langganan))
             ->assertRedirect(route('admin.langganan.index'));
+        $this->assertSame('active', $order->fresh()->status);
+        $this->assertTrue($u1->fresh()->hasActiveSubscription());
 
+        // Settled invoice is accessible to owner & admin, blocked for other students
         $this->actingAs($u1)->get(route('langganan.invoice', $order->id_langganan))
             ->assertStatus(200)
-            ->assertSee($order->kode_invoice)
-            ->assertSee('49.000');
+            ->assertSee('SUB-20261126-SYNC01')
+            ->assertSee('490.000')
+            ->assertSee('BANK TRANSFER');
         $this->actingAs($admin)->get(route('langganan.invoice', $order->id_langganan))->assertStatus(200);
         $this->actingAs($u2)->get(route('langganan.invoice', $order->id_langganan))->assertStatus(403);
 
-        // 3. Admin updates package price; non-admin blocked (403); existing invoice nominal snapshot unchanged
+        // Student can cancel own pending order
+        $order2 = Langganan::create([
+            'kode_invoice' => 'SUB-20261126-CANC02',
+            'id_user' => $u2->id_user,
+            'id_paket' => 1,
+            'nominal' => 49000,
+            'status' => 'pending',
+            'snap_token' => 'tok-canc',
+            'created_at' => now(),
+        ]);
+
+        $this->actingAs($u2)->post(route('langganan.cancel', $order2->id_langganan))
+            ->assertRedirect(route('langganan.index'));
+        $this->assertSame('cancelled', $order2->fresh()->status);
+
+        // Webhook expire marks pending order expired & notifies student
+        $order3 = Langganan::create([
+            'kode_invoice' => 'SUB-20261126-EXP003',
+            'id_user' => $u2->id_user,
+            'id_paket' => 1,
+            'nominal' => 49000,
+            'status' => 'pending',
+            'snap_token' => 'tok-exp',
+            'created_at' => now(),
+        ]);
+
+        $this->postJson(route('midtrans.webhook'), [
+            'order_id' => 'SUB-20261126-EXP003',
+            'status_code' => '202',
+            'gross_amount' => '49000.00',
+            'transaction_status' => 'expire',
+            'signature_key' => $this->midtransSignature('SUB-20261126-EXP003', '202', '49000.00'),
+        ])->assertOk();
+
+        $this->assertSame('expired', $order3->fresh()->status);
+        $this->assertFalse($u2->fresh()->hasActiveSubscription());
+        $this->assertTrue(Notifikasi::where('id_user', $u2->id_user)->where('judul', 'Pembayaran Pro Tidak Berhasil')->exists());
+
+        // Admin updates package price; non-admin blocked (403); existing invoice nominal snapshot unchanged
         $this->actingAs($u1)->post(route('admin.langganan.paket.update', 1), [
             'nama_paket' => 'Hack', 'harga' => 1000, 'durasi_hari' => 30,
         ])->assertStatus(403);
@@ -211,17 +262,17 @@ class SubscriptionTest extends TestCase
         ])->assertRedirect(route('admin.langganan.index'));
 
         $this->assertDatabaseHas('tb_paket_langganan', ['id_paket' => 1, 'nama_paket' => 'Pro Bulanan Plus', 'harga' => 59000]);
-        $this->assertSame(49000, $order->fresh()->nominal);
+        $this->assertSame(490000, $order->fresh()->nominal);
 
-        // 4. Pimpinan sees Pro finance summary on both dashboard & laporan
+        // Pimpinan sees Pro finance summary on both dashboard & laporan
         $this->actingAs($pimpinan)->get(route('dashboard'))
             ->assertStatus(200)
             ->assertSee('Ringkasan Keuangan Langganan Pro')
-            ->assertSee('Rp 49.000');
+            ->assertSee('Rp 490.000');
 
         $this->actingAs($pimpinan)->get(route('laporan.index'))
             ->assertStatus(200)
             ->assertSee('Ringkasan Keuangan Langganan Pro')
-            ->assertSee('Rp 49.000');
+            ->assertSee('Rp 490.000');
     }
 }

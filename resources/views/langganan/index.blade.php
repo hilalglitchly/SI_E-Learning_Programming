@@ -22,6 +22,12 @@
                 </div>
             @endif
 
+            @if (!$midtransConfigured)
+                <div class="neo-box" role="alert" style="background-color: #FEF08A; color: #000; border-left: 10px solid #DC2626; font-weight: 700;">
+                    Payment gateway Midtrans belum dikonfigurasi. Isi <code>MIDTRANS_SERVER_KEY</code> dan <code>MIDTRANS_CLIENT_KEY</code> di file <code>.env</code> untuk mengaktifkan pembayaran otomatis.
+                </div>
+            @endif
+
             <!-- Status Langganan Saat Ini -->
             <div class="neo-box" style="border-left: 10px solid {{ $activeSub ? '#047857' : '#D97706' }}; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
                 <div>
@@ -37,7 +43,7 @@
                     @else
                         <h2 style="margin: 6px 0; font-size: 1.45rem;">Akun Gratis</h2>
                         <p style="margin: 0; color: var(--muted-foreground); font-weight: 600;">
-                            Anda dapat mengakses seluruh kelas Gratis. Aktifkan paket Pro untuk membuka seluruh kelas Premium.
+                            Anda dapat mengakses seluruh kelas Gratis. Aktifkan paket Pro melalui Midtrans (QRIS, Virtual Account, E-Wallet, Kartu) untuk membuka seluruh kelas Premium secara instan.
                         </p>
                     @endif
                 </div>
@@ -46,10 +52,56 @@
                 </span>
             </div>
 
-            <!-- Pilihan Paket (2 Kolom Penuh — Bebas Ruang Kosong Kanan) -->
+            <!-- Transaksi Pending (Lanjutkan Bayar / Cek Status / Batalkan) -->
+            @if ($pendingOrder)
+                <div class="neo-box" style="border-left: 10px solid #D97706; background-color: #FEF9C3; color: #000;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 14px;">
+                        <div>
+                            <div style="font-size: 0.8rem; font-weight: 900; text-transform: uppercase;">Menunggu Pembayaran</div>
+                            <h2 style="margin: 4px 0; font-size: 1.35rem; color: #000;">
+                                {{ $pendingOrder->paket->nama_paket ?? 'Paket Pro' }} — Rp {{ number_format($pendingOrder->nominal, 0, ',', '.') }}
+                            </h2>
+                            <div style="font-weight: 700; font-size: 0.9rem;">Invoice: <code>{{ $pendingOrder->kode_invoice }}</code></div>
+                        </div>
+                        @if (!$midtransIsProd)
+                            <span style="background: #000; color: #FFD700; padding: 4px 10px; font-size: 0.75rem; font-weight: 900;">SANDBOX MODE</span>
+                        @endif
+                    </div>
+
+                    <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+                        @if ($midtransConfigured && $pendingOrder->snap_token)
+                            <button type="button" id="btn-snap-pay" class="neo-btn" style="min-height: 44px; background-color: #047857; color: #fff; padding: 10px 18px;">
+                                <i class='bx bx-credit-card' aria-hidden="true"></i> Bayar Sekarang (Midtrans)
+                            </button>
+                        @endif
+
+                        @if ($pendingOrder->payment_url)
+                            <a href="{{ $pendingOrder->payment_url }}" target="_blank" rel="noopener noreferrer" class="neo-btn" style="min-height: 44px; background-color: var(--accent); color: var(--accent-foreground); padding: 10px 16px;">
+                                <i class='bx bx-link-external' aria-hidden="true"></i> Buka Halaman Bayar
+                            </a>
+                        @endif
+
+                        <form id="sync-pending-form" method="POST" action="{{ route('langganan.sync', ['id' => $pendingOrder->id_langganan]) }}" style="margin: 0;">
+                            @csrf
+                            <button type="submit" class="neo-btn" style="min-height: 44px; background-color: #fff; color: #000; padding: 10px 16px;">
+                                <i class='bx bx-refresh' aria-hidden="true"></i> Cek Status Pembayaran
+                            </button>
+                        </form>
+
+                        <form method="POST" action="{{ route('langganan.cancel', ['id' => $pendingOrder->id_langganan]) }}" class="js-confirm-form" data-confirm-title="Batalkan Transaksi" data-confirm-message="Batalkan transaksi {{ $pendingOrder->kode_invoice }}? Anda bisa memilih paket ulang setelah dibatalkan." style="margin: 0;">
+                            @csrf
+                            <button type="submit" class="neo-btn neo-btn--danger" style="min-height: 44px; padding: 10px 16px;">
+                                <i class='bx bx-x' aria-hidden="true"></i> Batalkan
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            @endif
+
+            <!-- Pilihan Paket -->
             <div class="neo-grid-2" style="margin-bottom: 28px;">
                 @foreach ($paketList as $idx => $paket)
-                    <div class="neo-card plan-option-card {{ $idx === 0 ? 'is-selected' : '' }}" data-plan-card="{{ $paket->id_paket }}">
+                    <div class="neo-card plan-option-card {{ $idx === 0 ? 'is-selected' : '' }}">
                         <div>
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px;">
                                 <span class="badge-kode" style="margin: 0; background-color: var(--secondary); color: #000;">{{ $paket->durasi_hari }} HARI</span>
@@ -63,63 +115,21 @@
                             </div>
                             <p style="color: var(--muted-foreground); font-weight: 500; margin-bottom: 18px;">{{ $paket->deskripsi }}</p>
                         </div>
-                        <button
-                            type="button"
-                            class="neo-btn"
-                            data-pick-plan="{{ $paket->id_paket }}"
-                            style="width: 100%; min-height: 46px; background-color: var(--secondary); color: #000;"
-                        >
-                            Pilih {{ $paket->nama_paket }}
-                        </button>
+
+                        <form method="POST" action="{{ route('langganan.checkout') }}" style="margin: 0;">
+                            @csrf
+                            <input type="hidden" name="id_paket" value="{{ $paket->id_paket }}">
+                            <button
+                                type="submit"
+                                class="neo-btn"
+                                style="width: 100%; min-height: 46px; background-color: {{ ($pendingOrder || !$midtransConfigured) ? 'var(--muted)' : 'var(--secondary)' }}; color: #000;"
+                                {{ ($pendingOrder || !$midtransConfigured) ? 'disabled' : '' }}
+                            >
+                                <i class='bx bx-credit-card' aria-hidden="true"></i> Bayar {{ $paket->nama_paket }} via Midtrans
+                            </button>
+                        </form>
                     </div>
                 @endforeach
-            </div>
-
-            <!-- Instruksi Transfer & Form Upload Bukti Bayar -->
-            <div id="checkout-box" class="neo-box" style="border-left: 10px solid var(--accent);">
-                <h2 style="font-size: 1.3rem; border-bottom: 3px solid var(--border); padding-bottom: 10px; margin-bottom: 18px; display: flex; align-items: center; gap: 8px;">
-                    <i class='bx bx-credit-card' aria-hidden="true"></i> Transfer Manual &amp; Konfirmasi Pembayaran
-                </h2>
-
-                <div style="background-color: var(--muted); border: 3px solid var(--border); padding: 16px; margin-bottom: 20px;">
-                    <div style="font-weight: 900; text-transform: uppercase; font-size: 0.82rem; margin-bottom: 6px; color: var(--muted-foreground);">Rekening Tujuan Transfer</div>
-                    <div style="font-size: 1.15rem; font-weight: 900;">
-                        Bank {{ $payment['bank_name'] ?? 'BCA' }} &mdash; {{ $payment['account_number'] ?? '-' }}
-                    </div>
-                    <div style="font-weight: 700; color: var(--muted-foreground);">a.n. {{ $payment['account_holder'] ?? 'E-Learning Programming' }}</div>
-                </div>
-
-                @if ($hasPending)
-                    <div style="padding: 14px 16px; border: 3px solid #000; background-color: #FEF08A; color: #000; font-weight: 800; display: flex; align-items: center; gap: 10px;" role="status">
-                        <i class='bx bx-time-five' style="font-size: 1.4rem; flex-shrink: 0;" aria-hidden="true"></i>
-                        <span>Anda memiliki transaksi yang sedang menunggu verifikasi Admin. Mohon tunggu hingga proses selesai sebelum mengirim pengajuan baru.</span>
-                    </div>
-                @else
-                    <form method="POST" action="{{ route('langganan.checkout') }}" enctype="multipart/form-data">
-                        @csrf
-                        <div class="neo-form-group">
-                            <label class="neo-label" for="select-paket">Pilih Paket Langganan</label>
-                            <select id="select-paket" name="id_paket" class="neo-input" required>
-                                @foreach ($paketList as $paket)
-                                    <option value="{{ $paket->id_paket }}">
-                                        {{ $paket->nama_paket }} — Rp {{ number_format($paket->harga, 0, ',', '.') }} ({{ $paket->durasi_hari }} hari)
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <div class="neo-form-group">
-                            <label class="neo-label" for="bukti_bayar">Unggah Bukti Transfer</label>
-                            <span id="bukti-hint" class="auth-hint">Format yang diterima: JPG, PNG, atau PDF (maksimal 5 MB).</span>
-                            <input type="file" id="bukti_bayar" name="bukti_bayar" class="neo-input" accept=".jpg,.jpeg,.png,.pdf" aria-describedby="bukti-hint" required>
-                            <div id="bukti-file-info" style="margin-top: 6px; font-size: 0.85rem; font-weight: 700; color: var(--muted-foreground);" aria-live="polite"></div>
-                        </div>
-
-                        <button type="submit" class="neo-btn" style="width: 100%; min-height: 50px; font-size: 1rem; padding: 14px; background-color: var(--accent); color: var(--accent-foreground);">
-                            <i class='bx bx-upload' aria-hidden="true"></i> Kirim Bukti Pembayaran untuk Diverifikasi
-                        </button>
-                    </form>
-                @endif
             </div>
 
             <!-- Riwayat Transaksi -->
@@ -136,7 +146,7 @@
                                 <th>Nominal</th>
                                 <th>Status</th>
                                 <th>Masa Aktif</th>
-                                <th>Bukti &amp; Catatan</th>
+                                <th>Metode &amp; Keterangan</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -150,10 +160,10 @@
                                             <span class="neo-status-pill {{ $row->isCurrentlyActive() ? 'neo-status-pill--success' : 'neo-status-pill--neutral' }}">
                                                 {{ $row->isCurrentlyActive() ? 'Aktif' : 'Berakhir' }}
                                             </span>
-                                        @elseif ($row->status === 'rejected')
-                                            <span class="neo-status-pill neo-status-pill--danger">Ditolak</span>
-                                        @else
+                                        @elseif ($row->status === 'pending')
                                             <span class="neo-status-pill neo-status-pill--pending">Pending</span>
+                                        @else
+                                            <span class="neo-status-pill neo-status-pill--danger">{{ strtoupper($row->status) }}</span>
                                         @endif
                                     </td>
                                     <td style="font-size: 0.85rem;">
@@ -164,24 +174,16 @@
                                         @endif
                                     </td>
                                     <td style="font-size: 0.85rem;">
-                                        <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 10px;">
-                                            @if ($row->bukti_bayar)
-                                                <a href="{{ route('files.bukti_bayar', ['id' => $row->id_langganan]) }}" target="_blank" rel="noopener" class="auth-link auth-link--neutral" style="min-height: 36px;">
-                                                    <i class='bx bx-download' aria-hidden="true"></i> Unduh Bukti
-                                                </a>
+                                        <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
+                                            @if ($row->payment_type)
+                                                <span style="display: inline-block; background: var(--muted); border: 2px solid var(--border); padding: 2px 6px; font-weight: 800; font-size: 0.72rem; text-transform: uppercase;">
+                                                    {{ str_replace('_', ' ', $row->payment_type) }}
+                                                </span>
                                             @endif
                                             @if ($row->status === 'active')
                                                 <a href="{{ route('langganan.invoice', ['id' => $row->id_langganan]) }}" class="neo-btn" style="min-height: 36px; padding: 4px 10px; font-size: 0.76rem; background-color: var(--secondary); color: #000;">
                                                     <i class='bx bxs-printer' aria-hidden="true"></i> Struk
                                                 </a>
-                                            @elseif ($row->status === 'pending')
-                                                <form method="POST" action="{{ route('langganan.cancel', ['id' => $row->id_langganan]) }}" onsubmit="event.preventDefault(); NeoConfirm('Batalkan Pengajuan', 'Batalkan pengajuan pembayaran {{ $row->kode_invoice }}? Anda bisa mengirim ulang bukti baru setelah dibatalkan.', () => this.submit());" style="display: inline;">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="neo-btn neo-btn--danger" style="min-height: 36px; padding: 4px 10px; font-size: 0.76rem;">
-                                                        <i class='bx bx-x' aria-hidden="true"></i> Batalkan
-                                                    </button>
-                                                </form>
                                             @endif
                                         </div>
                                         @if ($row->catatan_admin)
@@ -201,39 +203,34 @@
     </main>
 @endsection
 
-@section('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    const selectPaket = document.getElementById('select-paket');
-    const planCards = document.querySelectorAll('[data-plan-card]');
-    const syncSelectedCard = (id) => {
-        planCards.forEach((c) => c.classList.toggle('is-selected', c.dataset.planCard === String(id)));
-    };
+@if ($midtransConfigured && $pendingOrder && $pendingOrder->snap_token)
+    @push('scripts')
+        <script src="{{ $snapJsUrl }}" data-client-key="{{ $midtransClientKey }}"></script>
+        <script>
+            (function () {
+                const token = @json($pendingOrder->snap_token);
+                const paymentUrl = @json($pendingOrder->payment_url);
+                const autoPay = @json($autoPayInvoice === $pendingOrder->kode_invoice);
+                const syncForm = document.getElementById('sync-pending-form');
+                const payBtn = document.getElementById('btn-snap-pay');
 
-    document.querySelectorAll('[data-pick-plan]').forEach((btn) => {
-        btn.addEventListener('click', () => {
-            const id = btn.dataset.pickPlan;
-            syncSelectedCard(id);
-            if (selectPaket) selectPaket.value = id;
-            const box = document.getElementById('checkout-box');
-            if (box) box.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: no-preference)').matches ? 'smooth' : 'auto' });
-        });
-    });
+                function openSnap() {
+                    if (typeof window.snap === 'undefined') {
+                        if (paymentUrl) {
+                            window.open(paymentUrl, '_blank', 'noopener');
+                        }
+                        return;
+                    }
+                    window.snap.pay(token, {
+                        onSuccess: function () { if (syncForm) syncForm.submit(); },
+                        onPending: function () { if (syncForm) syncForm.submit(); },
+                        onError: function () { if (syncForm) syncForm.submit(); }
+                    });
+                }
 
-    if (selectPaket) {
-        selectPaket.addEventListener('change', () => syncSelectedCard(selectPaket.value));
-    }
-
-    const fileInput = document.getElementById('bukti_bayar');
-    const fileInfo = document.getElementById('bukti-file-info');
-    if (fileInput && fileInfo) {
-        fileInput.addEventListener('change', () => {
-            const f = fileInput.files && fileInput.files[0];
-            if (!f) { fileInfo.textContent = ''; return; }
-            const kb = Math.max(1, Math.round(f.size / 1024));
-            fileInfo.textContent = `Berkas dipilih: ${f.name} (${kb >= 1024 ? (kb / 1024).toFixed(2) + ' MB' : kb + ' KB'})`;
-        });
-    }
-});
-</script>
-@endsection
+                if (payBtn) payBtn.addEventListener('click', openSnap);
+                if (autoPay) window.addEventListener('load', openSnap);
+            })();
+        </script>
+    @endpush
+@endif
