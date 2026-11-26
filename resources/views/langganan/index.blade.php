@@ -125,7 +125,7 @@
                                 style="width: 100%; min-height: 46px; background-color: {{ ($pendingOrder || !$midtransConfigured) ? 'var(--muted)' : 'var(--secondary)' }}; color: #000;"
                                 {{ ($pendingOrder || !$midtransConfigured) ? 'disabled' : '' }}
                             >
-                                <i class='bx bx-credit-card' aria-hidden="true"></i> Bayar {{ $paket->nama_paket }} via Midtrans
+                                <i class='bx bx-credit-card' aria-hidden="true"></i> Dapatkan Pro
                             </button>
                         </form>
                     </div>
