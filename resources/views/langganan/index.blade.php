@@ -100,8 +100,8 @@
 
             <!-- Pilihan Paket -->
             <div class="neo-grid-2" style="margin-bottom: 28px;">
-                @foreach ($paketList as $idx => $paket)
-                    <div class="neo-card plan-option-card {{ $idx === 0 ? 'is-selected' : '' }}">
+                @foreach ($paketList as $paket)
+                    <div class="neo-card plan-option-card {{ $paket->durasi_hari >= 365 ? 'is-selected' : '' }}">
                         <div>
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px;">
                                 <span class="badge-kode" style="margin: 0; background-color: var(--secondary); color: #000;">{{ $paket->durasi_hari }} HARI</span>
@@ -203,8 +203,24 @@
     </main>
 @endsection
 
-@if ($midtransConfigured && $pendingOrder && $pendingOrder->snap_token)
-    @push('scripts')
+@push('scripts')
+    <script>
+        document.querySelectorAll('.js-confirm-form').forEach((form) => {
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                if (typeof NeoConfirm === 'function') {
+                    NeoConfirm(
+                        form.dataset.confirmTitle || 'Konfirmasi',
+                        form.dataset.confirmMessage || 'Lanjutkan tindakan ini?',
+                        () => form.submit()
+                    );
+                } else if (window.confirm(form.dataset.confirmMessage || 'Lanjutkan tindakan ini?')) {
+                    form.submit();
+                }
+            });
+        });
+    </script>
+    @if ($midtransConfigured && $pendingOrder && $pendingOrder->snap_token)
         <script src="{{ $snapJsUrl }}" data-client-key="{{ $midtransClientKey }}"></script>
         <script>
             (function () {
@@ -232,5 +248,5 @@
                 if (autoPay) window.addEventListener('load', openSnap);
             })();
         </script>
-    @endpush
-@endif
+    @endif
+@endpush
