@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Daftar Akun - E-Learning Programming')
+@section('title', 'Daftar Akun - E-FORVM')
 
 @section('content')
     <main class="neo-container auth-page">

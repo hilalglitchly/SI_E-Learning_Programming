@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'E-Learning Programming - Belajar Koding Jadi Mudah')
+@section('title', 'E-FORVM - Belajar Koding Jadi Mudah')
 
 @section('styles')
     <style>
@@ -638,14 +638,31 @@
                 grid-template-columns: 1fr;
             }
             .course-card-item {
-                flex: 0 0 285px;
-                max-width: 285px;
+                flex: 0 0 84vw;
+                max-width: 310px;
             }
             .catalog-search-input {
                 max-width: 100%;
             }
             .hero-section {
-                box-shadow: 7px 7px 0px var(--shadow-color);
+                padding: 28px 14px;
+                margin-bottom: 28px;
+                box-shadow: 5px 5px 0px var(--shadow-color);
+            }
+            .hero-cta-group {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .btn-cta-primary,
+            .btn-cta-secondary {
+                width: 100%;
+                padding: 12px 18px;
+                font-size: 0.96rem;
+                box-shadow: 4px 4px 0px #000;
+            }
+            .home-section {
+                padding: 20px 14px;
+                box-shadow: 5px 5px 0px #000;
             }
         }
 
@@ -1035,7 +1052,7 @@
                         <iframe
                             style="position: absolute; inset: 0; width: 100%; height: 100%; border: 0;"
                             src="https://www.youtube.com/embed/0EdYaYIUOvA"
-                            title="Apa itu E-Learning Programming"
+                            title="Apa itu E-FORVM"
                             loading="lazy"
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                             allowfullscreen>

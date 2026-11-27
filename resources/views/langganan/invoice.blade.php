@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Struk Invoice ' . $order->kode_invoice . ' - E-Learning Programming')
+@section('title', 'Struk Invoice ' . $order->kode_invoice . ' - E-FORVM')
 
 @section('styles')
 <style>
@@ -59,7 +59,7 @@
         <div class="invoice-head">
             <div>
                 <div style="font-size: 0.82rem; font-weight: 900; text-transform: uppercase; color: var(--muted-foreground);">Bukti Pembayaran Resmi</div>
-                <h1 style="font-size: 1.75rem; margin: 4px 0; text-transform: uppercase;">&lt;/&gt; E-Learning Programming</h1>
+                <h1 style="font-size: 1.75rem; margin: 4px 0; text-transform: uppercase;">&lt;/&gt; E-FORVM</h1>
                 <div style="font-size: 0.85rem; font-weight: 600; color: var(--muted-foreground);">
                     {{ config('app.contact.email') }} &bull; {{ config('app.contact.phone') }}
                 </div>
@@ -109,7 +109,7 @@
                     <tr>
                         <td>
                             <div style="font-weight: 900;">{{ $order->paket->nama_paket ?? 'Langganan Pro' }}</div>
-                            <small style="color: var(--muted-foreground);">{{ $order->paket->deskripsi ?? 'Akses kelas Premium E-Learning Programming.' }}</small>
+                            <small style="color: var(--muted-foreground);">{{ $order->paket->deskripsi ?? 'Akses kelas Premium E-FORVM.' }}</small>
                         </td>
                         <td style="font-weight: 700; white-space: nowrap;">
                             @if ($order->tgl_mulai && $order->tgl_berakhir)

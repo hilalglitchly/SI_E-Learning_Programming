@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Lupa Password - E-Learning Programming')
+@section('title', 'Lupa Password - E-FORVM')
 
 @section('content')
     <main class="neo-container auth-page">

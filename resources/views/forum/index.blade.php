@@ -3,7 +3,7 @@
 @section('title', 'E-FORVM — Forum Diskusi Programming')
 
 @section('meta')
-    <meta name="description" content="Forum diskusi programming terbuka. Tanya jawab, berbagi kode, dan diskusi seputar pemrograman bersama komunitas E-Learning Programming.">
+    <meta name="description" content="Forum diskusi programming terbuka. Tanya jawab, berbagi kode, dan diskusi seputar pemrograman bersama komunitas E-FORVM.">
 @endsection
 
 @section('styles')

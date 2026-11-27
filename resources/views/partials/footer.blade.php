@@ -30,8 +30,8 @@
             <a href="{{ $isLogged ? route('dashboard') : route('home') }}" class="neo-footer-brand-logo">
                 <span style="font-family: monospace; font-size: 2rem; background-color: #FFD700; color: #000; padding: 2px 8px; border: 2px solid #000; box-shadow: 3px 3px 0px #FF4C4C;">&lt;/&gt;</span>
                 <div style="display: flex; flex-direction: column;">
-                    <span>E-LEARNING</span>
-                    <span>PROGRAMMING</span>
+                    <span>E-FORVM</span>
+                    <span style="font-size: 0.72rem; letter-spacing: 0.08em;">MOBILE LEARNING</span>
                 </div>
             </a>
             <p class="neo-footer-brand-desc">
@@ -100,7 +100,7 @@
 
     <!-- Copyright Bottom -->
     <div class="neo-footer-bottom">
-        <div>&copy; {{ date('Y') }} Sistem Informasi E-Learning Programming. Hak Cipta Dilindungi.</div>
+        <div>&copy; {{ date('Y') }} E-FORVM. Hak Cipta Dilindungi.</div>
         <div class="neo-footer-bottom-links">
             <a href="{{ route('home') }}#faq">Pusat Bantuan</a>
             <a href="{{ route('forum.index') }}">Komunitas E-FORVM</a>

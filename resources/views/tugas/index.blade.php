@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Daftar Tugas - E-Learning')
+@section('title', 'Daftar Tugas - E-FORVM')
 
 @section('content')
     <!-- MAIN CONTENT -->

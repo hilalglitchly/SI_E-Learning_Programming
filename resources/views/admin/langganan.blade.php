@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Riwayat Pembayaran Midtrans - Admin E-Learning')
+@section('title', 'Riwayat Pembayaran Midtrans - Admin E-FORVM')
 
 @section('content')
     <main class="neo-layout-container">

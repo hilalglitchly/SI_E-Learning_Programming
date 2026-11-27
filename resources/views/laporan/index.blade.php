@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Laporan Rekapitulasi - E-Learning')
+@section('title', 'Laporan Rekapitulasi - E-FORVM')
 
 @section('styles')
     <style>
@@ -358,7 +358,7 @@
     <div class="print-only-header">
         <div>
             <div style="font-size: 14pt; font-weight: 900; text-transform: uppercase; letter-spacing: -0.02em;">
-                &lt;/&gt; SISTEM INFORMASI E-LEARNING PROGRAMMING
+                &lt;/&gt; E-FORVM — MOBILE LEARNING PROGRAMMING
             </div>
             <div style="font-size: 11pt; font-weight: 800; text-transform: uppercase; margin-top: 2px;">
                 Laporan Rekapitulasi Akademik &amp; Aktivitas Kelas
@@ -379,7 +379,7 @@
          ===================================================== -->
     <div class="lap-header">
         <div>
-            <div class="lap-header-tag">Sistem Informasi E-Learning Programming &bull; Semester {{ date('n') <= 6 ? 'Genap ' . (date('Y') - 1) . '/' . date('Y') : 'Ganjil ' . date('Y') . '/' . (date('Y') + 1) }}</div>
+            <div class="lap-header-tag">E-FORVM &bull; Semester {{ date('n') <= 6 ? 'Genap ' . (date('Y') - 1) . '/' . date('Y') : 'Ganjil ' . date('Y') . '/' . (date('Y') + 1) }}</div>
             <h1>
                 Laporan Rekapitulasi Sistem
             </h1>
@@ -628,7 +628,7 @@
     <div class="print-only-footer">
         <div>
             <div><strong>Catatan Dokumen:</strong></div>
-            <div>Dokumen ini dihasilkan secara otomatis oleh Sistem Informasi E-Learning Programming.</div>
+            <div>Dokumen ini dihasilkan secara otomatis oleh E-FORVM.</div>
             <div>Data bersifat valid sesuai waktu cetak yang tertera pada kop dokumen.</div>
         </div>
         <div style="text-align: center; min-width: 220px;">
@@ -638,7 +638,7 @@
             <div style="border-bottom: 1.5px solid #000; font-weight: 900; padding-bottom: 2px;">
                 {{ strtoupper($username) }}
             </div>
-            <div style="font-size: 8pt; color: #444; margin-top: 2px;">Sistem Informasi E-Learning</div>
+            <div style="font-size: 8pt; color: #444; margin-top: 2px;">E-FORVM</div>
         </div>
     </div>
 

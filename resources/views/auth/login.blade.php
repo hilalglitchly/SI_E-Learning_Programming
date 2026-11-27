@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Masuk - E-Learning Programming')
+@section('title', 'Masuk - E-FORVM')
 
 @section('content')
     <main class="neo-container auth-page">
@@ -16,7 +16,7 @@
 
             <div class="auth-body">
                 <h1 id="auth-heading" class="auth-title">Selamat Datang</h1>
-                <p class="auth-subtitle">Masuk ke akun E-Learning Programming Anda.</p>
+                <p class="auth-subtitle">Masuk ke akun E-FORVM Anda.</p>
 
                 @if (!empty($error))
                     <div class="auth-alert auth-alert--error" role="alert">

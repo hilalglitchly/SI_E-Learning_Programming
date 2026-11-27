@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#FFD700"/>
+  <rect x="44" y="44" width="424" height="424" fill="#000000"/>
+  <rect x="28" y="28" width="424" height="424" fill="#FFFFFF" stroke="#000000" stroke-width="24"/>
+  <rect x="64" y="64" width="352" height="196" fill="#FFD700" stroke="#000000" stroke-width="18"/>
+  <path d="M168 122 L112 162 L168 202 M312 122 L368 162 L312 202 M258 112 L222 212" fill="none" stroke="#000000" stroke-width="24" stroke-linecap="square" stroke-linejoin="miter"/>
+  <rect x="64" y="294" width="352" height="118" fill="#DC2626" stroke="#000000" stroke-width="18"/>
+  <text x="240" y="378" text-anchor="middle" font-family="monospace, sans-serif" font-weight="900" font-size="78" fill="#FFFFFF" letter-spacing="4">E-FORVM</text>
+</svg>

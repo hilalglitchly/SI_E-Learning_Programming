@@ -210,7 +210,7 @@ class AuthController extends Controller
                     'nama' => $account['nama'],
                     'resetUrl' => $resetUrl,
                 ], function ($message) use ($email) {
-                    $message->to($email)->subject('Reset Password — E-Learning Programming');
+                    $message->to($email)->subject('Reset Password — E-FORVM');
                 });
             } catch (\Throwable $e) {
                 report($e);
@@ -332,7 +332,7 @@ class AuthController extends Controller
                 'nama' => $nama,
                 'verifyUrl' => $verifyUrl,
             ], function ($message) use ($email) {
-                $message->to($email)->subject('Verifikasi Email — E-Learning Programming');
+                $message->to($email)->subject('Verifikasi Email — E-FORVM');
             });
         } catch (\Throwable $e) {
             report($e);

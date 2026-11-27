@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Dashboard - E-Learning Programming')
+@section('title', 'Dashboard - E-FORVM')
 
 @section('content')
     <main class="neo-layout-container">
@@ -408,7 +408,7 @@
                     <div class="neo-box" style="background-color: var(--card); border-left: 12px solid #6D28D9; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; margin-bottom: 28px;">
                         <div>
                             <div style="font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted-foreground); margin-bottom: 4px;">
-                                SISTEM INFORMASI E-LEARNING PROGRAMMING
+                                E-FORVM — MOBILE LEARNING PROGRAMMING
                             </div>
                             <h1 style="font-size: clamp(1.45rem, 3vw, 2rem); margin: 0 0 6px 0; font-weight: 900; text-transform: uppercase;">
                                 LAPORAN EKSEKUTIF — <span style="background-color: var(--secondary); color: #000; padding: 2px 10px; border: 2px solid #000; box-shadow: 3px 3px 0px #000; display: inline-block; transform: rotate(-1deg);">{{ strtoupper($username) }}</span>
@@ -579,7 +579,7 @@
 
                     <div class="pimpinan-print-footer">
                         <div>
-                            <strong>Sistem Informasi E-Learning Programming</strong><br>
+                            <strong>E-FORVM</strong><br>
                             Dicetak oleh: {{ $username }} (Pimpinan)<br>
                             Tanggal: {{ date('d F Y, H:i') }} WIB
                         </div>

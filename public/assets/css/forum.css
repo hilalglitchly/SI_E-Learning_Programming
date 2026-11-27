@@ -34,6 +34,49 @@
     }
 }
 
+@media (max-width: 640px) {
+    .forum-layout {
+        padding: 0.85rem;
+        gap: 1rem;
+    }
+
+    .forum-mobile-header,
+    .forum-filter-chips {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        padding-bottom: 4px;
+    }
+
+    .forum-mobile-header::-webkit-scrollbar,
+    .forum-filter-chips::-webkit-scrollbar {
+        display: none;
+    }
+
+    .forum-mobile-topic-btn,
+    .forum-chip {
+        flex: 0 0 auto;
+        white-space: nowrap;
+        min-height: 40px;
+    }
+
+    .forum-search-bar {
+        gap: 6px;
+    }
+
+    .forum-search-input {
+        min-width: 0;
+        font-size: 16px;
+        padding: 10px 12px;
+    }
+
+    .forum-search-btn {
+        padding: 10px 14px;
+        font-size: 0.84rem;
+    }
+}
+
 /* ============================================
    TICKER / MARQUEE BAR
    ============================================ */

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('code') — @yield('title') | E-Learning Programming</title>
+    <title>@yield('code') — @yield('title') | E-FORVM</title>
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
     <style>
         .err-page {

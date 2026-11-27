@@ -29,6 +29,8 @@ class SecurityHeaders
             "font-src 'self' data: https://unpkg.com https://fonts.gstatic.com",
             "img-src 'self' data: https:",
             "connect-src 'self' https://app.sandbox.midtrans.com https://app.midtrans.com https://api.sandbox.midtrans.com https://api.midtrans.com",
+            "worker-src 'self'",
+            "manifest-src 'self'",
             "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://app.sandbox.midtrans.com https://app.midtrans.com",
         ]);
         $response->headers->set('Content-Security-Policy', $csp);

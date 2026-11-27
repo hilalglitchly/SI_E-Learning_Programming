@@ -16,7 +16,7 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'Laravel'),
+    'name' => env('APP_NAME', 'E-FORVM'),
 
     'contact' => [
         'email' => env('CONTACT_EMAIL', 'support@elearning.local'),

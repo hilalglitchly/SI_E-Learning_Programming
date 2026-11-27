@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Tambah Pengguna - Admin E-Learning')
+@section('title', 'Tambah Pengguna - Admin E-FORVM')
 
 @section('content')
     <!-- MAIN CONTENT -->

@@ -14,10 +14,10 @@ $username = $user ? $user->username : 'Guest';
 <!-- TOP NAVBAR (Floating Neo-Brutalism Style) -->
 <nav class="neo-navbar" style="width: 96%; max-width: 1400px; margin: 20px auto; position: sticky; top: 20px; z-index: 1000; border: 3px solid #000; box-shadow: 8px 8px 0px #000; border-radius: 0; background-color: #FFD700; color: #000;">
     <a href="{{ $is_logged_in ? route('dashboard') : route('home') }}" class="neo-navbar-brand" style="font-weight: 900; color: #000; display: flex; align-items: center; gap: 7px; text-decoration: none; line-height: 1.05;">
-        <span style="font-size: 1.4rem; font-family: monospace; font-weight: 900;">&lt;/&gt;</span>
+        <span class="neo-brand-code" style="font-size: 1.4rem; font-family: monospace; font-weight: 900;">&lt;/&gt;</span>
         <div style="display: flex; flex-direction: column;">
-            <span>E-LEARNING</span>
-            <span>PROGRAMMING</span>
+            <span class="neo-brand-title" style="font-size: 1.2rem; letter-spacing: 0.04em;">E-FORVM</span>
+            <span class="neo-brand-sub" style="font-size: 0.65rem; font-weight: 800; letter-spacing: 0.08em;">MOBILE LEARNING</span>
         </div>
     </a>
     
@@ -55,9 +55,14 @@ $username = $user ? $user->username : 'Guest';
     </ul>
 
     <div class="neo-navbar-user">
-        <button type="button" id="nav-mobile-toggle" class="neo-nav-toggle brutal-hover" aria-expanded="false" aria-controls="neo-navbar-menu">
+        <button type="button" id="pwa-install-btn" title="Install Aplikasi E-FORVM" aria-label="Install Aplikasi E-FORVM" class="neo-navbar-btn brutal-hover" style="display: none; height: 42px; padding: 0 10px; align-items: center; justify-content: center; gap: 5px; font-size: 0.78rem; font-weight: 900; text-transform: uppercase; background-color: #16A34A; border: 3px solid #000; box-shadow: 3px 3px 0px #000; color: #FFF; cursor: pointer; white-space: nowrap;">
+            <i class='bx bx-download' style="font-size: 1.1rem;" aria-hidden="true"></i>
+            <span class="neo-btn-label">INSTALL</span>
+        </button>
+
+        <button type="button" id="nav-mobile-toggle" aria-label="Buka menu navigasi" class="neo-nav-toggle brutal-hover" aria-expanded="false" aria-controls="neo-navbar-menu">
             <i class='bx bx-menu' id="nav-mobile-icon" aria-hidden="true"></i>
-            <span>MENU</span>
+            <span class="neo-btn-label">MENU</span>
         </button>
 
         <button type="button" title="Ganti Tema" aria-label="Ganti tema gelap atau terang" id="theme-toggle" onclick="toggleDarkMode()" class="neo-navbar-btn brutal-hover" style="width: 42px; height: 42px; padding: 0; display: inline-flex; align-items: center; justify-content: center; font-size: 1.15rem; line-height: 1; background-color: #FFF; border: 3px solid #000; box-shadow: 3px 3px 0px #000; color: #000; cursor: pointer;">
@@ -87,9 +92,9 @@ $username = $user ? $user->username : 'Guest';
             </div>
 
             <div class="neo-user-dropdown" style="position: relative; display: inline-flex;">
-                <div class="neo-user-badge" style="cursor: pointer; height: 42px; box-sizing: border-box; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; line-height: 1.15; background-color: #FFF; padding: 0 12px; border: 3px solid #000; box-shadow: 3px 3px 0px #000; transition: transform 0.1s, box-shadow 0.1s, background-color 0.2s;">
-                    <strong style="font-size: 0.85rem; color: #000; white-space: nowrap;">{{ strtoupper($username) }}</strong>
-                    <span style="font-size: 0.75rem; color: #000; font-weight: 600; display: flex; align-items: center; gap: 3px; white-space: nowrap;">
+                <div class="neo-user-badge" role="button" tabindex="0" aria-expanded="false" aria-label="Menu akun pengguna" style="cursor: pointer; height: 42px; box-sizing: border-box; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; line-height: 1.15; background-color: #FFF; padding: 0 12px; border: 3px solid #000; box-shadow: 3px 3px 0px #000; transition: transform 0.1s, box-shadow 0.1s, background-color 0.2s;">
+                    <strong class="neo-user-name" style="font-size: 0.85rem; color: #000; white-space: nowrap;">{{ strtoupper($username) }}</strong>
+                    <span class="neo-user-role" style="font-size: 0.75rem; color: #000; font-weight: 600; display: flex; align-items: center; gap: 3px; white-space: nowrap;">
                         {{ $user->role ?? 'Guest' }} <i class='bx bxs-chevron-down' style="font-size: 1.05em;"></i>
                     </span>
                 </div>
@@ -128,28 +133,49 @@ $username = $user ? $user->username : 'Guest';
             icon.className = "bx bxs-sun";
         }
 
-        // Hover Listener for User Dropdown
+        // Hover + Tap Listener for User Dropdown (mobile touch-friendly)
         const userDropdown = document.querySelector(".neo-user-dropdown");
         const dropdownMenu = document.querySelector(".neo-dropdown-menu");
         const userBadge = document.querySelector(".neo-user-badge");
         let dropdownTimeout;
 
         if (userDropdown && dropdownMenu && userBadge) {
-            userDropdown.addEventListener("mouseenter", () => {
+            const setUserMenu = (open) => {
+                dropdownMenu.style.display = open ? "block" : "none";
+                userBadge.setAttribute("aria-expanded", open ? "true" : "false");
+                userBadge.style.transform = open ? "translate(2px, 2px)" : "none";
+                userBadge.style.boxShadow = open ? "1px 1px 0px #000" : "3px 3px 0px #000";
+                userBadge.style.backgroundColor = open ? "#FFD700" : "#FFF";
+            };
+
+            userBadge.addEventListener("click", (e) => {
+                e.stopPropagation();
                 clearTimeout(dropdownTimeout);
-                dropdownMenu.style.display = "block";
-                userBadge.style.transform = "translate(2px, 2px)";
-                userBadge.style.boxShadow = "1px 1px 0px #000";
-                userBadge.style.backgroundColor = "#FFD700";
+                setUserMenu(dropdownMenu.style.display !== "block");
             });
-            
-            userDropdown.addEventListener("mouseleave", () => {
-                dropdownTimeout = setTimeout(() => {
-                    dropdownMenu.style.display = "none";
-                    userBadge.style.transform = "none";
-                    userBadge.style.boxShadow = "3px 3px 0px #000";
-                    userBadge.style.backgroundColor = "#FFF";
-                }, 300); // Jeda 300ms sebelum hilang
+
+            userBadge.addEventListener("keydown", (e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setUserMenu(dropdownMenu.style.display !== "block");
+                }
+            });
+
+            if (window.matchMedia && window.matchMedia("(hover: hover)").matches) {
+                userDropdown.addEventListener("mouseenter", () => {
+                    clearTimeout(dropdownTimeout);
+                    setUserMenu(true);
+                });
+
+                userDropdown.addEventListener("mouseleave", () => {
+                    dropdownTimeout = setTimeout(() => setUserMenu(false), 300);
+                });
+            }
+
+            document.addEventListener("click", (e) => {
+                if (dropdownMenu.style.display === "block" && !userDropdown.contains(e.target)) {
+                    setUserMenu(false);
+                }
             });
         }
 

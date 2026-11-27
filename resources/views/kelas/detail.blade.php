@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', ($kelasInfo['nama_kelas'] ?? 'Detail Kelas') . ' - E-Learning')
+@section('title', ($kelasInfo['nama_kelas'] ?? 'Detail Kelas') . ' - E-FORVM')
 
 @section('styles')
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
@@ -100,9 +100,37 @@
         @media (max-width: 768px) {
             .classroom-layout {
                 flex-direction: column;
+                gap: 1rem;
             }
             .col-left, .col-right {
                 width: 100%;
+                min-width: 0;
+            }
+            .classroom-tabs {
+                gap: 0.55rem;
+                margin-bottom: 1.25rem;
+                padding-bottom: 0.65rem;
+                -webkit-overflow-scrolling: touch;
+            }
+            .brutal-tab {
+                padding: 0.55rem 0.95rem;
+                font-size: 0.86rem;
+                box-shadow: 3px 3px 0px var(--shadow-color);
+            }
+            .classroom-banner {
+                padding: 1.25rem 1rem;
+                margin-bottom: 1.25rem;
+            }
+            .banner-title {
+                font-size: 1.45rem;
+                letter-spacing: -0.02em;
+            }
+            .banner-subtitle {
+                font-size: 0.95rem;
+            }
+            .brutal-card {
+                padding: 1rem;
+                margin-bottom: 1rem;
             }
         }
 
@@ -405,7 +433,7 @@
             <!-- BANNER UTAMA -->
             <div class="classroom-banner">
                 <div class="banner-title">{{ $kelasInfo['nama_kelas'] ?? 'Nama Kelas' }}</div>
-                <div class="banner-subtitle">{{ !empty($kelasInfo['nama_pengajar']) ? 'Pengajar: ' . $kelasInfo['nama_pengajar'] : 'Sistem Informasi E-Learning Programming' }}</div>
+                <div class="banner-subtitle">{{ !empty($kelasInfo['nama_pengajar']) ? 'Pengajar: ' . $kelasInfo['nama_pengajar'] : 'E-FORVM Mobile Learning' }}</div>
             </div>
 
             <!-- LAYOUT 2 KOLOM -->
@@ -761,7 +789,7 @@
 
             <h3 style="font-size: 1.6rem; text-transform: uppercase; font-weight: 800; margin-bottom: 1.5rem; margin-top: 2rem;">Teman Sekelas ({{ count($pesertaList) }})</h3>
             @if (count($pesertaList) > 0)
-                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 1rem;">
                     @foreach ($pesertaList as $p)
                         <div class="brutal-card" style="display: flex; align-items: center; gap: 1rem; padding: 1rem;">
                             <div class="share-icon" style="background-color: var(--secondary); color: #000000; border: 3px solid var(--border); box-shadow: var(--shadow-offset-x) var(--shadow-offset-y) var(--shadow-blur) var(--shadow-color);">👤</div>

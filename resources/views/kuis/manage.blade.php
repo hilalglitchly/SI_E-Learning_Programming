@@ -36,7 +36,7 @@
                         <textarea name="pertanyaan" rows="3" class="neo-input" placeholder="Tuliskan pertanyaan di sini..." required></textarea>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="neo-grid-2" style="gap: 16px;">
                         <div class="neo-form-group">
                             <label class="neo-label">Opsi A</label>
                             <input type="text" name="opsi_a" class="neo-input" required>
@@ -84,7 +84,7 @@
                         </div>
                         <p style="font-size: 1.05em; margin-bottom: 16px; font-weight: 500;">{!! nl2br(e($s['pertanyaan'])) !!}</p>
                         
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.95em;">
+                        <div class="neo-grid-2" style="gap: 10px; font-size: 0.95em;">
                             <div style="padding: 8px; border: 2px solid var(--border); {{ $s['jawaban_benar'] === 'A' ? 'background-color: #a8e6cf; color: #000; font-weight: bold;' : '' }}">A. {{ $s['opsi_a'] }}</div>
                             <div style="padding: 8px; border: 2px solid var(--border); {{ $s['jawaban_benar'] === 'B' ? 'background-color: #a8e6cf; color: #000; font-weight: bold;' : '' }}">B. {{ $s['opsi_b'] }}</div>
                             <div style="padding: 8px; border: 2px solid var(--border); {{ $s['jawaban_benar'] === 'C' ? 'background-color: #a8e6cf; color: #000; font-weight: bold;' : '' }}">C. {{ $s['opsi_c'] }}</div>
@@ -99,7 +99,7 @@
                                     <label class="neo-label">Pertanyaan</label>
                                     <textarea name="pertanyaan" rows="2" class="neo-input" required>{{ $s['pertanyaan'] }}</textarea>
                                 </div>
-                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <div class="neo-grid-2" style="gap: 10px;">
                                     <div class="neo-form-group"><label class="neo-label">Opsi A</label><input type="text" name="opsi_a" class="neo-input" value="{{ $s['opsi_a'] }}" required></div>
                                     <div class="neo-form-group"><label class="neo-label">Opsi B</label><input type="text" name="opsi_b" class="neo-input" value="{{ $s['opsi_b'] }}" required></div>
                                     <div class="neo-form-group"><label class="neo-label">Opsi C</label><input type="text" name="opsi_c" class="neo-input" value="{{ $s['opsi_c'] }}" required></div>

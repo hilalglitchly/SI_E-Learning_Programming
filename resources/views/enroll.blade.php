@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Cari Kelas - E-Learning Programming')
+@section('title', 'Cari Kelas - E-FORVM')
 
 @section('content')
     <main class="neo-layout-container">

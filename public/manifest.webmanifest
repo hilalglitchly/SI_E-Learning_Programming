@@ -1,0 +1,54 @@
+{
+  "id": "/",
+  "name": "E-FORVM",
+  "short_name": "E-FORVM",
+  "description": "Aplikasi Mobile E-Learning & Forum Diskusi Pemrograman E-FORVM",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#FFD700",
+  "theme_color": "#FFD700",
+  "lang": "id",
+  "categories": ["education", "developer"],
+  "icons": [
+    {
+      "src": "/assets/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Beranda",
+      "url": "/dashboard",
+      "icons": [{ "src": "/assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Forum Diskusi",
+      "short_name": "Forum",
+      "url": "/forum",
+      "icons": [{ "src": "/assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Cari Kelas",
+      "short_name": "Kelas",
+      "url": "/enroll",
+      "icons": [{ "src": "/assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ]
+}
