@@ -60,6 +60,7 @@ class AuthController extends Controller
             session([
                 'id_user' => $user->id_user,
                 'username' => $user->username,
+                'display_name' => $user->display_name,
                 'role' => $user->role,
             ]);
 

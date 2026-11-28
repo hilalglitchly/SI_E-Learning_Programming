@@ -1,4 +1,24 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;800&display=swap');
+/* Google Font Space Grotesk loaded via preconnect + <link> in layouts/app.blade.php to avoid CSS @import waterfall */
+
+#nav-progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background-color: #DC2626;
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  opacity: 0;
+  z-index: 2000;
+  pointer-events: none;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.15s ease;
+}
+
+#nav-progress-bar.is-loading {
+  opacity: 1;
+  transform: scaleX(0.78);
+}
 
 /* ========================================
    LIGHT MODE (DEFAULT VARIABLES)
@@ -690,8 +710,157 @@ a.neo-card:hover {
    MOBILE APP BOTTOM NAVIGATION & TOUCH UX
    ======================================== */
 .neo-mobile-nav,
-.neo-mobile-drawer-auth {
+.neo-mobile-drawer-auth,
+.neo-mobile-app-header {
     display: none;
+}
+
+.neo-notif-drawer {
+    position: fixed;
+    top: 94px;
+    right: max(2%, 16px);
+    width: 340px;
+    max-width: calc(100vw - 24px);
+    background-color: var(--card);
+    border: 4px solid #000000;
+    box-shadow: 6px 6px 0px #000000;
+    z-index: 1200;
+    color: var(--foreground);
+}
+
+/* Account Native-Style List Menu */
+.account-menu-card {
+    background-color: var(--card);
+    border: 3px solid var(--border);
+    box-shadow: 6px 6px 0px var(--shadow-color);
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+.account-menu-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background-color: var(--secondary);
+    color: #000000;
+    border-bottom: 3px solid var(--border);
+    font-weight: 900;
+    font-size: 0.92rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.account-menu-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.account-menu-row {
+    width: 100%;
+    min-height: 60px;
+    padding: 12px 14px;
+    background-color: var(--card);
+    color: var(--foreground);
+    border: 0;
+    border-bottom: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-align: left;
+    text-decoration: none;
+    font-family: inherit;
+    cursor: pointer;
+    box-sizing: border-box;
+    transition: background-color 0.12s ease;
+}
+
+.account-menu-list > *:last-child,
+.account-menu-list > form:last-child .account-menu-row {
+    border-bottom: 0;
+}
+
+.account-menu-row:hover,
+.account-menu-row:active {
+    background-color: var(--muted);
+}
+
+.account-menu-icon {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    background-color: var(--muted);
+    color: var(--foreground);
+    border: 2px solid var(--border);
+    box-shadow: 2px 2px 0px var(--shadow-color);
+}
+
+.account-menu-icon--danger {
+    background-color: #FEE2E2;
+    color: #DC2626;
+}
+
+.account-menu-row--danger strong {
+    color: #DC2626;
+}
+
+html.dark-mode .account-menu-row--danger strong {
+    color: #FCA5A5;
+}
+
+.account-menu-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.account-menu-text strong {
+    font-size: 0.95rem;
+    font-weight: 900;
+    line-height: 1.2;
+}
+
+.account-menu-text small {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--muted-foreground);
+    line-height: 1.3;
+}
+
+.account-menu-chevron {
+    font-size: 1.4rem;
+    color: var(--muted-foreground);
+    flex-shrink: 0;
+}
+
+.account-faq-item {
+    border: 2px solid var(--border);
+    background-color: var(--background);
+    margin-bottom: 10px;
+    padding: 10px 12px;
+}
+
+.account-faq-item summary {
+    font-weight: 900;
+    font-size: 0.92rem;
+    cursor: pointer;
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+}
+
+.account-faq-item p {
+    margin: 8px 0 0;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--muted-foreground);
+    line-height: 1.5;
 }
 
 .neo-mobile-nav-icon-wrap {
@@ -750,9 +919,136 @@ a.neo-card:hover {
         padding-bottom: 0;
     }
 
-    /* Opsi 2 Full App Shell: Auth users get bottom bar only; Guests get top bar only */
-    body.is-auth-shell .neo-navbar {
+    /* Opsi 2 Full App Shell: Auth users get Profile App Header + Bottom Bar (no desktop navbar, no 4-col footer) */
+    body.is-auth-shell .neo-navbar,
+    body.is-auth-shell .neo-site-footer {
         display: none !important;
+    }
+
+    body.is-auth-shell .neo-mobile-app-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        width: 100%;
+        min-height: 60px;
+        padding: 8px 12px;
+        background-color: #FFD700;
+        color: #000000;
+        border-bottom: 3px solid #000000;
+        box-shadow: 0 3px 0px #000000;
+        margin-bottom: 10px;
+        box-sizing: border-box;
+    }
+
+    html.dark-mode body.is-auth-shell .neo-mobile-app-header {
+        background-color: #18181B;
+        color: #F4F4F5;
+        border-bottom-color: #FFD700;
+    }
+
+    .neo-app-header-profile {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+        flex: 1;
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .neo-app-avatar {
+        width: 42px;
+        height: 42px;
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #FFFFFF;
+        color: #000000;
+        border: 3px solid #000000;
+        box-shadow: 2px 2px 0px #000000;
+        font-size: 0.95rem;
+        font-weight: 900;
+    }
+
+    html.dark-mode .neo-app-avatar {
+        background-color: #FFD700;
+        color: #000000;
+    }
+
+    .neo-app-identity {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        line-height: 1.2;
+    }
+
+    .neo-app-name {
+        font-size: 0.92rem;
+        font-weight: 900;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .neo-app-sub {
+        font-size: 0.74rem;
+        font-weight: 700;
+        opacity: 0.82;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .neo-app-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+
+    .neo-app-header-icon {
+        position: relative;
+        width: 42px;
+        height: 42px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #FFFFFF;
+        color: #000000;
+        border: 3px solid #000000;
+        box-shadow: 2px 2px 0px #000000;
+        font-size: 1.25rem;
+        text-decoration: none;
+        cursor: pointer;
+        padding: 0;
+    }
+
+    .neo-app-header-icon:active {
+        transform: translate(1px, 1px);
+        box-shadow: 1px 1px 0px #000000;
+    }
+
+    .neo-app-header-badge {
+        position: absolute;
+        top: -6px;
+        right: -6px;
+        min-width: 19px;
+        height: 19px;
+        padding: 0 4px;
+        border-radius: 999px;
+        background-color: #DC2626;
+        color: #FFFFFF;
+        border: 2px solid #000000;
+        font-size: 0.68rem;
+        font-weight: 900;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .account-menu-card {
+        box-shadow: 4px 4px 0px var(--shadow-color);
     }
 
     h1 { font-size: 1.6rem; }

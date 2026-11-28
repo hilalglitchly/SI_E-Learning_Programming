@@ -21,13 +21,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         pdo_mysql \
         pdo_sqlite \
         zip \
-    && a2enmod rewrite headers \
+    && a2enmod rewrite headers deflate expires \
     && rm -rf /var/lib/apt/lists/*
 
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
     && sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf \
     && sed -ri -e 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf
+
+RUN printf "<IfModule mod_deflate.c>\nAddOutputFilterByType DEFLATE text/html text/plain text/css application/javascript application/json image/svg+xml application/manifest+json\n</IfModule>\n<IfModule mod_expires.c>\nExpiresActive On\nExpiresByType text/css \"access plus 7 days\"\nExpiresByType application/javascript \"access plus 7 days\"\nExpiresByType image/png \"access plus 30 days\"\nExpiresByType image/svg+xml \"access plus 30 days\"\n</IfModule>\n" \
+    > /etc/apache2/conf-enabled/perf.conf
 
 RUN printf "expose_php = Off\nupload_max_filesize = 16M\npost_max_size = 20M\nmemory_limit = 256M\nopcache.enable = 1\nopcache.validate_timestamps = 0\n" \
     > /usr/local/etc/php/conf.d/app.ini

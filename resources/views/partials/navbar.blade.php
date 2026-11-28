@@ -3,6 +3,8 @@ $is_logged_in = auth()->check();
 $user = auth()->user();
 $role = $user ? strtolower($user->role) : '';
 $username = $user ? $user->username : 'Guest';
+$displayName = $is_logged_in ? (session('display_name') ?: $username) : 'Guest';
+$initials = strtoupper(mb_substr(preg_replace('/[^a-zA-Z0-9]/', '', $displayName) ?: $username, 0, 2));
 @endphp
 
 <script>
@@ -74,25 +76,12 @@ $username = $user ? $user->username : 'Guest';
         </button>
         
         @if ($is_logged_in)
-            <!-- NOTIFICATION DROPDOWN -->
+            <!-- NOTIFICATION BUTTON (Drawer lives outside .neo-navbar so mobile header shares it) -->
             <div class="neo-notif-dropdown" style="position: relative; display: inline-flex;">
                 <button type="button" id="notif-btn" title="Notifikasi" aria-label="Buka notifikasi" class="neo-navbar-btn brutal-hover" style="width: 42px; height: 42px; padding: 0; display: inline-flex; align-items: center; justify-content: center; font-size: 1.15rem; line-height: 1; background-color: #FFF; border: 3px solid #000; box-shadow: 3px 3px 0px #000; color: #000; position: relative; cursor: pointer;">
                     <i class='bx bxs-bell' aria-hidden="true"></i>
                     <span id="notif-badge" style="display: none; position: absolute; top: -8px; right: -8px; background-color: #DC2626; color: #FFF; font-size: 0.7rem; font-weight: 900; padding: 2px 6px; border: 2px solid #000; border-radius: 50%; box-shadow: 1px 1px 0px #000;">0</span>
                 </button>
-                
-                <div id="notif-menu" style="position: absolute; top: 120%; right: 0; width: 320px; background-color: var(--card); border: 4px solid #000; box-shadow: 6px 6px 0px #000; z-index: 1002; display: none; color: var(--foreground);">
-                    <div style="background-color: var(--secondary); color: #000; padding: 10px 15px; font-weight: 900; border-bottom: 3px solid #000; display: flex; justify-content: space-between; align-items: center;">
-                        <span>NOTIFIKASI</span>
-                        <div style="display: flex; gap: 10px;">
-                            <button onclick="markAllRead()" style="background: none; border: none; font-size: 0.75rem; font-weight: bold; text-decoration: underline; cursor: pointer; color: #000;">Tandai Dibaca</button>
-                            <button onclick="deleteAllNotif()" style="background: none; border: none; font-size: 0.75rem; font-weight: bold; text-decoration: underline; cursor: pointer; color: #D32F2F;">Hapus Semua</button>
-                        </div>
-                    </div>
-                    <div id="notif-list" style="max-height: 300px; overflow-y: auto; padding: 0;">
-                        <div style="padding: 20px; text-align: center; color: var(--muted-foreground); font-weight: bold;">Memuat...</div>
-                    </div>
-                </div>
             </div>
 
             <div class="neo-user-dropdown" style="position: relative; display: inline-flex;">
@@ -123,6 +112,42 @@ $username = $user ? $user->username : 'Guest';
         @endif
     </div>
 </nav>
+
+@if ($is_logged_in)
+<!-- MOBILE APP HEADER (Shown only on <= 768px for authenticated users) -->
+<header class="neo-mobile-app-header no-print" aria-label="Header akun mobile">
+    <a href="{{ route('profil.index') }}" class="neo-app-header-profile">
+        <span class="neo-app-avatar" aria-hidden="true">{{ $initials }}</span>
+        <span class="neo-app-identity">
+            <strong class="neo-app-name">{{ strtoupper($displayName) }}</strong>
+            <span class="neo-app-sub">{{ $user->role }} &bull; {{ '@' . $username }}</span>
+        </span>
+    </a>
+    <div class="neo-app-header-actions">
+        <a href="{{ route('profil.index') }}#faq-section" class="neo-app-header-icon" title="Bantuan & FAQ" aria-label="Bantuan dan FAQ">
+            <i class='bx bx-help-circle' aria-hidden="true"></i>
+        </a>
+        <button type="button" id="mobile-notif-btn" class="neo-app-header-icon" title="Notifikasi" aria-label="Buka notifikasi">
+            <i class='bx bxs-bell' aria-hidden="true"></i>
+            <span id="mobile-header-notif-badge" class="neo-app-header-badge" style="display: none;">0</span>
+        </button>
+    </div>
+</header>
+
+<!-- SHARED NOTIFICATION DRAWER (Desktop + Mobile App Header) -->
+<div id="notif-menu" class="neo-notif-drawer no-print" style="display: none;">
+    <div style="background-color: var(--secondary); color: #000; padding: 10px 15px; font-weight: 900; border-bottom: 3px solid #000; display: flex; justify-content: space-between; align-items: center;">
+        <span>NOTIFIKASI</span>
+        <div style="display: flex; gap: 10px;">
+            <button type="button" onclick="markAllRead()" style="background: none; border: none; font-size: 0.78rem; font-weight: 800; text-decoration: underline; cursor: pointer; color: #000;">Tandai Dibaca</button>
+            <button type="button" onclick="deleteAllNotif()" style="background: none; border: none; font-size: 0.78rem; font-weight: 800; text-decoration: underline; cursor: pointer; color: #B91C1C;">Hapus Semua</button>
+        </div>
+    </div>
+    <div id="notif-list" style="max-height: 320px; overflow-y: auto; padding: 0;">
+        <div style="padding: 20px; text-align: center; color: var(--muted-foreground); font-weight: bold;">Memuat...</div>
+    </div>
+</div>
+@endif
 
 <script src="{{ asset('assets/js/neo-alert.js') }}"></script>
 <script>
@@ -277,112 +302,147 @@ $username = $user ? $user->username : 'Guest';
             });
         }
 
-        // Notification Dropdown Logic
+        // Notification Drawer Logic (Shared by Desktop #notif-btn & Mobile #mobile-notif-btn)
         const notifBtn = document.getElementById('notif-btn');
+        const mobileNotifBtn = document.getElementById('mobile-notif-btn');
         const notifMenu = document.getElementById('notif-menu');
         const notifList = document.getElementById('notif-list');
         const notifBadge = document.getElementById('notif-badge');
+        const NOTIF_CACHE_KEY = 'eforvm_notif_cache_v1';
+        const NOTIF_TTL_MS = 25000;
 
-        if (notifBtn && notifMenu) {
-            // Toggle menu on click
-            notifBtn.addEventListener('click', (e) => {
+        if (notifMenu && (notifBtn || mobileNotifBtn)) {
+            const toggleNotifMenu = (e) => {
                 e.stopPropagation();
                 const isVisible = notifMenu.style.display === 'block';
                 notifMenu.style.display = isVisible ? 'none' : 'block';
                 if (!isVisible) {
-                    loadNotifikasi();
+                    loadNotifikasi(true);
                 }
-            });
+            };
 
-            // Close when clicking outside
+            if (notifBtn) notifBtn.addEventListener('click', toggleNotifMenu);
+            if (mobileNotifBtn) mobileNotifBtn.addEventListener('click', toggleNotifMenu);
+
             document.addEventListener('click', (e) => {
-                if (!notifMenu.contains(e.target) && e.target !== notifBtn) {
+                if (
+                    notifMenu.style.display === 'block' &&
+                    !notifMenu.contains(e.target) &&
+                    !(notifBtn && notifBtn.contains(e.target)) &&
+                    !(mobileNotifBtn && mobileNotifBtn.contains(e.target))
+                ) {
                     notifMenu.style.display = 'none';
                 }
             });
 
-            // Load notifications via AJAX
-            window.loadNotifikasi = function() {
+            const renderNotifPayload = (res) => {
+                const badgeText = res.unread_count > 9 ? '9+' : String(res.unread_count);
+                [
+                    notifBadge,
+                    document.getElementById('mobile-header-notif-badge'),
+                    document.getElementById('mobile-nav-notif-badge'),
+                    document.getElementById('profil-notif-badge')
+                ].forEach((b) => {
+                    if (!b) return;
+                    if (res.unread_count > 0) {
+                        b.style.display = 'inline-flex';
+                        b.innerText = badgeText;
+                    } else {
+                        b.style.display = 'none';
+                    }
+                });
+
+                const targets = [notifList, document.getElementById('profil-notif-list')].filter(Boolean);
+                targets.forEach((container) => {
+                    container.innerHTML = '';
+                    if (!res.data || res.data.length === 0) {
+                        container.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--muted-foreground); font-weight: bold;">Belum ada notifikasi.</div>`;
+                        return;
+                    }
+                    res.data.forEach(n => {
+                        const bg = n.is_read == 0 ? 'background-color: rgba(255, 215, 0, 0.15);' : '';
+                        const item = document.createElement('div');
+                        item.style.cssText = `padding: 12px 15px; border-bottom: 2px solid var(--border); cursor: pointer; transition: background 0.2s; ${bg}`;
+                        item.onmouseover = () => item.style.backgroundColor = 'var(--muted)';
+                        item.onmouseout = () => item.style.backgroundColor = n.is_read == 0 ? 'rgba(255, 215, 0, 0.15)' : 'transparent';
+
+                        const header = document.createElement('div');
+                        header.style.cssText = 'font-weight: 900; font-size: 0.9rem; margin-bottom: 4px; color: var(--primary); display: flex; justify-content: space-between; align-items: center; gap: 8px;';
+                        const titleSpan = document.createElement('span');
+                        titleSpan.textContent = n.judul ?? '';
+                        header.appendChild(titleSpan);
+                        if (n.is_read == 0) {
+                            const dot = document.createElement('span');
+                            dot.style.cssText = 'width: 8px; height: 8px; flex-shrink: 0; background-color: var(--primary); border-radius: 50%; display: inline-block;';
+                            header.appendChild(dot);
+                        }
+
+                        const body = document.createElement('div');
+                        body.style.cssText = 'font-size: 0.85rem; font-weight: 500; margin-bottom: 6px; line-height: 1.35;';
+                        body.textContent = n.pesan ?? '';
+
+                        const timeEl = document.createElement('div');
+                        timeEl.style.cssText = 'font-size: 0.72rem; color: var(--muted-foreground); font-weight: bold;';
+                        timeEl.textContent = n.tgl_dibuat ?? '';
+
+                        item.append(header, body, timeEl);
+
+                        item.onclick = () => {
+                            try { sessionStorage.removeItem(NOTIF_CACHE_KEY); } catch (e) {}
+                            fetch('{{ route("api.notifikasi") }}', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/x-www-form-urlencoded',
+                                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                },
+                                body: `action=mark_read&id_notifikasi=${encodeURIComponent(n.id_notifikasi)}`
+                            }).then(() => {
+                                if (typeof n.link === 'string' && n.link) {
+                                    try {
+                                        const parsed = new URL(n.link, window.location.origin);
+                                        if (parsed.origin === window.location.origin && (parsed.protocol === 'http:' || parsed.protocol === 'https:')) {
+                                            window.location.href = parsed.href;
+                                        }
+                                    } catch (e) {}
+                                }
+                            });
+                        };
+
+                        container.appendChild(item);
+                    });
+                });
+            };
+
+            // Load notifications with 25s sessionStorage cache so rapid tab clicks avoid extra DB round-trips
+            window.loadNotifikasi = function(force = false) {
+                if (!force) {
+                    try {
+                        const raw = sessionStorage.getItem(NOTIF_CACHE_KEY);
+                        if (raw) {
+                            const cached = JSON.parse(raw);
+                            if (cached && cached.ts && (Date.now() - cached.ts) < NOTIF_TTL_MS && cached.payload) {
+                                renderNotifPayload(cached.payload);
+                                return;
+                            }
+                        }
+                    } catch (e) {}
+                }
+
                 fetch('{{ route("api.notifikasi") }}')
                     .then(response => response.json())
                     .then(res => {
                         if (res.status === 'success') {
-                            const badgeText = res.unread_count > 9 ? '9+' : String(res.unread_count);
-                            // Update Desktop & Mobile Bottom-Nav Badges
-                            [notifBadge, document.getElementById('mobile-nav-notif-badge')].forEach((b) => {
-                                if (!b) return;
-                                if (res.unread_count > 0) {
-                                    b.style.display = 'inline-flex';
-                                    b.innerText = badgeText;
-                                } else {
-                                    b.style.display = 'none';
-                                }
-                            });
-
-                            const targets = [notifList, document.getElementById('profil-notif-list')].filter(Boolean);
-                            targets.forEach((container) => {
-                                container.innerHTML = '';
-                                if (res.data.length === 0) {
-                                    container.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--muted-foreground); font-weight: bold;">Belum ada notifikasi.</div>`;
-                                    return;
-                                }
-                                res.data.forEach(n => {
-                                    const bg = n.is_read == 0 ? 'background-color: rgba(255, 215, 0, 0.15);' : '';
-                                    const item = document.createElement('div');
-                                    item.style.cssText = `padding: 12px 15px; border-bottom: 2px solid var(--border); cursor: pointer; transition: background 0.2s; ${bg}`;
-                                    item.onmouseover = () => item.style.backgroundColor = 'var(--muted)';
-                                    item.onmouseout = () => item.style.backgroundColor = n.is_read == 0 ? 'rgba(255, 215, 0, 0.15)' : 'transparent';
-
-                                    const header = document.createElement('div');
-                                    header.style.cssText = 'font-weight: 900; font-size: 0.9rem; margin-bottom: 4px; color: var(--primary); display: flex; justify-content: space-between; align-items: center; gap: 8px;';
-                                    const titleSpan = document.createElement('span');
-                                    titleSpan.textContent = n.judul ?? '';
-                                    header.appendChild(titleSpan);
-                                    if (n.is_read == 0) {
-                                        const dot = document.createElement('span');
-                                        dot.style.cssText = 'width: 8px; height: 8px; flex-shrink: 0; background-color: var(--primary); border-radius: 50%; display: inline-block;';
-                                        header.appendChild(dot);
-                                    }
-
-                                    const body = document.createElement('div');
-                                    body.style.cssText = 'font-size: 0.85rem; font-weight: 500; margin-bottom: 6px; line-height: 1.35;';
-                                    body.textContent = n.pesan ?? '';
-
-                                    const timeEl = document.createElement('div');
-                                    timeEl.style.cssText = 'font-size: 0.72rem; color: var(--muted-foreground); font-weight: bold;';
-                                    timeEl.textContent = n.tgl_dibuat ?? '';
-
-                                    item.append(header, body, timeEl);
-
-                                    item.onclick = () => {
-                                        fetch('{{ route("api.notifikasi") }}', {
-                                            method: 'POST',
-                                            headers: {
-                                                'Content-Type': 'application/x-www-form-urlencoded',
-                                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                                            },
-                                            body: `action=mark_read&id_notifikasi=${encodeURIComponent(n.id_notifikasi)}`
-                                        }).then(() => {
-                                            if (typeof n.link === 'string' && n.link) {
-                                                try {
-                                                    const parsed = new URL(n.link, window.location.origin);
-                                                    if (parsed.origin === window.location.origin && (parsed.protocol === 'http:' || parsed.protocol === 'https:')) {
-                                                        window.location.href = parsed.href;
-                                                    }
-                                                } catch (e) {}
-                                            }
-                                        });
-                                    };
-
-                                    container.appendChild(item);
-                                });
-                            });
+                            try {
+                                sessionStorage.setItem(NOTIF_CACHE_KEY, JSON.stringify({ ts: Date.now(), payload: res }));
+                            } catch (e) {}
+                            renderNotifPayload(res);
                         }
                     })
                     .catch(err => console.error("Gagal memuat notifikasi:", err));
             };
 
             window.markAllRead = function() {
+                try { sessionStorage.removeItem(NOTIF_CACHE_KEY); } catch (e) {}
                 fetch('{{ route("api.notifikasi") }}', {
                     method: 'POST',
                     headers: {
@@ -391,12 +451,13 @@ $username = $user ? $user->username : 'Guest';
                     },
                     body: `action=mark_read&id_notifikasi=all`
                 }).then(() => {
-                    loadNotifikasi();
+                    loadNotifikasi(true);
                 });
             };
 
             window.deleteAllNotif = function() {
                 NeoConfirm('Hapus Notifikasi', 'Yakin ingin menghapus semua riwayat notifikasi?', () => {
+                    try { sessionStorage.removeItem(NOTIF_CACHE_KEY); } catch (e) {}
                     fetch('{{ route("api.notifikasi") }}', {
                         method: 'POST',
                         headers: {
@@ -405,16 +466,16 @@ $username = $user ? $user->username : 'Guest';
                         },
                         body: `action=delete&id_notifikasi=all`
                     }).then(() => {
-                        loadNotifikasi();
+                        loadNotifikasi(true);
                     });
                 });
             };
 
-            // Initial load & Poll every 60 seconds only while tab is visible
-            loadNotifikasi();
+            // Initial load (cached across tabs) & poll every 60s when visible
+            loadNotifikasi(false);
             setInterval(() => {
                 if (!document.hidden) {
-                    loadNotifikasi();
+                    loadNotifikasi(true);
                 }
             }, 60000);
         }

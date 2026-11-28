@@ -74,11 +74,24 @@ class User extends Authenticatable
 
     public function activeSubscription(): ?Langganan
     {
-        return Langganan::where('id_user', $this->id_user)
+        $key = '_active_sub_' . $this->id_user;
+        $req = app()->bound('request') ? request() : null;
+
+        if ($req && $req->attributes->has($key)) {
+            return $req->attributes->get($key);
+        }
+
+        $sub = Langganan::where('id_user', $this->id_user)
             ->where('status', 'active')
             ->where('tgl_berakhir', '>', now())
             ->orderByDesc('tgl_berakhir')
             ->first();
+
+        if ($req) {
+            $req->attributes->set($key, $sub);
+        }
+
+        return $sub;
     }
 
     public function hasActiveSubscription(): bool

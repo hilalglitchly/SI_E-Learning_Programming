@@ -64,13 +64,19 @@ class PwaMobileTest extends TestCase
         $this->actingAs($user)->get(route('dashboard'))
             ->assertStatus(200)
             ->assertSee('is-auth-shell', false)
+            ->assertSee('neo-mobile-app-header', false)
+            ->assertSee('mobile-notif-btn', false)
             ->assertSee('neo-mobile-nav', false)
-            ->assertSee('mobile-nav-notif-badge', false);
+            ->assertSee('mobile-nav-notif-badge', false)
+            ->assertSee('nav-progress-bar', false);
 
         $this->actingAs($user)->get(route('profil.index'))
             ->assertStatus(200)
+            ->assertSee('account-menu-list', false)
+            ->assertSee('Kelola Profil', false)
+            ->assertSee('Pembayaran &amp; Status Pro', false)
+            ->assertSee('FAQ &amp; Panduan Pengguna', false)
             ->assertSee('profil-notif-list', false)
-            ->assertSee('profil-theme-label', false)
-            ->assertSee('Langganan Pro', false);
+            ->assertSee('profil-theme-label', false);
     }
 }

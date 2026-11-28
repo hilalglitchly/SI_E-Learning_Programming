@@ -11,6 +11,7 @@ use App\Models\PaketLangganan;
 use App\Models\Pengajar;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class HomeController extends Controller
 {
@@ -20,39 +21,34 @@ class HomeController extends Controller
             return redirect()->route('dashboard');
         }
 
-        $daftarKelas = Kelas::with('pengajar')
-            ->withCount([
-                'peserta as total_peserta',
-                'materi as total_materi',
-            ])
-            ->orderByDesc('is_premium')
-            ->orderBy('id_kelas', 'desc')
-            ->get();
+        $data = Cache::remember('home.public_payload.v1', 60, function () {
+            $daftarKelas = Kelas::with('pengajar')
+                ->withCount([
+                    'peserta as total_peserta',
+                    'materi as total_materi',
+                ])
+                ->orderByDesc('is_premium')
+                ->orderBy('id_kelas', 'desc')
+                ->get();
 
-        $totalKelas = Kelas::count();
-        $totalMurid = Murid::count();
-        $totalPengajar = Pengajar::count();
-        $totalMateri = Materi::count();
+            return [
+                'daftarKelas' => $daftarKelas,
+                'totalKelas' => $daftarKelas->count(),
+                'totalMurid' => Murid::count(),
+                'totalPengajar' => Pengajar::count(),
+                'totalMateri' => Materi::count(),
+                'paketList' => PaketLangganan::where('is_active', true)
+                    ->orderBy('harga', 'asc')
+                    ->get(),
+                'recentPosts' => ForumPost::with(['user', 'tags'])
+                    ->withCount('jawaban')
+                    ->orderByDesc('tgl_post')
+                    ->limit(3)
+                    ->get(),
+            ];
+        });
 
-        $paketList = PaketLangganan::where('is_active', true)
-            ->orderBy('harga', 'asc')
-            ->get();
-
-        $recentPosts = ForumPost::with(['user', 'tags'])
-            ->withCount('jawaban')
-            ->orderByDesc('tgl_post')
-            ->limit(3)
-            ->get();
-
-        return view('home', compact(
-            'daftarKelas',
-            'totalKelas',
-            'totalMurid',
-            'totalPengajar',
-            'totalMateri',
-            'paketList',
-            'recentPosts'
-        ));
+        return view('home', $data);
     }
 
     public function sendKontak(Request $request)

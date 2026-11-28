@@ -48,6 +48,7 @@ class ProfilController extends Controller
         $pesan = session('pesan', '');
         $tipe_pesan = session('tipe_pesan', '');
         $isEmailVerified = $user->hasVerifiedEmail();
+        $activeSub = $user->isMurid() ? $user->activeSubscription() : null;
 
         return view('profil.index', compact(
             'role',
@@ -56,6 +57,7 @@ class ProfilController extends Controller
             'nomor_induk',
             'email',
             'isEmailVerified',
+            'activeSub',
             'pesan',
             'tipe_pesan'
         ));
@@ -132,6 +134,8 @@ class ProfilController extends Controller
                     'email' => $email,
                 ]);
             }
+
+            session(['display_name' => $nama]);
 
             if ($oldEmail !== $email) {
                 $user->email_verified_at = null;

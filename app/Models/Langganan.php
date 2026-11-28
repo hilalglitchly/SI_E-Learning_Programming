@@ -36,6 +36,18 @@ class Langganan extends Model
         'created_at' => 'datetime',
     ];
 
+    protected static function booted(): void
+    {
+        $clear = static function (self $sub): void {
+            if (app()->bound('request')) {
+                request()->attributes->remove('_active_sub_' . $sub->id_user);
+            }
+        };
+
+        static::saved($clear);
+        static::deleted($clear);
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class, 'id_user', 'id_user');
