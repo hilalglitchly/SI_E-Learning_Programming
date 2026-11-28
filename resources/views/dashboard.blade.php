@@ -353,7 +353,12 @@
                         margin-bottom: 32px;
                     }
                     @media (max-width: 1024px) { .pimpinan-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-                    @media (max-width: 520px) { .pimpinan-stat-grid { grid-template-columns: 1fr; } }
+                    @media (max-width: 520px) {
+                        .pimpinan-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 20px; }
+                        .pimpinan-stat-card { padding: 12px 10px; gap: 10px; box-shadow: 4px 4px 0px var(--shadow-color); }
+                        .pimpinan-stat-icon { width: 40px; height: 40px; font-size: 1.35rem; }
+                        .pimpinan-stat-number { font-size: 1.55rem; }
+                    }
                     .pimpinan-stat-card {
                         border: 3px solid var(--border);
                         box-shadow: 6px 6px 0px var(--shadow-color);

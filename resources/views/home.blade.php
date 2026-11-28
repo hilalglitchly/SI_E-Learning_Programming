@@ -632,37 +632,109 @@
             }
         }
         @media (max-width: 520px) {
-            .home-stats-grid,
-            .home-features-grid,
+            .home-main {
+                padding-top: 0;
+            }
             .contact-form-row {
                 grid-template-columns: 1fr;
             }
+            .home-stats-section {
+                padding: 12px 10px;
+                margin-bottom: 20px;
+                border-width: 3px;
+                box-shadow: 4px 4px 0px #000;
+            }
+            .home-stats-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 10px;
+            }
+            .home-stat-card {
+                padding: 14px 8px;
+                border-width: 3px;
+                box-shadow: 3px 3px 0px #000;
+                transform: none !important;
+            }
+            .home-stat-number {
+                font-size: 1.65rem;
+                margin-bottom: 4px;
+            }
+            .home-stat-label {
+                font-size: 0.72rem;
+                line-height: 1.25;
+            }
+            .home-features-grid {
+                display: flex;
+                overflow-x: auto;
+                scroll-snap-type: x mandatory;
+                gap: 12px;
+                padding-bottom: 6px;
+                -webkit-overflow-scrolling: touch;
+            }
+            .home-features-grid .feature-box {
+                flex: 0 0 80vw;
+                max-width: 270px;
+                scroll-snap-align: start;
+                padding: 16px 14px;
+                box-shadow: 4px 4px 0px #000;
+            }
             .course-card-item {
-                flex: 0 0 84vw;
-                max-width: 310px;
+                flex: 0 0 82vw;
+                max-width: 300px;
             }
             .catalog-search-input {
                 max-width: 100%;
             }
             .hero-section {
-                padding: 28px 14px;
-                margin-bottom: 28px;
-                box-shadow: 5px 5px 0px var(--shadow-color);
+                padding: 20px 12px;
+                margin-bottom: 18px;
+                border-width: 3px;
+                box-shadow: 4px 4px 0px var(--shadow-color);
+            }
+            .hero-title {
+                font-size: clamp(1.6rem, 7vw, 2.05rem);
+                margin-bottom: 12px;
+            }
+            .hero-highlight {
+                padding: 2px 10px;
+                border-width: 3px;
+                box-shadow: 4px 4px 0px #000;
+                margin-top: 6px;
+            }
+            .hero-subtitle {
+                font-size: 0.92rem;
+                margin-bottom: 18px;
+                line-height: 1.5;
             }
             .hero-cta-group {
-                flex-direction: column;
-                gap: 10px;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
             }
             .btn-cta-primary,
             .btn-cta-secondary {
                 width: 100%;
-                padding: 12px 18px;
-                font-size: 0.96rem;
-                box-shadow: 4px 4px 0px #000;
+                min-height: 46px;
+                padding: 10px 8px;
+                font-size: 0.8rem;
+                gap: 5px;
+                border-width: 3px;
+                box-shadow: 3px 3px 0px #000;
             }
             .home-section {
-                padding: 20px 14px;
-                box-shadow: 5px 5px 0px #000;
+                padding: 16px 12px;
+                margin-bottom: 20px;
+                border-width: 3px;
+                box-shadow: 4px 4px 0px #000;
+            }
+            .section-header {
+                margin-bottom: 16px;
+                padding-bottom: 10px;
+                gap: 10px;
+            }
+        }
+        @media (max-width: 340px) {
+            .hero-cta-group {
+                grid-template-columns: 1fr;
             }
         }
 

@@ -19,13 +19,13 @@
             <i class='bx bx-task' aria-hidden="true"></i>
             <span>Tugas</span>
         </a>
+        <a href="{{ route('forum.index') }}" class="{{ request()->routeIs('forum.*') ? 'is-active' : '' }}">
+            <i class='bx bx-message-rounded-dots' aria-hidden="true"></i>
+            <span>Forum</span>
+        </a>
         <a href="{{ route('langganan.index') }}" class="{{ request()->routeIs('langganan.*') ? 'is-active' : '' }}">
             <i class='bx bxs-crown' aria-hidden="true"></i>
             <span>Pro</span>
-        </a>
-        <a href="{{ route('profil.index') }}" class="{{ request()->routeIs('profil.*') ? 'is-active' : '' }}">
-            <i class='bx bxs-user-circle' aria-hidden="true"></i>
-            <span>Akun</span>
         </a>
     @elseif ($role === 'pengajar')
         <a href="{{ route('tugas.index') }}" class="{{ request()->routeIs('tugas.index') || request()->routeIs('penilaian.*') ? 'is-active' : '' }}">
@@ -52,10 +52,6 @@
         <a href="{{ route('forum.index') }}" class="{{ request()->routeIs('forum.*') ? 'is-active' : '' }}">
             <i class='bx bx-message-rounded-dots' aria-hidden="true"></i>
             <span>Forum</span>
-        </a>
-        <a href="{{ route('profil.index') }}" class="{{ request()->routeIs('profil.*') ? 'is-active' : '' }}">
-            <i class='bx bxs-user-circle' aria-hidden="true"></i>
-            <span>Akun</span>
         </a>
     @elseif ($role === 'pimpinan')
         <a href="{{ route('laporan.index') }}" class="{{ request()->routeIs('laporan.*') ? 'is-active' : '' }}">

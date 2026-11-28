@@ -60,7 +60,7 @@ $username = $user ? $user->username : 'Guest';
             <span class="neo-btn-label">INSTALL</span>
         </button>
 
-        <button type="button" id="nav-mobile-toggle" aria-label="Buka menu navigasi" class="neo-nav-toggle brutal-hover" aria-expanded="false" aria-controls="neo-navbar-menu">
+        <button type="button" id="nav-mobile-toggle" aria-label="Buka menu navigasi" class="neo-nav-toggle {{ $is_logged_in ? 'neo-nav-toggle--hide-mobile' : '' }} brutal-hover" aria-expanded="false" aria-controls="neo-navbar-menu">
             <i class='bx bx-menu' id="nav-mobile-icon" aria-hidden="true"></i>
             <span class="neo-btn-label">MENU</span>
         </button>
@@ -99,18 +99,23 @@ $username = $user ? $user->username : 'Guest';
                     </span>
                 </div>
                 
-                <div class="neo-dropdown-menu" style="position: absolute; top: 100%; right: 0; z-index: 1001; min-width: 100%; padding-top: 5px; display: none;">
-                    <form id="logout-form" method="POST" action="{{ route('logout') }}" style="margin: 0;">
-                        @csrf
-                        <button type="submit" id="logout-btn" class="neo-logout-btn brutal-hover" style="background-color: var(--primary); color: #FFF; border: 3px solid #000; box-shadow: 4px 4px 0px #000; padding: 8px 16px; font-weight: bold; text-transform: uppercase; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; box-sizing: border-box; cursor: pointer;">
-                            <i class='bx bx-log-out'></i> LOG OUT
-                        </button>
-                    </form>
+                <div class="neo-dropdown-menu" style="position: absolute; top: 100%; right: 0; z-index: 1001; min-width: 150px; padding-top: 5px; display: none;">
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <a href="{{ route('profil.index') }}" class="brutal-hover" style="background-color: #FFF; color: #000; border: 3px solid #000; box-shadow: 4px 4px 0px #000; padding: 8px 14px; font-weight: 900; text-transform: uppercase; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; box-sizing: border-box; font-size: 0.84rem;">
+                            <i class='bx bxs-user-circle' aria-hidden="true"></i> PROFIL SAYA
+                        </a>
+                        <form id="logout-form" method="POST" action="{{ route('logout') }}" style="margin: 0;">
+                            @csrf
+                            <button type="submit" id="logout-btn" class="neo-logout-btn brutal-hover" style="background-color: var(--primary); color: #FFF; border: 3px solid #000; box-shadow: 4px 4px 0px #000; padding: 8px 16px; font-weight: bold; text-transform: uppercase; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; box-sizing: border-box; cursor: pointer;">
+                                <i class='bx bx-log-out' aria-hidden="true"></i> LOG OUT
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
         @else
-            <a href="{{ route('login') }}" class="brutal-hover" style="height: 42px; box-sizing: border-box; display: inline-flex; align-items: center; padding: 0 14px; font-weight: 900; background-color: #FFF; color: #000; border: 3px solid #000; box-shadow: 3px 3px 0px #000; text-decoration: none; text-transform: uppercase; font-size: 0.85rem; white-space: nowrap;">Masuk</a>
-            <a href="{{ route('register') }}" class="brutal-hover" style="height: 42px; box-sizing: border-box; display: inline-flex; align-items: center; padding: 0 14px; font-weight: 900; background-color: #DC2626; color: #FFF; border: 3px solid #000; box-shadow: 3px 3px 0px #000; text-decoration: none; text-transform: uppercase; font-size: 0.85rem; white-space: nowrap;">Daftar</a>
+            <a href="{{ route('login') }}" class="neo-nav-login-desktop brutal-hover" style="height: 42px; box-sizing: border-box; display: inline-flex; align-items: center; padding: 0 14px; font-weight: 900; background-color: #FFF; color: #000; border: 3px solid #000; box-shadow: 3px 3px 0px #000; text-decoration: none; text-transform: uppercase; font-size: 0.85rem; white-space: nowrap;">Masuk</a>
+            <a href="{{ route('register') }}" class="neo-nav-register-btn brutal-hover" style="height: 42px; box-sizing: border-box; display: inline-flex; align-items: center; padding: 0 14px; font-weight: 900; background-color: #DC2626; color: #FFF; border: 3px solid #000; box-shadow: 3px 3px 0px #000; text-decoration: none; text-transform: uppercase; font-size: 0.85rem; white-space: nowrap;">Daftar</a>
         @endif
     </div>
 </nav>

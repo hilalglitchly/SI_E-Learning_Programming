@@ -1,4 +1,4 @@
-const CACHE_NAME = 'eforvm-static-v2';
+const CACHE_NAME = 'eforvm-static-v3';
 const PRECACHE_URLS = [
     '/offline.html',
     '/manifest.webmanifest',

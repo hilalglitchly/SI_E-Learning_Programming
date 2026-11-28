@@ -724,19 +724,24 @@ a.neo-card:hover {
     h2 { font-size: 1.28rem; }
     h3 { font-size: 1.1rem; }
 
-    /* Compact single-row mobile sticky top bar */
+    /* Compact full-bleed non-sticky mobile app header (bottom nav stays fixed) */
     .neo-navbar {
-        width: calc(100% - 16px) !important;
-        min-height: 58px;
-        margin: 8px auto !important;
-        top: 8px !important;
-        padding: 0.45rem 0.65rem !important;
-        gap: 6px !important;
-        box-shadow: 4px 4px 0px #000000 !important;
+        position: relative !important;
+        top: 0 !important;
+        width: 100% !important;
+        max-width: none !important;
+        min-height: 56px;
+        margin: 0 0 12px 0 !important;
+        padding: 0.45rem 0.75rem !important;
+        gap: 8px !important;
+        border-top: 0 !important;
+        border-left: 0 !important;
+        border-right: 0 !important;
+        box-shadow: 0 4px 0px #000000 !important;
     }
 
     .neo-navbar-brand {
-        padding: 2px 4px;
+        padding: 2px 2px;
         gap: 5px !important;
     }
 
@@ -749,37 +754,46 @@ a.neo-card:hover {
     }
 
     .neo-brand-sub,
-    .neo-btn-label {
+    .neo-btn-label,
+    .neo-nav-login-desktop,
+    .neo-nav-toggle--hide-mobile {
         display: none !important;
     }
 
     .neo-navbar-user {
-        gap: 6px;
+        gap: 8px;
     }
 
     .neo-nav-toggle,
     .neo-navbar-btn {
-        width: 38px !important;
-        height: 38px !important;
-        min-height: 38px !important;
+        width: 44px !important;
+        height: 44px !important;
+        min-height: 44px !important;
         padding: 0 !important;
     }
 
+    .neo-nav-register-btn {
+        height: 44px !important;
+        min-height: 44px !important;
+        padding: 0 14px !important;
+        font-size: 0.84rem !important;
+    }
+
     .neo-user-badge {
-        height: 38px !important;
-        padding: 0 8px !important;
-        max-width: 112px;
+        height: 44px !important;
+        padding: 0 10px !important;
+        max-width: 124px;
     }
 
     .neo-user-name,
     .neo-user-role {
-        max-width: 92px;
+        max-width: 100px;
         overflow: hidden;
         text-overflow: ellipsis;
     }
 
     .neo-user-name {
-        font-size: 0.76rem !important;
+        font-size: 0.78rem !important;
     }
 
     .neo-user-role {
@@ -789,9 +803,9 @@ a.neo-card:hover {
     /* Anchor notification drawer edge-to-edge on small phones so it never clips left */
     #notif-menu {
         position: fixed !important;
-        top: 72px !important;
-        left: 12px !important;
-        right: 12px !important;
+        top: 62px !important;
+        left: 10px !important;
+        right: 10px !important;
         width: auto !important;
         max-width: none !important;
     }
@@ -867,11 +881,11 @@ a.neo-card:hover {
 
     /* Compact spacing, shadows & touch ergonomics */
     .neo-container {
-        padding: 0 0.85rem;
+        padding: 0 10px;
     }
 
     .neo-layout-container {
-        padding: 0.85rem 0.85rem 1.75rem 0.85rem;
+        padding: 0.65rem 10px 1.5rem 10px;
         margin-top: 0;
     }
 
@@ -974,11 +988,9 @@ a.neo-card:hover {
 }
 
 @media (max-width: 420px) {
-    .neo-navbar-user a[href*="login"],
-    .neo-navbar-user a[href*="register"] {
-        height: 38px !important;
-        padding: 0 9px !important;
-        font-size: 0.76rem !important;
+    .neo-nav-register-btn {
+        padding: 0 11px !important;
+        font-size: 0.78rem !important;
     }
 }
 
@@ -2602,7 +2614,14 @@ html.dark-mode .enroll-filter-btn:focus-visible {
 }
 
 @media (max-width: 560px) {
-    .neo-grid-4,
+    .neo-grid-4 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.75rem;
+    }
+    .neo-grid-4 > .neo-box {
+        padding: 0.85rem 0.75rem;
+        gap: 10px !important;
+    }
     .profile-info-grid {
         grid-template-columns: 1fr;
     }
