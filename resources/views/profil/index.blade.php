@@ -66,8 +66,13 @@
                 @endif
 
                 <div style="border-top: 2px dashed var(--border); padding-top: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-                    <span style="font-weight: 800; font-size: 0.92rem;">Kelola akun Anda:</span>
+                    <span style="font-weight: 800; font-size: 0.92rem;">Kelola akun &amp; aplikasi:</span>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        @if (strtolower($role) === 'murid')
+                            <a href="{{ route('langganan.index') }}" class="neo-btn neo-btn--pro" style="min-height: 44px; padding: 8px 16px; font-size: 0.85rem;">
+                                <i class='bx bxs-crown' aria-hidden="true"></i> Langganan Pro
+                            </a>
+                        @endif
                         @if (in_array(strtolower($role), ['murid', 'pengajar']))
                             <button type="button" onclick="toggleProfileForm()" class="neo-btn" style="min-height: 44px; background-color: var(--secondary); color: #000; padding: 8px 16px; font-size: 0.85rem;">
                                 <i class='bx bx-edit' aria-hidden="true"></i> Edit Profil
@@ -76,7 +81,35 @@
                         <button type="button" onclick="togglePasswordForm()" class="neo-btn" style="min-height: 44px; background-color: var(--accent); color: var(--accent-foreground); padding: 8px 16px; font-size: 0.85rem;">
                             <i class='bx bx-lock-alt' aria-hidden="true"></i> Ubah Password
                         </button>
+                        <button type="button" onclick="toggleDarkMode()" class="neo-btn" style="min-height: 44px; background-color: var(--muted); color: var(--foreground); padding: 8px 16px; font-size: 0.85rem;">
+                            <i class='bx bxs-moon' id="profil-theme-icon" aria-hidden="true"></i> <span id="profil-theme-label">Mode Gelap</span>
+                        </button>
+                        <button type="button" class="neo-btn js-pwa-install-btn" style="display: none; min-height: 44px; background-color: #047857; color: #FFF; padding: 8px 16px; font-size: 0.85rem;">
+                            <i class='bx bx-download' aria-hidden="true"></i> Install App
+                        </button>
+                        <form method="POST" action="{{ route('logout') }}" onsubmit="event.preventDefault(); NeoConfirm('Konfirmasi Keluar', 'Apakah Anda yakin ingin keluar dari sistem?', () => this.submit());" style="margin: 0;">
+                            @csrf
+                            <button type="submit" class="neo-btn neo-btn--danger" style="min-height: 44px; padding: 8px 16px; font-size: 0.85rem;">
+                                <i class='bx bx-log-out' aria-hidden="true"></i> Keluar
+                            </button>
+                        </form>
                     </div>
+                </div>
+            </section>
+
+            <!-- Kotak Notifikasi (Memudahkan Akses Notifikasi di Mode App Mobile) -->
+            <section class="neo-box" aria-label="Notifikasi terbaru">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border-bottom: 3px solid var(--border); padding-bottom: 10px; margin-bottom: 12px;">
+                    <h2 style="margin: 0; font-size: 1.2rem; display: flex; align-items: center; gap: 8px;">
+                        <i class='bx bxs-bell' aria-hidden="true"></i> Notifikasi Terbaru
+                    </h2>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button type="button" onclick="if (window.markAllRead) markAllRead()" class="neo-btn" style="min-height: 40px; padding: 6px 12px; font-size: 0.78rem; background-color: var(--secondary); color: #000;">Tandai Dibaca</button>
+                        <button type="button" onclick="if (window.deleteAllNotif) deleteAllNotif()" class="neo-btn neo-btn--danger" style="min-height: 40px; padding: 6px 12px; font-size: 0.78rem;">Hapus Semua</button>
+                    </div>
+                </div>
+                <div id="profil-notif-list" style="max-height: 320px; overflow-y: auto; border: 2px solid var(--border); background-color: var(--background);">
+                    <div style="padding: 18px; text-align: center; color: var(--muted-foreground); font-weight: 700;">Memuat notifikasi...</div>
                 </div>
             </section>
 

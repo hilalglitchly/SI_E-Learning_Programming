@@ -689,8 +689,34 @@ a.neo-card:hover {
 /* ========================================
    MOBILE APP BOTTOM NAVIGATION & TOUCH UX
    ======================================== */
-.neo-mobile-nav {
+.neo-mobile-nav,
+.neo-mobile-drawer-auth {
     display: none;
+}
+
+.neo-mobile-nav-icon-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.neo-mobile-nav-badge {
+    position: absolute;
+    top: -6px;
+    right: -10px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background-color: #DC2626;
+    color: #FFFFFF;
+    border: 2px solid #000000;
+    font-size: 0.65rem;
+    font-weight: 900;
+    line-height: 1;
+    align-items: center;
+    justify-content: center;
 }
 
 @media (hover: none), (pointer: coarse) {
@@ -716,17 +742,26 @@ a.neo-card:hover {
         overflow-x: clip;
     }
 
-    body {
+    body.is-auth-shell {
         padding-bottom: calc(74px + env(safe-area-inset-bottom));
+    }
+
+    body.is-guest-shell {
+        padding-bottom: 0;
+    }
+
+    /* Opsi 2 Full App Shell: Auth users get bottom bar only; Guests get top bar only */
+    body.is-auth-shell .neo-navbar {
+        display: none !important;
     }
 
     h1 { font-size: 1.6rem; }
     h2 { font-size: 1.28rem; }
     h3 { font-size: 1.1rem; }
 
-    /* Compact full-bleed non-sticky mobile app header (bottom nav stays fixed) */
-    .neo-navbar {
-        position: relative !important;
+    /* Compact sticky single-row top navbar for Guests */
+    body.is-guest-shell .neo-navbar {
+        position: sticky !important;
         top: 0 !important;
         width: 100% !important;
         max-width: none !important;
@@ -755,9 +790,37 @@ a.neo-card:hover {
 
     .neo-brand-sub,
     .neo-btn-label,
-    .neo-nav-login-desktop,
+    .neo-nav-register-desktop,
     .neo-nav-toggle--hide-mobile {
         display: none !important;
+    }
+
+    .neo-mobile-drawer-auth {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        width: 100%;
+        padding-top: 8px;
+        margin-top: 4px;
+        border-top: 2px dashed #000000;
+    }
+
+    .neo-mobile-drawer-auth a {
+        justify-content: center !important;
+        text-align: center;
+        border: 3px solid #000000 !important;
+        box-shadow: 3px 3px 0px #000000;
+        font-weight: 900;
+    }
+
+    .neo-drawer-btn-login {
+        background-color: #FFFFFF !important;
+        color: #000000 !important;
+    }
+
+    .neo-drawer-btn-register {
+        background-color: #DC2626 !important;
+        color: #FFFFFF !important;
     }
 
     .neo-navbar-user {
@@ -772,7 +835,7 @@ a.neo-card:hover {
         padding: 0 !important;
     }
 
-    .neo-nav-register-btn {
+    .neo-nav-login-btn {
         height: 44px !important;
         min-height: 44px !important;
         padding: 0 14px !important;
@@ -988,7 +1051,7 @@ a.neo-card:hover {
 }
 
 @media (max-width: 420px) {
-    .neo-nav-register-btn {
+    .neo-nav-login-btn {
         padding: 0 11px !important;
         font-size: 0.78rem !important;
     }

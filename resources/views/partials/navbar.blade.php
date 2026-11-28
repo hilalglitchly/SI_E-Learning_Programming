@@ -51,11 +51,15 @@ $username = $user ? $user->username : 'Guest';
             <li><a id="nav-paket" href="{{ route('home') }}#paket" style="color: #000;"><i class='bx bxs-crown' aria-hidden="true"></i> HARGA</a></li>
             <li><a id="nav-faq" href="{{ route('home') }}#faq" style="color: #000;"><i class='bx bx-question-mark' aria-hidden="true"></i> FAQ</a></li>
             <li><a id="nav-kontak" href="{{ route('home') }}#kontak" style="color: #000;"><i class='bx bxs-contact' aria-hidden="true"></i> KONTAK</a></li>
+            <li class="neo-mobile-drawer-auth">
+                <a href="{{ route('login') }}" class="neo-drawer-btn-login"><i class='bx bx-log-in' aria-hidden="true"></i> MASUK</a>
+                <a href="{{ route('register') }}" class="neo-drawer-btn-register"><i class='bx bx-user-plus' aria-hidden="true"></i> DAFTAR GRATIS</a>
+            </li>
         @endif
     </ul>
 
     <div class="neo-navbar-user">
-        <button type="button" id="pwa-install-btn" title="Install Aplikasi E-FORVM" aria-label="Install Aplikasi E-FORVM" class="neo-navbar-btn brutal-hover" style="display: none; height: 42px; padding: 0 10px; align-items: center; justify-content: center; gap: 5px; font-size: 0.78rem; font-weight: 900; text-transform: uppercase; background-color: #16A34A; border: 3px solid #000; box-shadow: 3px 3px 0px #000; color: #FFF; cursor: pointer; white-space: nowrap;">
+        <button type="button" id="pwa-install-btn" title="Install Aplikasi E-FORVM" aria-label="Install Aplikasi E-FORVM" class="neo-navbar-btn js-pwa-install-btn brutal-hover" style="display: none; height: 42px; padding: 0 10px; align-items: center; justify-content: center; gap: 5px; font-size: 0.78rem; font-weight: 900; text-transform: uppercase; background-color: #16A34A; border: 3px solid #000; box-shadow: 3px 3px 0px #000; color: #FFF; cursor: pointer; white-space: nowrap;">
             <i class='bx bx-download' style="font-size: 1.1rem;" aria-hidden="true"></i>
             <span class="neo-btn-label">INSTALL</span>
         </button>
@@ -114,29 +118,38 @@ $username = $user ? $user->username : 'Guest';
                 </div>
             </div>
         @else
-            <a href="{{ route('login') }}" class="neo-nav-login-desktop brutal-hover" style="height: 42px; box-sizing: border-box; display: inline-flex; align-items: center; padding: 0 14px; font-weight: 900; background-color: #FFF; color: #000; border: 3px solid #000; box-shadow: 3px 3px 0px #000; text-decoration: none; text-transform: uppercase; font-size: 0.85rem; white-space: nowrap;">Masuk</a>
-            <a href="{{ route('register') }}" class="neo-nav-register-btn brutal-hover" style="height: 42px; box-sizing: border-box; display: inline-flex; align-items: center; padding: 0 14px; font-weight: 900; background-color: #DC2626; color: #FFF; border: 3px solid #000; box-shadow: 3px 3px 0px #000; text-decoration: none; text-transform: uppercase; font-size: 0.85rem; white-space: nowrap;">Daftar</a>
+            <a href="{{ route('login') }}" class="neo-nav-login-btn brutal-hover" style="height: 42px; box-sizing: border-box; display: inline-flex; align-items: center; padding: 0 14px; font-weight: 900; background-color: #FFF; color: #000; border: 3px solid #000; box-shadow: 3px 3px 0px #000; text-decoration: none; text-transform: uppercase; font-size: 0.85rem; white-space: nowrap;">Masuk</a>
+            <a href="{{ route('register') }}" class="neo-nav-register-desktop brutal-hover" style="height: 42px; box-sizing: border-box; display: inline-flex; align-items: center; padding: 0 14px; font-weight: 900; background-color: #DC2626; color: #FFF; border: 3px solid #000; box-shadow: 3px 3px 0px #000; text-decoration: none; text-transform: uppercase; font-size: 0.85rem; white-space: nowrap;">Daftar</a>
         @endif
     </div>
 </nav>
 
 <script src="{{ asset('assets/js/neo-alert.js') }}"></script>
 <script>
-    function toggleDarkMode() {
-        const isDark = document.documentElement.classList.toggle("dark-mode");
-        localStorage.setItem("theme", isDark ? "dark" : "light");
+    function syncThemeControls(isDark) {
         const icon = document.getElementById("theme-icon");
         if (icon) {
             icon.className = isDark ? "bx bxs-sun" : "bx bxs-moon";
         }
+        const profilIcon = document.getElementById("profil-theme-icon");
+        if (profilIcon) {
+            profilIcon.className = isDark ? "bx bxs-sun" : "bx bxs-moon";
+        }
+        const profilLabel = document.getElementById("profil-theme-label");
+        if (profilLabel) {
+            profilLabel.textContent = isDark ? "Mode Terang" : "Mode Gelap";
+        }
+    }
+
+    function toggleDarkMode() {
+        const isDark = document.documentElement.classList.toggle("dark-mode");
+        localStorage.setItem("theme", isDark ? "dark" : "light");
+        syncThemeControls(isDark);
     }
 
     document.addEventListener("DOMContentLoaded", () => {
         const isDark = document.documentElement.classList.contains("dark-mode");
-        const icon = document.getElementById("theme-icon");
-        if (icon && isDark) {
-            icon.className = "bx bxs-sun";
-        }
+        syncThemeControls(isDark);
 
         // Hover + Tap Listener for User Dropdown (mobile touch-friendly)
         const userDropdown = document.querySelector(".neo-user-dropdown");
@@ -294,19 +307,25 @@ $username = $user ? $user->username : 'Guest';
                     .then(response => response.json())
                     .then(res => {
                         if (res.status === 'success') {
-                            // Update Badge
-                            if (res.unread_count > 0) {
-                                notifBadge.style.display = 'inline-block';
-                                notifBadge.innerText = res.unread_count > 9 ? '9+' : res.unread_count;
-                            } else {
-                                notifBadge.style.display = 'none';
-                            }
+                            const badgeText = res.unread_count > 9 ? '9+' : String(res.unread_count);
+                            // Update Desktop & Mobile Bottom-Nav Badges
+                            [notifBadge, document.getElementById('mobile-nav-notif-badge')].forEach((b) => {
+                                if (!b) return;
+                                if (res.unread_count > 0) {
+                                    b.style.display = 'inline-flex';
+                                    b.innerText = badgeText;
+                                } else {
+                                    b.style.display = 'none';
+                                }
+                            });
 
-                            // Populate List
-                            notifList.innerHTML = '';
-                            if (res.data.length === 0) {
-                                notifList.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--muted-foreground); font-weight: bold;">Belum ada notifikasi.</div>`;
-                            } else {
+                            const targets = [notifList, document.getElementById('profil-notif-list')].filter(Boolean);
+                            targets.forEach((container) => {
+                                container.innerHTML = '';
+                                if (res.data.length === 0) {
+                                    container.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--muted-foreground); font-weight: bold;">Belum ada notifikasi.</div>`;
+                                    return;
+                                }
                                 res.data.forEach(n => {
                                     const bg = n.is_read == 0 ? 'background-color: rgba(255, 215, 0, 0.15);' : '';
                                     const item = document.createElement('div');
@@ -315,22 +334,22 @@ $username = $user ? $user->username : 'Guest';
                                     item.onmouseout = () => item.style.backgroundColor = n.is_read == 0 ? 'rgba(255, 215, 0, 0.15)' : 'transparent';
 
                                     const header = document.createElement('div');
-                                    header.style.cssText = 'font-weight: 900; font-size: 0.9rem; margin-bottom: 4px; color: var(--primary); display: flex; justify-content: space-between;';
+                                    header.style.cssText = 'font-weight: 900; font-size: 0.9rem; margin-bottom: 4px; color: var(--primary); display: flex; justify-content: space-between; align-items: center; gap: 8px;';
                                     const titleSpan = document.createElement('span');
                                     titleSpan.textContent = n.judul ?? '';
                                     header.appendChild(titleSpan);
                                     if (n.is_read == 0) {
                                         const dot = document.createElement('span');
-                                        dot.style.cssText = 'width: 8px; height: 8px; background-color: var(--primary); border-radius: 50%; display: inline-block;';
+                                        dot.style.cssText = 'width: 8px; height: 8px; flex-shrink: 0; background-color: var(--primary); border-radius: 50%; display: inline-block;';
                                         header.appendChild(dot);
                                     }
 
                                     const body = document.createElement('div');
-                                    body.style.cssText = 'font-size: 0.85rem; font-weight: 500; margin-bottom: 6px; line-height: 1.3;';
+                                    body.style.cssText = 'font-size: 0.85rem; font-weight: 500; margin-bottom: 6px; line-height: 1.35;';
                                     body.textContent = n.pesan ?? '';
 
                                     const timeEl = document.createElement('div');
-                                    timeEl.style.cssText = 'font-size: 0.7rem; color: var(--muted-foreground); font-weight: bold;';
+                                    timeEl.style.cssText = 'font-size: 0.72rem; color: var(--muted-foreground); font-weight: bold;';
                                     timeEl.textContent = n.tgl_dibuat ?? '';
 
                                     item.append(header, body, timeEl);
@@ -355,9 +374,9 @@ $username = $user ? $user->username : 'Guest';
                                         });
                                     };
 
-                                    notifList.appendChild(item);
+                                    container.appendChild(item);
                                 });
-                            }
+                            });
                         }
                     })
                     .catch(err => console.error("Gagal memuat notifikasi:", err));

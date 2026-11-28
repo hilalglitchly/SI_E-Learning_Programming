@@ -21,7 +21,7 @@
     @yield('styles')
     @stack('styles')
 </head>
-<body @hasSection('body_style') style="@yield('body_style')" @endif>
+<body class="{{ auth()->check() ? 'is-auth-shell' : 'is-guest-shell' }}" @hasSection('body_style') style="@yield('body_style')" @endif>
 
 @include('partials.navbar')
 
@@ -33,7 +33,9 @@
     @include('partials.footer')
 @endif
 
-@include('partials.mobile-nav')
+@auth
+    @include('partials.mobile-nav')
+@endauth
 @include('partials.cursor')
 
 @yield('scripts')
@@ -47,26 +49,34 @@
 
     (function () {
         let deferredPrompt = null;
-        const installBtn = document.getElementById('pwa-install-btn');
-        if (!installBtn) return;
+        const installBtns = document.querySelectorAll('.js-pwa-install-btn');
+        if (!installBtns.length) return;
+
+        const setVisible = (show) => {
+            installBtns.forEach((btn) => {
+                btn.style.display = show ? 'inline-flex' : 'none';
+            });
+        };
 
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            installBtn.style.display = 'inline-flex';
+            setVisible(true);
         });
 
-        installBtn.addEventListener('click', async () => {
-            if (!deferredPrompt) return;
-            deferredPrompt.prompt();
-            await deferredPrompt.userChoice;
-            deferredPrompt = null;
-            installBtn.style.display = 'none';
+        installBtns.forEach((btn) => {
+            btn.addEventListener('click', async () => {
+                if (!deferredPrompt) return;
+                deferredPrompt.prompt();
+                await deferredPrompt.userChoice;
+                deferredPrompt = null;
+                setVisible(false);
+            });
         });
 
         window.addEventListener('appinstalled', () => {
             deferredPrompt = null;
-            installBtn.style.display = 'none';
+            setVisible(false);
         });
     })();
 </script>

@@ -2,7 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\Murid;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class PwaMobileTest extends TestCase
@@ -31,18 +34,43 @@ class PwaMobileTest extends TestCase
         $this->assertFileExists(public_path('assets/icons/icon.svg'));
     }
 
-    public function test_home_renders_eforvm_pwa_headers_mobile_nav_and_csp(): void
+    public function test_guest_uses_top_navbar_only_and_authenticated_user_uses_mobile_bottom_nav(): void
     {
-        $res = $this->get('/');
-        $res->assertStatus(200)
+        $guestRes = $this->get('/');
+        $guestRes->assertStatus(200)
             ->assertSee('manifest.webmanifest', false)
             ->assertSee('apple-touch-icon.png', false)
             ->assertSee('theme-color', false)
-            ->assertSee('neo-mobile-nav', false)
+            ->assertSee('is-guest-shell', false)
+            ->assertDontSee('neo-mobile-nav', false)
             ->assertSee('E-FORVM', false);
 
-        $csp = (string) $res->headers->get('Content-Security-Policy');
+        $csp = (string) $guestRes->headers->get('Content-Security-Policy');
         $this->assertStringContainsString("worker-src 'self'", $csp);
         $this->assertStringContainsString("manifest-src 'self'", $csp);
+
+        $user = User::create([
+            'username' => 'pwa_murid',
+            'password' => Hash::make('StrongPass123!'),
+            'role' => 'Murid',
+        ]);
+        Murid::create([
+            'nim' => '91001',
+            'nama_murid' => 'Murid PWA',
+            'email' => 'pwa@student.local',
+            'id_user' => $user->id_user,
+        ]);
+
+        $this->actingAs($user)->get(route('dashboard'))
+            ->assertStatus(200)
+            ->assertSee('is-auth-shell', false)
+            ->assertSee('neo-mobile-nav', false)
+            ->assertSee('mobile-nav-notif-badge', false);
+
+        $this->actingAs($user)->get(route('profil.index'))
+            ->assertStatus(200)
+            ->assertSee('profil-notif-list', false)
+            ->assertSee('profil-theme-label', false)
+            ->assertSee('Langganan Pro', false);
     }
 }
