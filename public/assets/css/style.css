@@ -1,5 +1,27 @@
 /* Google Font Space Grotesk loaded via preconnect + <link> in layouts/app.blade.php to avoid CSS @import waterfall */
 
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition {
+    navigation: auto;
+  }
+  ::view-transition-old(root) {
+    animation: 0.16s ease-out both vt-fade-out;
+  }
+  ::view-transition-new(root) {
+    animation: 0.2s ease-out both vt-fade-in;
+  }
+}
+
+@keyframes vt-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0.85; }
+}
+
+@keyframes vt-fade-in {
+  from { opacity: 0.85; }
+  to { opacity: 1; }
+}
+
 #nav-progress-bar {
   position: fixed;
   top: 0;
@@ -18,6 +40,106 @@
 #nav-progress-bar.is-loading {
   opacity: 1;
   transform: scaleX(0.78);
+}
+
+/* Neo-Brutalist Skeleton Placeholder (static default; opts in to compositor-only pulse when motion allowed) */
+.neo-skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+}
+
+.neo-skeleton-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 2px solid var(--border);
+  background-color: var(--card);
+}
+
+.neo-skeleton-line {
+  display: block;
+  height: 12px;
+  background-color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.neo-skeleton-line--title {
+  width: 58%;
+  height: 14px;
+}
+
+.neo-skeleton-line--body {
+  width: 92%;
+}
+
+.neo-skeleton-line--short {
+  width: 38%;
+  height: 10px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .neo-skeleton-line {
+    animation: neo-skeleton-pulse 1.4s ease-in-out infinite;
+  }
+}
+
+@keyframes neo-skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+/* Mobile Pull-to-Refresh Pill (Auth Shell <= 768px) */
+#mobile-ptr-pill {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  body.is-auth-shell #mobile-ptr-pill {
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    z-index: 1900;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    background-color: #FFD700;
+    color: #000000;
+    border: 3px solid #000000;
+    box-shadow: 3px 3px 0px #000000;
+    font-size: 0.78rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(-50%, -64px);
+    transition: transform 0.18s ease-out, opacity 0.18s ease-out;
+  }
+
+  body.is-auth-shell #mobile-ptr-pill.is-pulling {
+    transition: none;
+  }
+
+  body.is-auth-shell #mobile-ptr-pill.is-ready {
+    background-color: #DC2626;
+    color: #FFFFFF;
+  }
+
+  html.dark-mode body.is-auth-shell #mobile-ptr-pill {
+    background-color: #27272A;
+    color: #FFD700;
+    border-color: #FFD700;
+  }
+
+  html.dark-mode body.is-auth-shell #mobile-ptr-pill.is-ready {
+    background-color: #DC2626;
+    color: #FFFFFF;
+    border-color: #FFFFFF;
+  }
 }
 
 /* ========================================

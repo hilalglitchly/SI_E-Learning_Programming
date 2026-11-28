@@ -251,7 +251,18 @@
                     </div>
                 </div>
                 <div id="profil-notif-list" style="max-height: 320px; overflow-y: auto; border: 2px solid var(--border); background-color: var(--background);">
-                    <div style="padding: 18px; text-align: center; color: var(--muted-foreground); font-weight: 700;">Memuat notifikasi...</div>
+                    <div class="neo-skeleton-list" role="status" aria-label="Memuat notifikasi">
+                        <div class="neo-skeleton-item">
+                            <span class="neo-skeleton-line neo-skeleton-line--title"></span>
+                            <span class="neo-skeleton-line neo-skeleton-line--body"></span>
+                            <span class="neo-skeleton-line neo-skeleton-line--short"></span>
+                        </div>
+                        <div class="neo-skeleton-item">
+                            <span class="neo-skeleton-line neo-skeleton-line--title"></span>
+                            <span class="neo-skeleton-line neo-skeleton-line--body"></span>
+                            <span class="neo-skeleton-line neo-skeleton-line--short"></span>
+                        </div>
+                    </div>
                 </div>
             </section>
 

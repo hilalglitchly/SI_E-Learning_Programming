@@ -24,9 +24,32 @@
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     @yield('styles')
     @stack('styles')
+    <script type="speculationrules">
+    {
+        "prefetch": [{
+            "where": {
+                "and": [
+                    { "href_matches": "/*" },
+                    { "not": { "href_matches": "/logout" } },
+                    { "not": { "href_matches": "/files/*" } },
+                    { "not": { "href_matches": "/api/*" } },
+                    { "not": { "href_matches": "/kuis/*" } },
+                    { "not": { "selector_matches": "[target=_blank], [download], [rel~=nofollow]" } }
+                ]
+            },
+            "eagerness": "moderate"
+        }]
+    }
+    </script>
 </head>
 <body class="{{ auth()->check() ? 'is-auth-shell' : 'is-guest-shell' }}" @hasSection('body_style') style="@yield('body_style')" @endif>
 <div id="nav-progress-bar" aria-hidden="true"></div>
+@auth
+<div id="mobile-ptr-pill" class="no-print" role="status" aria-live="polite" aria-hidden="true">
+    <i class='bx bx-refresh' aria-hidden="true"></i>
+    <span id="mobile-ptr-label">Tarik untuk muat ulang</span>
+</div>
+@endauth
 
 @include('partials.navbar')
 
@@ -138,6 +161,70 @@
             if (bar) bar.classList.remove('is-loading');
         });
     })();
+@auth
+
+    // Lightweight mobile Pull-to-Refresh for authenticated app shell (passive listeners, never blocks normal scroll)
+    (function () {
+        const pill = document.getElementById('mobile-ptr-pill');
+        const label = document.getElementById('mobile-ptr-label');
+        if (!pill || !label) return;
+
+        let startY = 0;
+        let pulling = false;
+        let pullDist = 0;
+        const threshold = 76;
+
+        const isBlockedTarget = (el) => !!(el && el.closest && el.closest('input, textarea, select, [contenteditable], .ql-editor, #notif-menu, .neo-modal-overlay'));
+
+        window.addEventListener('touchstart', (e) => {
+            if (window.innerWidth > 768 || window.scrollY > 0 || e.touches.length !== 1 || isBlockedTarget(e.target)) {
+                pulling = false;
+                return;
+            }
+            startY = e.touches[0].clientY;
+            pullDist = 0;
+            pulling = true;
+        }, { passive: true });
+
+        window.addEventListener('touchmove', (e) => {
+            if (!pulling) return;
+            const dy = e.touches[0].clientY - startY;
+            if (dy <= 10 || window.scrollY > 0) {
+                pullDist = 0;
+                pill.classList.remove('is-pulling', 'is-ready');
+                pill.style.opacity = '0';
+                pill.style.transform = 'translate(-50%, -64px)';
+                return;
+            }
+            pullDist = Math.min(dy * 0.55, 104);
+            const ready = pullDist >= threshold;
+            pill.classList.add('is-pulling');
+            pill.classList.toggle('is-ready', ready);
+            pill.setAttribute('aria-hidden', 'false');
+            pill.style.opacity = String(Math.min(1, pullDist / 48));
+            pill.style.transform = `translate(-50%, ${Math.round(pullDist - 54)}px)`;
+            label.textContent = ready ? 'Lepas untuk muat ulang' : 'Tarik untuk muat ulang';
+        }, { passive: true });
+
+        window.addEventListener('touchend', () => {
+            if (!pulling) return;
+            const shouldReload = pullDist >= threshold;
+            pulling = false;
+            pill.classList.remove('is-pulling');
+            if (shouldReload) {
+                label.textContent = 'Memuat ulang...';
+                pill.style.transform = 'translate(-50%, 10px)';
+                pill.style.opacity = '1';
+                window.location.reload();
+                return;
+            }
+            pill.classList.remove('is-ready');
+            pill.setAttribute('aria-hidden', 'true');
+            pill.style.opacity = '0';
+            pill.style.transform = 'translate(-50%, -64px)';
+        }, { passive: true });
+    })();
+@endauth
 </script>
 </body>
 </html>

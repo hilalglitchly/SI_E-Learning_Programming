@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 
 class Langganan extends Model
 {
@@ -42,6 +43,7 @@ class Langganan extends Model
             if (app()->bound('request')) {
                 request()->attributes->remove('_active_sub_' . $sub->id_user);
             }
+            Cache::forget('dashboard.pimpinan_stats.v1');
         };
 
         static::saved($clear);

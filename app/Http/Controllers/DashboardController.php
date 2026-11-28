@@ -8,6 +8,7 @@ use App\Models\Murid;
 use App\Models\Pengajar;
 use App\Models\Submission;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
@@ -69,36 +70,50 @@ class DashboardController extends Controller
                 ->paginate(10, ['*'], 'kelas_page')
                 ->withQueryString();
 
-            $allPengajarOptions = DB::table('tb_pengajar')
+            $allPengajarOptions = Cache::remember('admin.pengajar_options.v1', 60, fn() => DB::table('tb_pengajar')
                 ->select('nidn', 'nama_pengajar')
                 ->orderBy('nama_pengajar', 'asc')
-                ->get();
+                ->get());
 
             $totalPengajarCount = $listPengajar->total();
             $totalMuridCount = $listMurid->total();
             $totalKelasCount = $listKelas->total();
 
         } elseif (strtolower($role) === 'pimpinan') {
-            $statKelas = Kelas::count();
-            $statPengajar = Pengajar::count();
-            $statMurid = Murid::count();
-            $statSubmission = Submission::count();
-            $statProRevenue = (int) Langganan::where('status', 'active')->sum('nominal');
-            $statProAktif = Langganan::where('status', 'active')->where('tgl_berakhir', '>', now())->count();
-            $statProPending = Langganan::where('status', 'pending')->count();
-            $statProDitolak = Langganan::whereIn('status', ['rejected', 'cancelled', 'expired', 'failed', 'refunded'])->count();
+            $pimpinanStats = Cache::remember('dashboard.pimpinan_stats.v1', 45, function () {
+                $rows = DB::select("
+                    SELECT k.id_kelas, k.nama_kelas, k.deskripsi, k.is_premium, p.nama_pengajar,
+                           (SELECT COUNT(*) FROM tb_peserta_kelas pk WHERE pk.id_kelas = k.id_kelas) AS jumlah_murid,
+                           (SELECT COUNT(*) FROM tb_materi m WHERE m.id_kelas = k.id_kelas) AS jumlah_materi,
+                           (SELECT COUNT(*) FROM tb_tugas t WHERE t.id_kelas = k.id_kelas) AS jumlah_tugas,
+                           (SELECT COUNT(*) FROM tb_kuis ku WHERE ku.id_kelas = k.id_kelas) AS jumlah_kuis
+                    FROM tb_kelas k
+                    LEFT JOIN tb_pengajar p ON k.nidn = p.nidn
+                    ORDER BY k.id_kelas ASC
+                ");
 
-            $rows = DB::select("
-                SELECT k.id_kelas, k.nama_kelas, k.deskripsi, k.is_premium, p.nama_pengajar,
-                       (SELECT COUNT(*) FROM tb_peserta_kelas pk WHERE pk.id_kelas = k.id_kelas) AS jumlah_murid,
-                       (SELECT COUNT(*) FROM tb_materi m WHERE m.id_kelas = k.id_kelas) AS jumlah_materi,
-                       (SELECT COUNT(*) FROM tb_tugas t WHERE t.id_kelas = k.id_kelas) AS jumlah_tugas,
-                       (SELECT COUNT(*) FROM tb_kuis ku WHERE ku.id_kelas = k.id_kelas) AS jumlah_kuis
-                FROM tb_kelas k
-                LEFT JOIN tb_pengajar p ON k.nidn = p.nidn
-                ORDER BY k.id_kelas ASC
-            ");
-            $rekapKelas = array_map(fn($r) => (array) $r, $rows);
+                return [
+                    'statKelas' => Kelas::count(),
+                    'statPengajar' => Pengajar::count(),
+                    'statMurid' => Murid::count(),
+                    'statSubmission' => Submission::count(),
+                    'statProRevenue' => (int) Langganan::where('status', 'active')->sum('nominal'),
+                    'statProAktif' => Langganan::where('status', 'active')->where('tgl_berakhir', '>', now())->count(),
+                    'statProPending' => Langganan::where('status', 'pending')->count(),
+                    'statProDitolak' => Langganan::whereIn('status', ['rejected', 'cancelled', 'expired', 'failed', 'refunded'])->count(),
+                    'rekapKelas' => array_map(fn($r) => (array) $r, $rows),
+                ];
+            });
+
+            $statKelas = $pimpinanStats['statKelas'];
+            $statPengajar = $pimpinanStats['statPengajar'];
+            $statMurid = $pimpinanStats['statMurid'];
+            $statSubmission = $pimpinanStats['statSubmission'];
+            $statProRevenue = $pimpinanStats['statProRevenue'];
+            $statProAktif = $pimpinanStats['statProAktif'];
+            $statProPending = $pimpinanStats['statProPending'];
+            $statProDitolak = $pimpinanStats['statProDitolak'];
+            $rekapKelas = $pimpinanStats['rekapKelas'];
 
         } elseif ($role === 'Pengajar' || strtolower($role) === 'pengajar') {
             $rows = DB::select("

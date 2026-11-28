@@ -21,8 +21,10 @@ services:
         value: "*"
       - key: LOG_CHANNEL
         value: stderr
-      - key: SESSION_DRIVER
+      - key: CACHE_STORE
         value: file
+      - key: SESSION_DRIVER
+        value: cookie
       - key: SESSION_SECURE_COOKIE
         value: "true"
       - key: DB_CONNECTION

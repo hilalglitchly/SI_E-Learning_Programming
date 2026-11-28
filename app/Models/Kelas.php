@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 
 class Kelas extends Model
 {
@@ -20,6 +21,18 @@ class Kelas extends Model
     protected $casts = [
         'is_premium' => 'boolean',
     ];
+
+    protected static function booted(): void
+    {
+        $flush = static function (): void {
+            Cache::forget('kelas.catalog.v1');
+            Cache::forget('home.public_payload.v1');
+            Cache::forget('dashboard.pimpinan_stats.v1');
+        };
+
+        static::saved($flush);
+        static::deleted($flush);
+    }
 
     public function pengajar()
     {

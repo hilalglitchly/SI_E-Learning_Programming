@@ -144,7 +144,18 @@ $initials = strtoupper(mb_substr(preg_replace('/[^a-zA-Z0-9]/', '', $displayName
         </div>
     </div>
     <div id="notif-list" style="max-height: 320px; overflow-y: auto; padding: 0;">
-        <div style="padding: 20px; text-align: center; color: var(--muted-foreground); font-weight: bold;">Memuat...</div>
+        <div class="neo-skeleton-list" role="status" aria-label="Memuat notifikasi">
+            <div class="neo-skeleton-item">
+                <span class="neo-skeleton-line neo-skeleton-line--title"></span>
+                <span class="neo-skeleton-line neo-skeleton-line--body"></span>
+                <span class="neo-skeleton-line neo-skeleton-line--short"></span>
+            </div>
+            <div class="neo-skeleton-item">
+                <span class="neo-skeleton-line neo-skeleton-line--title"></span>
+                <span class="neo-skeleton-line neo-skeleton-line--body"></span>
+                <span class="neo-skeleton-line neo-skeleton-line--short"></span>
+            </div>
+        </div>
     </div>
 </div>
 @endif

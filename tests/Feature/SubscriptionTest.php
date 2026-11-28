@@ -144,11 +144,13 @@ class SubscriptionTest extends TestCase
         $this->actingAs($u1)->get(route('tugas.index'))->assertStatus(200)->assertSee('Tugas Rahasia Pro');
         $this->actingAs($u1)->get(route('files.materi', ['id' => $materiPro->id_materi]))->assertStatus(200);
 
-        // 7. Admin dashboard lists transaction & filter/search works; non-admin blocked (403)
+        // 7. Admin dashboard lists transaction, filter/search, & Midtrans webhook info; non-admin blocked (403)
         $this->actingAs($u2)->get(route('admin.langganan.index'))->assertStatus(403);
         $this->actingAs($admin)->get(route('admin.langganan.index', ['status' => 'active', 'q' => $order->kode_invoice]))
             ->assertStatus(200)
-            ->assertSee($order->kode_invoice);
+            ->assertSee($order->kode_invoice)
+            ->assertSee('/api/midtrans/webhook', false)
+            ->assertSee('copy-webhook-url-btn', false);
 
         // 8. Once subscription expires, access to Premium class, global tasks, & file is revoked immediately
         $order->update(['tgl_berakhir' => now()->subMinute()]);

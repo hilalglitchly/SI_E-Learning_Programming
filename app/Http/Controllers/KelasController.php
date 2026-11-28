@@ -12,6 +12,7 @@ use App\Models\PesertaKelas;
 use App\Models\Submission;
 use App\Models\Tugas;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -34,16 +35,22 @@ class KelasController extends Controller
         $nim = $murid->nim;
         $pesan = session('pesan', '');
 
-        $rows = DB::select("
-            SELECT k.*, p.nama_pengajar 
-            FROM tb_kelas k
-            LEFT JOIN tb_pengajar p ON k.nidn = p.nidn
-            WHERE k.id_kelas NOT IN (
-                SELECT id_kelas FROM tb_peserta_kelas WHERE nim = :nim
-            )
-        ", ['nim' => $nim]);
+        $allCatalog = Cache::remember('kelas.catalog.v1', 60, function () {
+            $rows = DB::select("
+                SELECT k.*, p.nama_pengajar
+                FROM tb_kelas k
+                LEFT JOIN tb_pengajar p ON k.nidn = p.nidn
+            ");
+            return array_map(fn($r) => (array) $r, $rows);
+        });
 
-        $kelasTersedia = array_map(fn($r) => (array) $r, $rows);
+        $enrolledIds = array_flip(
+            PesertaKelas::where('nim', $nim)->pluck('id_kelas')->map(fn($id) => (int) $id)->all()
+        );
+        $kelasTersedia = array_values(array_filter(
+            $allCatalog,
+            fn(array $row) => !isset($enrolledIds[(int) $row['id_kelas']])
+        ));
         $hasActivePro = $user->hasActiveSubscription();
 
         return view('enroll', compact('kelasTersedia', 'pesan', 'hasActivePro'));

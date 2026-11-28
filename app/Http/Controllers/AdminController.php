@@ -11,6 +11,7 @@ use App\Models\Submission;
 use App\Models\Tugas;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -91,6 +92,7 @@ class AdminController extends Controller
             }
 
             DB::commit();
+            $this->flushDirectoryCaches();
 
             return redirect()->route('admin.users.create')
                 ->with('pesan', "Berhasil! Akun {$role_baru} atas nama '{$nama_lengkap}' telah ditambahkan.")
@@ -208,6 +210,7 @@ class AdminController extends Controller
             }
 
             DB::commit();
+            $this->flushDirectoryCaches();
 
             return redirect()->route('dashboard', ['msg' => 'updated']);
         } catch (\Exception $e) {
@@ -240,6 +243,7 @@ class AdminController extends Controller
 
             $this->deletePrivateFiles('bukti_bayar', $buktiFiles);
             $this->deletePrivateFiles('submission', $submissionFiles);
+            $this->flushDirectoryCaches();
         }
 
         return redirect()->route('dashboard', ['msg' => 'deleted']);
@@ -344,6 +348,14 @@ class AdminController extends Controller
         return redirect()->route('dashboard')
             ->with('pesan', "Kelas '{$nama}' berhasil dihapus.")
             ->with('tipe_pesan', 'success');
+    }
+
+    private function flushDirectoryCaches(): void
+    {
+        Cache::forget('admin.pengajar_options.v1');
+        Cache::forget('kelas.catalog.v1');
+        Cache::forget('home.public_payload.v1');
+        Cache::forget('dashboard.pimpinan_stats.v1');
     }
 
     private function deletePrivateFiles(string $folder, array $files): void

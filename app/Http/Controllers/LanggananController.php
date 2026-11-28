@@ -7,6 +7,7 @@ use App\Models\Notifikasi;
 use App\Models\PaketLangganan;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -58,7 +59,11 @@ class LanggananController extends Controller
         }
 
         $activeSub = $user->activeSubscription();
-        $paketList = PaketLangganan::where('is_active', true)->orderBy('harga', 'asc')->get();
+        $paketList = Cache::remember(
+            'paket.active_list.v1',
+            60,
+            fn() => PaketLangganan::where('is_active', true)->orderBy('harga', 'asc')->get()
+        );
         $riwayat = Langganan::with('paket')
             ->where('id_user', $user->id_user)
             ->orderByDesc('id_langganan')
@@ -426,6 +431,9 @@ class LanggananController extends Controller
             'deskripsi' => trim((string) $request->input('deskripsi', '')),
             'is_active' => $request->boolean('is_active'),
         ]);
+
+        Cache::forget('paket.active_list.v1');
+        Cache::forget('home.public_payload.v1');
 
         return redirect()->route('admin.langganan.index')
             ->with('pesan', "Paket '{$paket->nama_paket}' berhasil diperbarui.")

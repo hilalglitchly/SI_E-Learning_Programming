@@ -27,11 +27,53 @@
                 </div>
             @endif
 
-            @if (!$midtransConfigured)
-                <div class="neo-box" role="alert" style="background-color: #FEF08A; color: #000; border-left: 10px solid #DC2626; font-weight: 700;">
-                    <code>MIDTRANS_SERVER_KEY</code> / <code>MIDTRANS_CLIENT_KEY</code> belum diisi di <code>.env</code>. Webhook Midtrans endpoint: <code>{{ url('/api/midtrans/webhook') }}</code>
+            <!-- Panel Verifikasi Webhook Midtrans -->
+            @php
+                $webhookUrl = url('/api/midtrans/webhook');
+            @endphp
+            <div class="neo-box" style="margin-bottom: 22px; background-color: {{ $midtransConfigured ? 'var(--card)' : '#FEF08A' }}; color: {{ $midtransConfigured ? 'var(--foreground)' : '#000' }}; border-left: 10px solid {{ $midtransConfigured ? '#047857' : '#DC2626' }};">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
+                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <strong style="font-size: 0.92rem; text-transform: uppercase;">Webhook Midtrans (Payment Notification URL)</strong>
+                        <span style="padding: 2px 8px; font-size: 0.72rem; font-weight: 900; border: 2px solid #000; background-color: {{ $midtransConfigured ? '#BBF7D0' : '#FCA5A5' }}; color: #000;">
+                            {{ $midtransConfigured ? 'KEY TERHUBUNG' : 'KEY BELUM DIATUR' }}
+                        </span>
+                    </div>
+                    <button type="button" id="copy-webhook-url-btn" class="neo-btn" style="min-height: 40px; padding: 6px 12px; font-size: 0.78rem; background-color: var(--secondary); color: #000;" onclick="copyMidtransWebhookUrl()">
+                        <i class='bx bx-copy' aria-hidden="true"></i> <span id="copy-webhook-url-label">Salin URL</span>
+                    </button>
                 </div>
-            @endif
+                <input type="text" id="midtrans-webhook-url-input" class="neo-input" value="{{ $webhookUrl }}" readonly aria-label="Payment Notification URL Midtrans" style="margin: 0 0 8px 0; font-family: monospace; font-size: 0.86rem; font-weight: 700; background-color: var(--background); color: var(--foreground);">
+                <div style="font-size: 0.8rem; font-weight: 600; color: {{ $midtransConfigured ? 'var(--muted-foreground)' : '#000' }};">
+                    @if (!$midtransConfigured)
+                        <code>MIDTRANS_SERVER_KEY</code> / <code>MIDTRANS_CLIENT_KEY</code> belum diisi di Environment Variables.
+                    @endif
+                    Pastikan URL di atas terpasang di <strong>Midtrans Dashboard &rarr; Settings &rarr; Configuration &rarr; Payment Notification URL</strong> agar status Pro aktif otomatis setelah dibayar.
+                </div>
+            </div>
+            <script>
+                function copyMidtransWebhookUrl() {
+                    const input = document.getElementById('midtrans-webhook-url-input');
+                    const label = document.getElementById('copy-webhook-url-label');
+                    if (!input) return;
+                    const done = () => {
+                        if (!label) return;
+                        label.textContent = 'Tersalin!';
+                        setTimeout(() => { label.textContent = 'Salin URL'; }, 1800);
+                    };
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(input.value).then(done).catch(() => {
+                            input.select();
+                            document.execCommand('copy');
+                            done();
+                        });
+                    } else {
+                        input.select();
+                        document.execCommand('copy');
+                        done();
+                    }
+                }
+            </script>
 
             <!-- Ringkasan (3 Kolom Penuh) -->
             <div class="neo-grid-3" style="margin-bottom: 28px;">

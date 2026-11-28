@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Kelas;
 use App\Models\Murid;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -42,7 +43,9 @@ class PwaMobileTest extends TestCase
             ->assertSee('apple-touch-icon.png', false)
             ->assertSee('theme-color', false)
             ->assertSee('is-guest-shell', false)
+            ->assertSee('speculationrules', false)
             ->assertDontSee('neo-mobile-nav', false)
+            ->assertDontSee('mobile-ptr-pill', false)
             ->assertSee('E-FORVM', false);
 
         $csp = (string) $guestRes->headers->get('Content-Security-Policy');
@@ -68,7 +71,9 @@ class PwaMobileTest extends TestCase
             ->assertSee('mobile-notif-btn', false)
             ->assertSee('neo-mobile-nav', false)
             ->assertSee('mobile-nav-notif-badge', false)
-            ->assertSee('nav-progress-bar', false);
+            ->assertSee('nav-progress-bar', false)
+            ->assertSee('mobile-ptr-pill', false)
+            ->assertSee('neo-skeleton-list', false);
 
         $this->actingAs($user)->get(route('profil.index'))
             ->assertStatus(200)
@@ -77,6 +82,22 @@ class PwaMobileTest extends TestCase
             ->assertSee('Pembayaran &amp; Status Pro', false)
             ->assertSee('FAQ &amp; Panduan Pengguna', false)
             ->assertSee('profil-notif-list', false)
+            ->assertSee('neo-skeleton-list', false)
             ->assertSee('profil-theme-label', false);
+
+        // Catalog cache warms on /enroll and invalidates immediately when a new Kelas is saved
+        $this->actingAs($user)->get(route('enroll.index'))
+            ->assertStatus(200)
+            ->assertDontSee('Kelas Cache Baru');
+
+        Kelas::create([
+            'nama_kelas' => 'Kelas Cache Baru',
+            'deskripsi' => 'Uji invalidasi cache katalog.',
+            'is_premium' => false,
+        ]);
+
+        $this->actingAs($user)->get(route('enroll.index'))
+            ->assertStatus(200)
+            ->assertSee('Kelas Cache Baru');
     }
 }
