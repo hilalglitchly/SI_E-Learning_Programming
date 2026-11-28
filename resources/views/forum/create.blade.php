@@ -176,6 +176,59 @@
             margin-top: 4px;
             font-weight: 600;
         }
+
+        @media (max-width: 768px) {
+            .create-post-container {
+                padding: 12px 10px 24px 10px;
+            }
+            .create-post-header {
+                gap: 10px;
+                margin-bottom: 14px;
+                padding-bottom: 10px;
+            }
+            .create-post-header h1 {
+                font-size: 1.25rem;
+            }
+            .create-post-header i {
+                font-size: 1.65rem;
+            }
+            .post-form-box {
+                padding: 14px;
+                box-shadow: 4px 4px 0px var(--shadow-color);
+            }
+            .tipe-options {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 8px;
+            }
+            .tipe-radio-label {
+                padding: 10px 6px;
+                font-size: 0.78rem;
+                gap: 4px;
+                border-width: 2px;
+            }
+            .tipe-radio-label i {
+                font-size: 1.35rem;
+            }
+            .tags-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 8px;
+            }
+            #editor-container {
+                height: 220px;
+            }
+            .form-actions {
+                flex-direction: column-reverse;
+                gap: 10px;
+            }
+            .btn-cancel,
+            .form-actions .neo-btn {
+                width: 100% !important;
+                text-align: center;
+                justify-content: center;
+                min-height: 46px;
+            }
+        }
     </style>
 @endsection
 

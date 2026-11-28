@@ -34,47 +34,10 @@
     }
 }
 
-@media (max-width: 640px) {
-    .forum-layout {
-        padding: 0.85rem;
-        gap: 1rem;
-    }
-
-    .forum-mobile-header,
-    .forum-filter-chips {
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
-        padding-bottom: 4px;
-    }
-
-    .forum-mobile-header::-webkit-scrollbar,
-    .forum-filter-chips::-webkit-scrollbar {
-        display: none;
-    }
-
-    .forum-mobile-topic-btn,
-    .forum-chip {
-        flex: 0 0 auto;
-        white-space: nowrap;
-        min-height: 40px;
-    }
-
-    .forum-search-bar {
-        gap: 6px;
-    }
-
-    .forum-search-input {
-        min-width: 0;
-        font-size: 16px;
-        padding: 10px 12px;
-    }
-
-    .forum-search-btn {
-        padding: 10px 14px;
-        font-size: 0.84rem;
-    }
+.forum-mobile-create-btn,
+.forum-mobile-topics-strip,
+.forum-mobile-vote-pill {
+    display: none;
 }
 
 /* ============================================
@@ -1231,15 +1194,17 @@ html.dark-mode .forum-announcement {
 /* ============================================
    ANIMATION: ENTRANCE
    ============================================ */
-.forum-post-card {
-    animation: forumCardIn 0.3s ease-out both;
-}
+@media (prefers-reduced-motion: no-preference) {
+    .forum-post-card {
+        animation: forumCardIn 0.25s ease-out both;
+    }
 
-.forum-post-card:nth-child(1) { animation-delay: 0s; }
-.forum-post-card:nth-child(2) { animation-delay: 0.05s; }
-.forum-post-card:nth-child(3) { animation-delay: 0.1s; }
-.forum-post-card:nth-child(4) { animation-delay: 0.15s; }
-.forum-post-card:nth-child(5) { animation-delay: 0.2s; }
+    .forum-post-card:nth-child(1) { animation-delay: 0s; }
+    .forum-post-card:nth-child(2) { animation-delay: 0.04s; }
+    .forum-post-card:nth-child(3) { animation-delay: 0.08s; }
+    .forum-post-card:nth-child(4) { animation-delay: 0.12s; }
+    .forum-post-card:nth-child(5) { animation-delay: 0.16s; }
+}
 
 @keyframes forumCardIn {
     from {
@@ -1249,5 +1214,346 @@ html.dark-mode .forum-announcement {
     to {
         opacity: 1;
         transform: translateY(0);
+    }
+}
+
+/* ============================================
+   REDDIT-STYLE TABLET & MOBILE OVERRIDES
+   (Placed last so cascade cleanly overrides base desktop styles)
+   ============================================ */
+@media (max-width: 1200px) {
+    .forum-mobile-topics-strip {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 6px;
+        padding: 2px 0 10px 0;
+        overflow-x: auto;
+        scroll-snap-type: inline proximity;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+
+    .forum-mobile-topics-strip::-webkit-scrollbar {
+        display: none;
+    }
+
+    .forum-topic-pill {
+        flex: 0 0 auto;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 34px;
+        padding: 4px 11px;
+        background-color: var(--card);
+        color: var(--foreground);
+        border: 2px solid var(--border);
+        font-size: 0.76rem;
+        font-weight: 800;
+        text-decoration: none;
+        white-space: nowrap;
+        scroll-snap-align: start;
+    }
+
+    .forum-topic-pill.active {
+        background-color: var(--secondary);
+        color: #000000;
+    }
+
+    .forum-topic-pill-dot {
+        width: 8px;
+        height: 8px;
+        background-color: var(--topic-accent, var(--secondary));
+        border: 1px solid #000000;
+        flex-shrink: 0;
+    }
+}
+
+@media (max-width: 900px) {
+    .forum-mobile-create-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        min-height: 44px;
+        padding: 0 14px;
+        background-color: var(--primary);
+        color: #FFFFFF;
+        border: 3px solid var(--border);
+        box-shadow: 4px 4px 0px var(--shadow-color);
+        font-size: 0.82rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        text-decoration: none;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+}
+
+@media (max-width: 768px) {
+    /* Reddit-style mobile feed: drop noisy ticker, maximize full-width readability */
+    .forum-ticker {
+        display: none;
+    }
+
+    .forum-layout {
+        padding: 8px 0 18px 0;
+        gap: 0;
+        min-height: auto;
+    }
+
+    .forum-main-feed {
+        min-width: 0;
+    }
+
+    /* Compact Reddit-style Search + Create Post row */
+    .forum-search-bar {
+        gap: 6px;
+        padding: 0 10px;
+        margin-bottom: 10px;
+    }
+
+    .forum-search-input {
+        min-width: 0;
+        font-size: 16px;
+        padding: 9px 12px;
+        border-width: 2px;
+        box-shadow: 2px 2px 0px var(--shadow-color);
+    }
+
+    .forum-search-btn {
+        min-width: 42px;
+        min-height: 42px;
+        padding: 0 12px;
+        border-width: 2px;
+        box-shadow: 2px 2px 0px var(--shadow-color);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .forum-search-btn-text {
+        display: none;
+    }
+
+    .forum-mobile-create-btn {
+        min-height: 42px;
+        padding: 0 12px;
+        border-width: 2px;
+        box-shadow: 2px 2px 0px var(--shadow-color);
+    }
+
+    /* Single-row horizontally scrollable Reddit sort bar */
+    .forum-sort-tabs {
+        margin: 0 0 8px 0;
+        border-left: none;
+        border-right: none;
+        border-width: 2px 0;
+        box-shadow: none;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scroll-snap-type: inline proximity;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+
+    .forum-sort-tabs::-webkit-scrollbar {
+        display: none;
+    }
+
+    .forum-sort-tab {
+        flex: 0 0 auto;
+        white-space: nowrap;
+        padding: 10px 14px;
+        font-size: 0.78rem;
+        border-right-width: 2px;
+        scroll-snap-align: start;
+        position: relative;
+    }
+
+    .forum-sort-tab.active::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border-bottom: 3px solid #000000;
+    }
+
+    .forum-mobile-topics-strip {
+        padding: 2px 10px 8px 10px;
+    }
+
+    /* Compact single-row filter chips */
+    .forum-filter-chips {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scroll-snap-type: inline proximity;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        padding: 0 10px 8px 10px;
+        margin-bottom: 6px;
+        gap: 6px;
+    }
+
+    .forum-filter-chips::-webkit-scrollbar {
+        display: none;
+    }
+
+    .forum-chip {
+        flex: 0 0 auto;
+        white-space: nowrap;
+        min-height: 34px;
+        padding: 4px 10px;
+        font-size: 0.74rem;
+        box-shadow: 2px 2px 0px var(--shadow-color);
+        scroll-snap-align: start;
+    }
+
+    .forum-announcement {
+        margin: 0 10px 10px 10px;
+        padding: 10px 12px;
+        box-shadow: 3px 3px 0px var(--shadow-color);
+        font-size: 0.82rem;
+    }
+
+    /* Edge-to-edge Reddit mobile feed cards */
+    .forum-post-card {
+        display: block;
+        border-left: none;
+        border-right: none;
+        border-top-width: 2px;
+        border-bottom-width: 3px;
+        box-shadow: none;
+        margin-bottom: 8px;
+    }
+
+    .forum-post-card:hover {
+        transform: none;
+        box-shadow: none;
+    }
+
+    /* Hide desktop left vote rail on mobile; inline vote pill lives in action bar */
+    .forum-post-card > .forum-post-votes {
+        display: none;
+    }
+
+    .forum-post-body {
+        padding: 12px 14px;
+        gap: 8px;
+    }
+
+    .forum-post-meta {
+        gap: 6px;
+        font-size: 0.76rem;
+    }
+
+    .forum-post-avatar {
+        width: 24px;
+        height: 24px;
+        font-size: 0.68rem;
+    }
+
+    .forum-post-role {
+        padding: 1px 6px;
+        font-size: 0.64rem;
+    }
+
+    .forum-tipe-badge {
+        margin-left: auto;
+        font-size: 0.62rem;
+        padding: 2px 6px;
+    }
+
+    .forum-post-title {
+        font-size: 1.04rem;
+        line-height: 1.32;
+        -webkit-line-clamp: 3;
+        line-clamp: 3;
+    }
+
+    .forum-post-preview {
+        font-size: 0.86rem;
+        line-height: 1.45;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+    }
+
+    .forum-code-preview {
+        padding: 10px 12px;
+        font-size: 0.76rem;
+        max-height: 124px;
+        border-width: 2px;
+    }
+
+    .forum-post-tags {
+        gap: 5px;
+    }
+
+    .forum-tag {
+        padding: 2px 8px;
+        font-size: 0.68rem;
+    }
+
+    /* Signature Reddit mobile action pill row: [ ▲ 12 ▼ ] [ 💬 5 ] [ ↗ ] [ 🔖 ] */
+    .forum-post-actions {
+        gap: 6px;
+        padding-top: 8px;
+        border-top: 2px solid var(--muted);
+        flex-wrap: wrap;
+    }
+
+    .forum-mobile-vote-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        min-height: 36px;
+        padding: 0 6px;
+        background-color: var(--muted);
+        border: 2px solid var(--border);
+    }
+
+    .forum-mobile-vote-pill .forum-vote-btn {
+        min-width: 30px;
+        min-height: 32px;
+        padding: 0;
+        font-size: 1.05rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .forum-mobile-vote-pill .forum-vote-btn:hover {
+        transform: none;
+    }
+
+    .forum-mobile-vote-pill .forum-vote-count {
+        font-size: 0.84rem;
+        min-width: 20px;
+        text-align: center;
+        padding: 0 2px;
+    }
+
+    .forum-action-btn {
+        min-height: 36px;
+        padding: 0 10px;
+        font-size: 0.78rem;
+        background-color: var(--muted);
+        color: var(--foreground);
+        border: 2px solid var(--border);
+    }
+
+    .forum-action-label {
+        display: none;
+    }
+
+    .forum-status {
+        margin-left: auto;
+        font-size: 0.66rem;
+        padding: 4px 8px;
+    }
+
+    .forum-empty-state {
+        margin: 0 10px;
+        padding: 2rem 1.2rem;
     }
 }

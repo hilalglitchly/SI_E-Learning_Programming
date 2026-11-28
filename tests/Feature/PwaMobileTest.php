@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\ForumPost;
 use App\Models\Kelas;
 use App\Models\Murid;
 use App\Models\User;
@@ -99,5 +100,26 @@ class PwaMobileTest extends TestCase
         $this->actingAs($user)->get(route('enroll.index'))
             ->assertStatus(200)
             ->assertSee('Kelas Cache Baru');
+
+        // Reddit-style mobile forum feed & thread controls render cleanly
+        $post = ForumPost::create([
+            'id_user' => $user->id_user,
+            'judul' => 'Uji Layout Forum Mobile Reddit',
+            'konten' => '<p>Konten diskusi mobile gaya Reddit.</p>',
+            'tipe' => 'pertanyaan',
+            'status' => 'open',
+            'tgl_post' => now(),
+        ]);
+
+        $this->actingAs($user)->get(route('forum.index'))
+            ->assertStatus(200)
+            ->assertSee('forum-mobile-create-btn', false)
+            ->assertSee('forum-mobile-vote-pill', false)
+            ->assertSee('Uji Layout Forum Mobile Reddit');
+
+        $this->actingAs($user)->get(route('forum.show', ['id' => $post->id_post]))
+            ->assertStatus(200)
+            ->assertSee('forum-mobile-vote-pill', false)
+            ->assertSee('Uji Layout Forum Mobile Reddit');
     }
 }

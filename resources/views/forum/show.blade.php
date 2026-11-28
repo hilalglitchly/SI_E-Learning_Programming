@@ -226,15 +226,97 @@
         }
         
         @media (max-width: 768px) {
-            .post-detail-card, .answer-card {
-                flex-direction: column;
+            .forum-detail-container {
+                padding: 10px 0 24px 0;
             }
-            .forum-post-votes {
-                flex-direction: row;
+            .forum-back-btn {
+                margin: 0 12px 12px 12px;
+                min-height: 40px;
+                padding: 6px 12px;
+                border: 2px solid var(--border);
+                background-color: var(--card);
+                box-shadow: 2px 2px 0px var(--shadow-color);
+                font-size: 0.8rem;
+            }
+            .post-detail-card {
+                flex-direction: column;
+                border-left: none;
                 border-right: none;
-                border-bottom: 3px solid var(--border);
-                justify-content: center;
-                gap: 20px;
+                box-shadow: none;
+                margin-bottom: 14px;
+            }
+            .post-detail-body {
+                padding: 14px;
+            }
+            .post-detail-title {
+                font-size: 1.25rem;
+                margin: 10px 0 12px 0;
+            }
+            .post-detail-content {
+                font-size: 0.95rem;
+                margin-bottom: 14px;
+            }
+            .post-detail-card > .forum-post-votes,
+            .answer-card > .forum-post-votes {
+                display: none;
+            }
+            .answers-header {
+                margin: 0 14px 12px 14px;
+                padding-bottom: 8px;
+            }
+            .answers-header h3 {
+                font-size: 1.05rem;
+            }
+            .answer-card {
+                flex-direction: column;
+                border-left: 4px solid var(--border);
+                border-right: none;
+                margin: 0 0 10px 0;
+                box-shadow: none;
+            }
+            .answer-card:hover {
+                transform: none;
+                box-shadow: none;
+            }
+            .answer-card.is-solution {
+                border-left: 5px solid #22C55E;
+                box-shadow: none;
+            }
+            .answer-body {
+                padding: 12px 14px !important;
+            }
+            .answer-card.is-solution .answer-body {
+                padding-top: 38px !important;
+            }
+            .answer-content {
+                margin: 10px 0;
+                font-size: 0.92rem;
+            }
+            .answer-mobile-footer {
+                display: flex;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 8px;
+                margin-top: 10px;
+                padding-top: 8px;
+                border-top: 2px solid var(--muted);
+            }
+            .reply-box {
+                margin: 18px 10px 0 10px;
+                padding: 14px;
+                box-shadow: 4px 4px 0px var(--shadow-color);
+            }
+            #editor-container {
+                height: 150px;
+            }
+            .submit-reply-btn {
+                width: 100%;
+                min-height: 46px;
+            }
+        }
+        @media (min-width: 769px) {
+            .answer-mobile-footer .forum-mobile-vote-pill {
+                display: none;
             }
         }
     </style>
@@ -254,19 +336,21 @@
 
     <!-- MAIN POST -->
     <article class="post-detail-card">
-        <!-- Vote Column -->
+        <!-- Vote Column (Desktop) -->
         <div class="forum-post-votes">
-            <button class="forum-vote-btn {{ $userVotePost === 'up' ? 'voted-up' : '' }}" 
-                    onclick="vote({{ $post['id_post'] }}, 'post', 'up')" title="Upvote" {{ !$is_logged_in ? 'disabled' : '' }}>
-                <i class='bx bxs-up-arrow'></i>
+            <button type="button" class="forum-vote-btn {{ $userVotePost === 'up' ? 'voted-up' : '' }}"
+                    data-vote-btn="up"
+                    onclick="vote({{ $post['id_post'] }}, 'post', 'up')" title="Upvote" aria-label="Upvote postingan" {{ !$is_logged_in ? 'disabled' : '' }}>
+                <i class='bx bxs-up-arrow' aria-hidden="true"></i>
             </button>
-            <span class="forum-vote-count" id="vote-count-post-{{ $post['id_post'] }}">{{ $post['vote_count'] }}</span>
-            <button class="forum-vote-btn {{ $userVotePost === 'down' ? 'voted-down' : '' }}" 
-                    onclick="vote({{ $post['id_post'] }}, 'post', 'down')" title="Downvote" {{ !$is_logged_in ? 'disabled' : '' }}>
-                <i class='bx bxs-down-arrow'></i>
+            <span class="forum-vote-count" id="vote-count-post-{{ $post['id_post'] }}" data-vote-count>{{ $post['vote_count'] }}</span>
+            <button type="button" class="forum-vote-btn {{ $userVotePost === 'down' ? 'voted-down' : '' }}"
+                    data-vote-btn="down"
+                    onclick="vote({{ $post['id_post'] }}, 'post', 'down')" title="Downvote" aria-label="Downvote postingan" {{ !$is_logged_in ? 'disabled' : '' }}>
+                <i class='bx bxs-down-arrow' aria-hidden="true"></i>
             </button>
         </div>
-        
+
         <!-- Body -->
         <div class="post-detail-body">
             <div class="forum-post-meta" style="font-size: 0.9rem;">
@@ -275,41 +359,58 @@
                 <span class="forum-post-role {{ $post['user_role'] === 'Pengajar' ? 'role-pengajar' : ($post['user_role'] === 'Admin' ? 'role-admin' : '') }}">{{ $post['user_role'] }}</span>
                 <span class="forum-post-time">{{ timeAgo($post['tgl_post']) }}</span>
             </div>
-            
+
             <h1 class="post-detail-title">{{ $post['judul'] }}</h1>
-            
+
             @if (!empty($tags))
-            <div class="forum-post-tags" style="margin-bottom: 20px;">
-                <span class="forum-tipe-badge tipe-{{ $post['tipe'] }}" style="margin-right: 10px; padding: 4px 10px; font-size: 0.8rem;">{{ $post['tipe'] === 'pertanyaan' ? '❓ Pertanyaan' : ($post['tipe'] === 'diskusi' ? '💬 Diskusi' : '📤 Berbagi') }}</span>
+            <div class="forum-post-tags" style="margin-bottom: 16px;">
+                <span class="forum-tipe-badge tipe-{{ $post['tipe'] }}" style="padding: 4px 10px; font-size: 0.78rem;">{{ $post['tipe'] === 'pertanyaan' ? 'Pertanyaan' : ($post['tipe'] === 'diskusi' ? 'Diskusi' : 'Berbagi') }}</span>
                 @foreach ($tags as $t)
-                <a href="{{ route('forum.index', ['tag' => $t['nama_tag']]) }}" class="forum-tag" style="border-left: 4px solid {{ $t['warna'] }}; padding: 4px 10px; font-size: 0.8rem;">
+                <a href="{{ route('forum.index', ['tag' => $t['nama_tag']]) }}" class="forum-tag" style="border-left: 4px solid {{ $t['warna'] }}; padding: 4px 10px; font-size: 0.78rem;">
                     #{{ $t['nama_tag'] }}
                 </a>
                 @endforeach
-                
+
                 @if ($post['tipe'] === 'pertanyaan')
-                <span class="forum-status status-{{ $post['status'] }}" style="margin-left: auto; padding: 4px 10px; font-size: 0.8rem;">
+                <span class="forum-status status-{{ $post['status'] }}" style="margin-left: auto; padding: 4px 10px; font-size: 0.78rem;">
                     {{ $post['status'] === 'solved' ? '✓ SOLVED' : '○ OPEN' }}
                 </span>
                 @endif
             </div>
             @endif
-            
+
             <div class="post-detail-content">
                 {!! sanitize_rich_text($post['konten']) !!}
             </div>
-            
-            <div class="forum-post-actions" style="margin-top: 20px; padding-top: 15px;">
-                <button class="forum-action-btn" data-post-id="{{ $post['id_post'] }}" data-post-title="{{ $post['judul'] }}" onclick="sharePost(this.dataset.postId, this.dataset.postTitle)">
-                    <i class='bx bx-share-alt'></i> Bagikan
+
+            <div class="forum-post-actions" style="margin-top: 16px; padding-top: 12px;">
+                <div class="forum-mobile-vote-pill" role="group" aria-label="Voting postingan">
+                    <button type="button" class="forum-vote-btn {{ $userVotePost === 'up' ? 'voted-up' : '' }}"
+                            data-vote-btn="up"
+                            onclick="vote({{ $post['id_post'] }}, 'post', 'up')" aria-label="Upvote" {{ !$is_logged_in ? 'disabled' : '' }}>
+                        <i class='bx bxs-up-arrow' aria-hidden="true"></i>
+                    </button>
+                    <span class="forum-vote-count" data-vote-count>{{ $post['vote_count'] }}</span>
+                    <button type="button" class="forum-vote-btn {{ $userVotePost === 'down' ? 'voted-down' : '' }}"
+                            data-vote-btn="down"
+                            onclick="vote({{ $post['id_post'] }}, 'post', 'down')" aria-label="Downvote" {{ !$is_logged_in ? 'disabled' : '' }}>
+                        <i class='bx bxs-down-arrow' aria-hidden="true"></i>
+                    </button>
+                </div>
+
+                <a href="#answers" class="forum-action-btn" aria-label="{{ count($answers) }} jawaban">
+                    <i class='bx bx-message-rounded-dots' aria-hidden="true"></i> <span>{{ count($answers) }}</span>
+                </a>
+                <button type="button" class="forum-action-btn" data-post-id="{{ $post['id_post'] }}" data-post-title="{{ $post['judul'] }}" onclick="sharePost(this.dataset.postId, this.dataset.postTitle)" aria-label="Bagikan postingan">
+                    <i class='bx bx-share-alt' aria-hidden="true"></i> <span class="forum-action-label">Bagikan</span>
                 </button>
                 @if ($is_logged_in)
-                <button class="forum-action-btn" id="bookmark-btn-{{ $post['id_post'] }}" onclick="toggleBookmark({{ $post['id_post'] }})">
-                    <i class='bx {{ $isBookmarked ? 'bxs-bookmark' : 'bx-bookmark' }}'></i> 
-                    <span>{{ $isBookmarked ? 'Tersimpan' : 'Simpan' }}</span>
+                <button type="button" class="forum-action-btn" id="bookmark-btn-{{ $post['id_post'] }}" onclick="toggleBookmark({{ $post['id_post'] }})" aria-label="{{ $isBookmarked ? 'Hapus simpanan' : 'Simpan postingan' }}">
+                    <i class='bx {{ $isBookmarked ? 'bxs-bookmark' : 'bx-bookmark' }}' aria-hidden="true"></i>
+                    <span class="forum-action-label">{{ $isBookmarked ? 'Tersimpan' : 'Simpan' }}</span>
                 </button>
                 @endif
-                <span class="forum-action-btn" style="cursor: default;"><i class='bx bx-show'></i> {{ $post['views'] }} Dilihat</span>
+                <span class="forum-action-btn" style="cursor: default;"><i class='bx bx-show' aria-hidden="true"></i> {{ $post['views'] }}<span class="forum-action-label"> Dilihat</span></span>
                 @if ($is_logged_in && ((int) $id_user === (int) $post['id_user'] || strtolower($role) === 'admin'))
                     <form method="POST" action="{{ route('forum.delete', ['id' => $post['id_post']]) }}" style="display: inline; margin-left: auto;" onsubmit="event.preventDefault(); NeoConfirm('Hapus Postingan', 'Yakin ingin menghapus postingan ini secara permanen?', () => this.submit());">
                         @csrf
@@ -374,19 +475,21 @@
                 </div>
                 @endif
                 
-                <!-- Vote Column -->
+                <!-- Vote Column (Desktop) -->
                 <div class="forum-post-votes" style="{{ $ans['is_solusi'] ? 'padding-top: 40px;' : '' }}">
-                    <button class="forum-vote-btn {{ $ansVote === 'up' ? 'voted-up' : '' }}" 
-                            onclick="vote({{ $ans['id_jawaban'] }}, 'jawaban', 'up')" title="Upvote" {{ !$is_logged_in ? 'disabled' : '' }}>
-                        <i class='bx bxs-up-arrow'></i>
+                    <button type="button" class="forum-vote-btn {{ $ansVote === 'up' ? 'voted-up' : '' }}"
+                            data-vote-btn="up"
+                            onclick="vote({{ $ans['id_jawaban'] }}, 'jawaban', 'up')" title="Upvote" aria-label="Upvote jawaban" {{ !$is_logged_in ? 'disabled' : '' }}>
+                        <i class='bx bxs-up-arrow' aria-hidden="true"></i>
                     </button>
-                    <span class="forum-vote-count" id="vote-count-jawaban-{{ $ans['id_jawaban'] }}">{{ $ans['vote_count'] }}</span>
-                    <button class="forum-vote-btn {{ $ansVote === 'down' ? 'voted-down' : '' }}" 
-                            onclick="vote({{ $ans['id_jawaban'] }}, 'jawaban', 'down')" title="Downvote" {{ !$is_logged_in ? 'disabled' : '' }}>
-                        <i class='bx bxs-down-arrow'></i>
+                    <span class="forum-vote-count" id="vote-count-jawaban-{{ $ans['id_jawaban'] }}" data-vote-count>{{ $ans['vote_count'] }}</span>
+                    <button type="button" class="forum-vote-btn {{ $ansVote === 'down' ? 'voted-down' : '' }}"
+                            data-vote-btn="down"
+                            onclick="vote({{ $ans['id_jawaban'] }}, 'jawaban', 'down')" title="Downvote" aria-label="Downvote jawaban" {{ !$is_logged_in ? 'disabled' : '' }}>
+                        <i class='bx bxs-down-arrow' aria-hidden="true"></i>
                     </button>
                 </div>
-                
+
                 <!-- Answer Body -->
                 <div class="answer-body" style="{{ $ans['is_solusi'] ? 'padding-top: 40px;' : '' }}">
                     <div class="forum-post-meta">
@@ -395,23 +498,37 @@
                         <span class="forum-post-role {{ $ans['user_role'] === 'Pengajar' ? 'role-pengajar' : ($ans['user_role'] === 'Admin' ? 'role-admin' : '') }}">{{ $ans['user_role'] }}</span>
                         <span class="forum-post-time">{{ timeAgo($ans['tgl_jawaban']) }}</span>
                     </div>
-                    
+
                     <div class="answer-content">
                         {!! sanitize_rich_text($ans['konten']) !!}
                     </div>
-                    
-                    <!-- Post owner can mark as solved -->
-                    @if ($is_logged_in && ($id_user == $post['id_user'] || strtolower($role) === 'admin') && $post['tipe'] === 'pertanyaan' && !$ans['is_solusi'])
-                    <div style="margin-top: 15px; text-align: right;">
-                        <form method="POST" action="{{ route('forum.post', ['id' => $post['id_post']]) }}" style="display: inline;">
+
+                    <div class="answer-mobile-footer">
+                        <div class="forum-mobile-vote-pill" role="group" aria-label="Voting jawaban">
+                            <button type="button" class="forum-vote-btn {{ $ansVote === 'up' ? 'voted-up' : '' }}"
+                                    data-vote-btn="up"
+                                    onclick="vote({{ $ans['id_jawaban'] }}, 'jawaban', 'up')" aria-label="Upvote jawaban" {{ !$is_logged_in ? 'disabled' : '' }}>
+                                <i class='bx bxs-up-arrow' aria-hidden="true"></i>
+                            </button>
+                            <span class="forum-vote-count" data-vote-count>{{ $ans['vote_count'] }}</span>
+                            <button type="button" class="forum-vote-btn {{ $ansVote === 'down' ? 'voted-down' : '' }}"
+                                    data-vote-btn="down"
+                                    onclick="vote({{ $ans['id_jawaban'] }}, 'jawaban', 'down')" aria-label="Downvote jawaban" {{ !$is_logged_in ? 'disabled' : '' }}>
+                                <i class='bx bxs-down-arrow' aria-hidden="true"></i>
+                            </button>
+                        </div>
+
+                        <!-- Post owner can mark as solved -->
+                        @if ($is_logged_in && ($id_user == $post['id_user'] || strtolower($role) === 'admin') && $post['tipe'] === 'pertanyaan' && !$ans['is_solusi'])
+                        <form method="POST" action="{{ route('forum.post', ['id' => $post['id_post']]) }}" style="display: inline; margin-left: auto;">
                             @csrf
                             <input type="hidden" name="id_jawaban" value="{{ $ans['id_jawaban'] }}">
                             <button type="submit" name="mark_solved" value="1" class="mark-solved-btn">
-                                <i class='bx bx-check'></i> Tandai sebagai Solusi
+                                <i class='bx bx-check' aria-hidden="true"></i> Tandai Solusi
                             </button>
                         </form>
+                        @endif
                     </div>
-                    @endif
                     @if ($is_logged_in && ((int) $id_user === (int) $ans['id_user'] || strtolower($role) === 'admin'))
                         <div style="margin-top: 12px; padding-top: 10px; border-top: 2px dashed var(--border); display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px;">
                             <details style="flex: 1; min-width: 220px;">
@@ -531,17 +648,17 @@ function vote(id, type, voteType) {
     .then(res => res.json())
     .then(data => {
         if (data.status === 'success') {
-            const countEl = document.getElementById('vote-count-' + type + '-' + id);
-            if (countEl) countEl.textContent = data.new_count;
-
             const container = type === 'post' ? document.querySelector('.post-detail-card') : document.getElementById('jawaban-' + id);
             if (container) {
-                const upBtn = container.querySelector('.forum-vote-btn:first-child');
-                const downBtn = container.querySelector('.forum-vote-btn:last-of-type');
-                upBtn.classList.remove('voted-up');
-                downBtn.classList.remove('voted-down');
-                if (data.action === 'up') upBtn.classList.add('voted-up');
-                if (data.action === 'down') downBtn.classList.add('voted-down');
+                container.querySelectorAll('[data-vote-count]').forEach((el) => {
+                    el.textContent = data.new_count;
+                });
+                container.querySelectorAll('[data-vote-btn="up"]').forEach((btn) => {
+                    btn.classList.toggle('voted-up', data.action === 'up');
+                });
+                container.querySelectorAll('[data-vote-btn="down"]').forEach((btn) => {
+                    btn.classList.toggle('voted-down', data.action === 'down');
+                });
             }
         } else {
             NeoToast(data.message || 'Gagal memproses vote.', 'error');

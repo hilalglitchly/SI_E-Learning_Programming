@@ -108,57 +108,70 @@
     <!-- ========== MAIN FEED ========== -->
     <main class="forum-main-feed">
 
-        <!-- Mobile Topic Buttons -->
-        <div class="forum-mobile-header">
-            <a href="{{ route('forum.index', ['sort' => 'hot']) }}" class="forum-mobile-topic-btn {{ $sort === 'hot' ? 'active' : '' }}" style="{{ $sort === 'hot' ? 'background-color:var(--secondary);color:#000;' : '' }}"><i class='bx bxs-hot'></i> Hot</a>
-            <a href="{{ route('forum.index', ['sort' => 'baru']) }}" class="forum-mobile-topic-btn {{ $sort === 'baru' ? 'active' : '' }}" style="{{ $sort === 'baru' ? 'background-color:var(--secondary);color:#000;' : '' }}"><i class='bx bx-time-five'></i> Baru</a>
-            <a href="{{ route('forum.index', ['sort' => 'top']) }}" class="forum-mobile-topic-btn {{ $sort === 'top' ? 'active' : '' }}" style="{{ $sort === 'top' ? 'background-color:var(--secondary);color:#000;' : '' }}"><i class='bx bx-trophy'></i> Top</a>
-            @if ($is_logged_in)
-            <a href="{{ route('forum.create') }}" class="forum-mobile-topic-btn" style="background-color:var(--primary);color:#FFF;"><i class='bx bx-plus'></i> Post</a>
-            @endif
-        </div>
-
-        <!-- Search Bar -->
+        <!-- Search Bar + Mobile Create Post CTA -->
         <form method="GET" action="{{ route('forum.index') }}" class="forum-search-bar">
-            <input type="text" name="q" class="forum-search-input" placeholder="Ada bug apa hari ini? Tulis pertanyaan atau bagikan kode..." value="{{ $search }}">
+            <input type="search" name="q" class="forum-search-input" placeholder="Cari diskusi, error, atau topik..." value="{{ $search }}" aria-label="Cari di forum">
             @if (!empty($tag_filter))
                 <input type="hidden" name="tag" value="{{ $tag_filter }}">
             @endif
             @if (!empty($sort) && $sort !== 'hot')
                 <input type="hidden" name="sort" value="{{ $sort }}">
             @endif
-            <button type="submit" class="forum-search-btn"><i class='bx bx-search'></i> Kirim</button>
+            <button type="submit" class="forum-search-btn" aria-label="Cari">
+                <i class='bx bx-search' aria-hidden="true"></i> <span class="forum-search-btn-text">Cari</span>
+            </button>
+            @if ($is_logged_in)
+                <a href="{{ route('forum.create') }}" class="forum-mobile-create-btn" aria-label="Buat postingan baru">
+                    <i class='bx bx-plus' aria-hidden="true"></i><span>Post</span>
+                </a>
+            @endif
         </form>
+
+        <!-- Sort Tabs (Single-row horizontal scroll on mobile like Reddit) -->
+        <div class="forum-sort-tabs" role="navigation" aria-label="Urutkan postingan">
+            <a href="{{ route('forum.index', array_filter(['sort' => 'hot', 'tag' => $tag_filter ?: null, 'tipe' => $tipe_filter ?: null])) }}" class="forum-sort-tab {{ $sort === 'hot' ? 'active' : '' }}" @if ($sort === 'hot') aria-current="page" @endif><i class='bx bxs-hot' aria-hidden="true"></i> Hot</a>
+            <a href="{{ route('forum.index', array_filter(['sort' => 'baru', 'tag' => $tag_filter ?: null, 'tipe' => $tipe_filter ?: null])) }}" class="forum-sort-tab {{ $sort === 'baru' ? 'active' : '' }}" @if ($sort === 'baru') aria-current="page" @endif><i class='bx bx-time-five' aria-hidden="true"></i> Baru</a>
+            <a href="{{ route('forum.index', array_filter(['sort' => 'top', 'tag' => $tag_filter ?: null, 'tipe' => $tipe_filter ?: null])) }}" class="forum-sort-tab {{ $sort === 'top' ? 'active' : '' }}" @if ($sort === 'top') aria-current="page" @endif><i class='bx bx-up-arrow-alt' aria-hidden="true"></i> Top</a>
+            <a href="{{ route('forum.index', array_filter(['sort' => 'unsolved', 'tag' => $tag_filter ?: null])) }}" class="forum-sort-tab {{ $sort === 'unsolved' ? 'active' : '' }}" @if ($sort === 'unsolved') aria-current="page" @endif><i class='bx bx-help-circle' aria-hidden="true"></i> Belum Solved</a>
+            @if ($is_logged_in)
+            <a href="{{ route('forum.index', array_filter(['sort' => 'saved', 'tag' => $tag_filter ?: null, 'tipe' => $tipe_filter ?: null])) }}" class="forum-sort-tab {{ $sort === 'saved' ? 'active' : '' }}" @if ($sort === 'saved') aria-current="page" @endif><i class='bx bxs-bookmark' aria-hidden="true"></i> Tersimpan</a>
+            @endif
+        </div>
+
+        <!-- Mobile Community Topics Strip (like Reddit communities row) -->
+        @if (!empty($allTags))
+        <div class="forum-mobile-topics-strip" role="navigation" aria-label="Filter topik forum">
+            <a href="{{ route('forum.index', array_filter(['sort' => $sort !== 'hot' ? $sort : null, 'tipe' => $tipe_filter ?: null])) }}" class="forum-topic-pill {{ empty($tag_filter) ? 'active' : '' }}">
+                Semua Topik
+            </a>
+            @foreach ($allTags as $tag)
+            <a href="{{ route('forum.index', array_filter(['tag' => $tag['nama_tag'], 'sort' => $sort !== 'hot' ? $sort : null, 'tipe' => $tipe_filter ?: null])) }}"
+               class="forum-topic-pill {{ strtolower((string) $tag_filter) === strtolower((string) $tag['nama_tag']) ? 'active' : '' }}"
+               style="--topic-accent: {{ $tag['warna'] }};">
+                <span class="forum-topic-pill-dot" aria-hidden="true"></span>#{{ $tag['nama_tag'] }}
+            </a>
+            @endforeach
+        </div>
+        @endif
 
         <!-- Filter Chips -->
         <div class="forum-filter-chips">
-            <a href="{{ route('forum.index', array_filter(['tipe' => 'pertanyaan', 'tag' => $tag_filter ?: null])) }}" class="forum-chip {{ $tipe_filter === 'pertanyaan' ? 'active' : '' }}"><i class='bx bx-help-circle'></i> Pertanyaan</a>
-            <a href="{{ route('forum.index', array_filter(['tipe' => 'diskusi', 'tag' => $tag_filter ?: null])) }}" class="forum-chip {{ $tipe_filter === 'diskusi' ? 'active' : '' }}"><i class='bx bx-chat'></i> Diskusi</a>
-            <a href="{{ route('forum.index', array_filter(['tipe' => 'berbagi', 'tag' => $tag_filter ?: null])) }}" class="forum-chip {{ $tipe_filter === 'berbagi' ? 'active' : '' }}"><i class='bx bx-share-alt'></i> Berbagi</a>
+            <a href="{{ route('forum.index', array_filter(['tipe' => 'pertanyaan', 'tag' => $tag_filter ?: null, 'sort' => $sort !== 'hot' ? $sort : null])) }}" class="forum-chip {{ $tipe_filter === 'pertanyaan' ? 'active' : '' }}"><i class='bx bx-help-circle' aria-hidden="true"></i> Pertanyaan</a>
+            <a href="{{ route('forum.index', array_filter(['tipe' => 'diskusi', 'tag' => $tag_filter ?: null, 'sort' => $sort !== 'hot' ? $sort : null])) }}" class="forum-chip {{ $tipe_filter === 'diskusi' ? 'active' : '' }}"><i class='bx bx-chat' aria-hidden="true"></i> Diskusi</a>
+            <a href="{{ route('forum.index', array_filter(['tipe' => 'berbagi', 'tag' => $tag_filter ?: null, 'sort' => $sort !== 'hot' ? $sort : null])) }}" class="forum-chip {{ $tipe_filter === 'berbagi' ? 'active' : '' }}"><i class='bx bx-share-alt' aria-hidden="true"></i> Berbagi</a>
             @if (!empty($tipe_filter) || !empty($tag_filter) || !empty($search))
-                <a href="{{ route('forum.index') }}" class="forum-chip" style="background-color: var(--primary); color: #FFF;"><i class='bx bx-x'></i> Reset Filter</a>
+                <a href="{{ route('forum.index') }}" class="forum-chip" style="background-color: var(--primary); color: #FFF;"><i class='bx bx-x' aria-hidden="true"></i> Reset</a>
             @endif
         </div>
 
         <!-- Active Tag Filter Notice -->
         @if (!empty($tag_filter))
             <div class="forum-announcement" style="background-color: var(--accent); border-color: var(--border);">
-                <span class="forum-announcement-badge" style="background-color: #FFF; color: #000;">FILTER</span>
+                <span class="forum-announcement-badge" style="background-color: #FFF; color: #000;">TOPIK</span>
                 <span class="forum-announcement-text" style="color: #FFF;">Menampilkan postingan dengan tag: <strong>#{{ $tag_filter }}</strong></span>
-                <a href="{{ route('forum.index') }}" class="forum-announcement-dismiss" style="color: #FFF;">&times;</a>
+                <a href="{{ route('forum.index') }}" class="forum-announcement-dismiss" style="color: #FFF;" aria-label="Hapus filter topik">&times;</a>
             </div>
         @endif
-
-        <!-- Sort Tabs -->
-        <div class="forum-sort-tabs">
-            <a href="{{ route('forum.index', array_filter(['sort' => 'hot', 'tag' => $tag_filter ?: null, 'tipe' => $tipe_filter ?: null])) }}" class="forum-sort-tab {{ $sort === 'hot' ? 'active' : '' }}"><i class='bx bxs-hot'></i> Hot</a>
-            <a href="{{ route('forum.index', array_filter(['sort' => 'baru', 'tag' => $tag_filter ?: null, 'tipe' => $tipe_filter ?: null])) }}" class="forum-sort-tab {{ $sort === 'baru' ? 'active' : '' }}"><i class='bx bx-time-five'></i> Baru</a>
-            <a href="{{ route('forum.index', array_filter(['sort' => 'top', 'tag' => $tag_filter ?: null, 'tipe' => $tipe_filter ?: null])) }}" class="forum-sort-tab {{ $sort === 'top' ? 'active' : '' }}"><i class='bx bx-up-arrow-alt'></i> Top</a>
-            <a href="{{ route('forum.index', array_filter(['sort' => 'unsolved', 'tag' => $tag_filter ?: null])) }}" class="forum-sort-tab {{ $sort === 'unsolved' ? 'active' : '' }}"><i class='bx bx-help-circle'></i> Belum Solved</a>
-            @if ($is_logged_in)
-            <a href="{{ route('forum.index', array_filter(['sort' => 'saved', 'tag' => $tag_filter ?: null, 'tipe' => $tipe_filter ?: null])) }}" class="forum-sort-tab {{ $sort === 'saved' ? 'active' : '' }}"><i class='bx bxs-bookmark'></i> Tersimpan</a>
-            @endif
-        </div>
 
         <!-- Announcements -->
         @foreach ($announcements as $ann)
@@ -189,21 +202,25 @@
                     $codeBlock = extractCodeBlock($post['konten']);
                     $textPreview = getTextPreview($post['konten']);
                 @endphp
-            <div class="forum-post-card" id="post-{{ $post['id_post'] }}">
-                <!-- Vote Column -->
+            <article class="forum-post-card" id="post-{{ $post['id_post'] }}">
+                <!-- Vote Column (Desktop Left Rail) -->
                 <div class="forum-post-votes">
-                    <button class="forum-vote-btn {{ $userVote === 'up' ? 'voted-up' : '' }}" 
-                            onclick="vote({{ $post['id_post'] }}, 'post', 'up')" 
+                    <button type="button" class="forum-vote-btn {{ $userVote === 'up' ? 'voted-up' : '' }}"
+                            data-vote-btn="up"
+                            onclick="vote({{ $post['id_post'] }}, 'post', 'up')"
                             title="Upvote"
+                            aria-label="Upvote postingan"
                             {{ !$is_logged_in ? 'disabled' : '' }}>
-                        <i class='bx bxs-up-arrow'></i>
+                        <i class='bx bxs-up-arrow' aria-hidden="true"></i>
                     </button>
-                    <span class="forum-vote-count" id="vote-count-{{ $post['id_post'] }}">{{ $post['vote_count'] }}</span>
-                    <button class="forum-vote-btn {{ $userVote === 'down' ? 'voted-down' : '' }}" 
+                    <span class="forum-vote-count" id="vote-count-{{ $post['id_post'] }}" data-vote-count>{{ $post['vote_count'] }}</span>
+                    <button type="button" class="forum-vote-btn {{ $userVote === 'down' ? 'voted-down' : '' }}"
+                            data-vote-btn="down"
                             onclick="vote({{ $post['id_post'] }}, 'post', 'down')"
                             title="Downvote"
+                            aria-label="Downvote postingan"
                             {{ !$is_logged_in ? 'disabled' : '' }}>
-                        <i class='bx bxs-down-arrow'></i>
+                        <i class='bx bxs-down-arrow' aria-hidden="true"></i>
                     </button>
                 </div>
 
@@ -214,11 +231,11 @@
                         <span class="forum-post-avatar">{{ getInitial($post['username']) }}</span>
                         <span class="forum-post-username">{{ $post['username'] }}</span>
                         <span class="forum-post-role {{ $post['user_role'] === 'Pengajar' ? 'role-pengajar' : ($post['user_role'] === 'Admin' ? 'role-admin' : '') }}">{{ $post['user_role'] }}</span>
-                        @if ($post['is_pinned'])
-                            <span class="forum-pinned-badge"><i class='bx bxs-pin'></i> Pinned</span>
-                        @endif
-                        <span class="forum-tipe-badge tipe-{{ $post['tipe'] }}">{{ $post['tipe'] === 'pertanyaan' ? '❓ Pertanyaan' : ($post['tipe'] === 'diskusi' ? '💬 Diskusi' : '📤 Berbagi') }}</span>
                         <span class="forum-post-time">{{ timeAgo($post['tgl_post']) }}</span>
+                        @if ($post['is_pinned'])
+                            <span class="forum-pinned-badge"><i class='bx bxs-pin' aria-hidden="true"></i> Pinned</span>
+                        @endif
+                        <span class="forum-tipe-badge tipe-{{ $post['tipe'] }}">{{ $post['tipe'] === 'pertanyaan' ? 'Pertanyaan' : ($post['tipe'] === 'diskusi' ? 'Diskusi' : 'Berbagi') }}</span>
                     </div>
 
                     <!-- Title -->
@@ -249,18 +266,36 @@
                     </div>
                     @endif
 
-                    <!-- Actions -->
+                    <!-- Actions (Reddit-style bottom pill row on mobile) -->
                     <div class="forum-post-actions">
-                        <a href="{{ route('forum.show', ['id' => $post['id_post']]) }}" class="forum-action-btn">
-                            <i class='bx bx-message-rounded-dots'></i> {{ $post['jawaban_count'] }} Jawaban
+                        <div class="forum-mobile-vote-pill" role="group" aria-label="Voting postingan">
+                            <button type="button" class="forum-vote-btn {{ $userVote === 'up' ? 'voted-up' : '' }}"
+                                    data-vote-btn="up"
+                                    onclick="vote({{ $post['id_post'] }}, 'post', 'up')"
+                                    aria-label="Upvote"
+                                    {{ !$is_logged_in ? 'disabled' : '' }}>
+                                <i class='bx bxs-up-arrow' aria-hidden="true"></i>
+                            </button>
+                            <span class="forum-vote-count" data-vote-count>{{ $post['vote_count'] }}</span>
+                            <button type="button" class="forum-vote-btn {{ $userVote === 'down' ? 'voted-down' : '' }}"
+                                    data-vote-btn="down"
+                                    onclick="vote({{ $post['id_post'] }}, 'post', 'down')"
+                                    aria-label="Downvote"
+                                    {{ !$is_logged_in ? 'disabled' : '' }}>
+                                <i class='bx bxs-down-arrow' aria-hidden="true"></i>
+                            </button>
+                        </div>
+
+                        <a href="{{ route('forum.show', ['id' => $post['id_post']]) }}" class="forum-action-btn" aria-label="{{ $post['jawaban_count'] }} jawaban">
+                            <i class='bx bx-message-rounded-dots' aria-hidden="true"></i> <span>{{ $post['jawaban_count'] }}<span class="forum-action-label"> Jawaban</span></span>
                         </a>
-                        <button class="forum-action-btn" data-post-id="{{ $post['id_post'] }}" data-post-title="{{ $post['judul'] }}" onclick="sharePost(this.dataset.postId, this.dataset.postTitle)">
-                            <i class='bx bx-share-alt'></i> Bagikan
+                        <button type="button" class="forum-action-btn" data-post-id="{{ $post['id_post'] }}" data-post-title="{{ $post['judul'] }}" onclick="sharePost(this.dataset.postId, this.dataset.postTitle)" aria-label="Bagikan postingan">
+                            <i class='bx bx-share-alt' aria-hidden="true"></i> <span class="forum-action-label">Bagikan</span>
                         </button>
                         @if ($is_logged_in)
-                        <button class="forum-action-btn" id="bookmark-btn-{{ $post['id_post'] }}" onclick="toggleBookmark({{ $post['id_post'] }})">
-                            <i class='bx {{ $bookmarked ? 'bxs-bookmark' : 'bx-bookmark' }}'></i> 
-                            <span>{{ $bookmarked ? 'Tersimpan' : 'Simpan' }}</span>
+                        <button type="button" class="forum-action-btn" id="bookmark-btn-{{ $post['id_post'] }}" onclick="toggleBookmark({{ $post['id_post'] }})" aria-label="{{ $bookmarked ? 'Hapus simpanan' : 'Simpan postingan' }}">
+                            <i class='bx {{ $bookmarked ? 'bxs-bookmark' : 'bx-bookmark' }}' aria-hidden="true"></i>
+                            <span class="forum-action-label">{{ $bookmarked ? 'Tersimpan' : 'Simpan' }}</span>
                         </button>
                         @endif
 
@@ -272,7 +307,7 @@
                         @endif
                     </div>
                 </div>
-            </div>
+            </article>
             @endforeach
 
             <!-- Pagination -->
@@ -402,19 +437,17 @@ function vote(id, type, voteType) {
     .then(res => res.json())
     .then(data => {
         if (data.status === 'success') {
-            // Update vote count
-            const countEl = document.getElementById('vote-count-' + id);
-            if (countEl) countEl.textContent = data.new_count;
-
-            // Update button styles
             const card = document.getElementById('post-' + id);
             if (card) {
-                const upBtn = card.querySelector('.forum-vote-btn:first-child');
-                const downBtn = card.querySelector('.forum-vote-btn:last-of-type');
-                upBtn.classList.remove('voted-up');
-                downBtn.classList.remove('voted-down');
-                if (data.action === 'up') upBtn.classList.add('voted-up');
-                if (data.action === 'down') downBtn.classList.add('voted-down');
+                card.querySelectorAll('[data-vote-count]').forEach((el) => {
+                    el.textContent = data.new_count;
+                });
+                card.querySelectorAll('[data-vote-btn="up"]').forEach((btn) => {
+                    btn.classList.toggle('voted-up', data.action === 'up');
+                });
+                card.querySelectorAll('[data-vote-btn="down"]').forEach((btn) => {
+                    btn.classList.toggle('voted-down', data.action === 'down');
+                });
             }
         } else {
             NeoToast(data.message || 'Gagal memproses vote.', 'error');
