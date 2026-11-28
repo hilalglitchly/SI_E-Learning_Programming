@@ -534,11 +534,16 @@ class KelasController extends Controller
                 return redirect()->route('kelas.show', ['id' => $id_kelas])->with('pesan', $upload['error']);
             }
 
-            Submission::create([
-                'id_tugas' => $id_tugas,
-                'nim' => $nim,
-                'file_jawaban' => $upload['filename'],
-            ]);
+            try {
+                Submission::create([
+                    'id_tugas' => $id_tugas,
+                    'nim' => $nim,
+                    'file_jawaban' => $upload['filename'],
+                ]);
+            } catch (\Illuminate\Database\QueryException $e) {
+                $this->deletePrivateFile('submission', $upload['filename']);
+                return redirect()->route('kelas.show', ['id' => $id_kelas])->with('pesan', 'Anda sudah mengumpulkan jawaban untuk tugas ini.');
+            }
 
             return redirect()->route('kelas.show', ['id' => $id_kelas])->with('pesan', 'Tugas berhasil dikumpulkan!');
         }

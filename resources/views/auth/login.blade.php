@@ -35,6 +35,11 @@
                         <i class='bx bxs-check-circle' aria-hidden="true"></i>
                         <span>Registrasi berhasil! Silakan cek email untuk verifikasi dan masuk dengan akun baru Anda.</span>
                     </div>
+                @elseif (request()->query('msg') == 'login_required')
+                    <div class="auth-alert auth-alert--error" role="alert">
+                        <i class='bx bxs-info-circle' aria-hidden="true"></i>
+                        <span>Silakan masuk terlebih dahulu untuk mengakses fitur tersebut.</span>
+                    </div>
                 @endif
 
                 <form method="POST" action="{{ route('login') }}" data-auth-form>

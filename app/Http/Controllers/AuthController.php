@@ -133,7 +133,10 @@ class AuthController extends Controller
             return redirect()->route('register')->withInput($oldInput)->with('auth_error', 'Username sudah digunakan, silakan pilih yang lain!');
         }
 
-        if (Murid::whereRaw('LOWER(email) = ?', [$email])->exists()) {
+        if (
+            Murid::whereRaw('LOWER(email) = ?', [$email])->exists() ||
+            Pengajar::whereRaw('LOWER(email) = ?', [$email])->exists()
+        ) {
             return redirect()->route('register')->withInput($oldInput)->with('auth_error', 'Alamat email sudah terdaftar, silakan gunakan email lain atau langsung masuk.');
         }
 

@@ -156,4 +156,12 @@
             submitBtn.textContent = submitBtn.dataset.loadingText || 'Memproses...';
         }
     });
+
+    window.addEventListener('pageshow', () => {
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn && submitBtn.disabled && submitBtn.dataset.originalText) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = submitBtn.dataset.originalText;
+        }
+    });
 })();

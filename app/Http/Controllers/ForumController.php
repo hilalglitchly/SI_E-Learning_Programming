@@ -11,6 +11,7 @@ use App\Models\ForumVote;
 use App\Models\Notifikasi;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class ForumController extends Controller
@@ -54,15 +55,15 @@ class ForumController extends Controller
 
         switch ($sort) {
             case 'baru':
-                $order_sql = "ORDER BY p.tgl_post DESC";
+                $order_sql = "ORDER BY forum_feed.tgl_post DESC";
                 break;
             case 'top':
-                $order_sql = "ORDER BY vote_count DESC, p.views DESC, p.tgl_post DESC";
+                $order_sql = "ORDER BY forum_feed.vote_count DESC, forum_feed.views DESC, forum_feed.tgl_post DESC";
                 break;
             case 'unsolved':
                 $where_clauses[] = "p.tipe = 'pertanyaan' AND p.status = 'open'";
                 $where_sql = 'WHERE ' . implode(' AND ', $where_clauses);
-                $order_sql = "ORDER BY p.tgl_post DESC";
+                $order_sql = "ORDER BY forum_feed.tgl_post DESC";
                 break;
             case 'saved':
                 if (!$id_user) {
@@ -71,10 +72,10 @@ class ForumController extends Controller
                 $where_clauses[] = "p.id_post IN (SELECT fs.id_post FROM tb_forum_simpan fs WHERE fs.id_user = ?)";
                 $params[] = $id_user;
                 $where_sql = 'WHERE ' . implode(' AND ', $where_clauses);
-                $order_sql = "ORDER BY p.tgl_post DESC";
+                $order_sql = "ORDER BY forum_feed.tgl_post DESC";
                 break;
             default: // 'hot'
-                $order_sql = "ORDER BY p.is_pinned DESC, (vote_count * 2 + p.views * 0.05 + jawaban_count * 3) DESC, p.tgl_post DESC";
+                $order_sql = "ORDER BY forum_feed.is_pinned DESC, (forum_feed.vote_count * 2 + forum_feed.views * 0.05 + forum_feed.jawaban_count * 3) DESC, forum_feed.tgl_post DESC";
                 break;
         }
 
@@ -82,14 +83,17 @@ class ForumController extends Controller
         $total_posts = $countRow ? (int) $countRow->total : 0;
         $total_pages = (int) ceil($total_posts / $per_page);
 
+        // Derived table required so MySQL 8 / TiDB allow arithmetic expressions on computed vote_count/jawaban_count in ORDER BY
         $sql = "
-            SELECT p.*, 
-                   u.username, u.role as user_role,
-                   COALESCE((SELECT SUM(CASE WHEN v.tipe_vote = 'up' THEN 1 WHEN v.tipe_vote = 'down' THEN -1 ELSE 0 END) FROM tb_forum_vote v WHERE v.id_post = p.id_post), 0) as vote_count,
-                   (SELECT COUNT(*) FROM tb_forum_jawaban j WHERE j.id_post = p.id_post) as jawaban_count
-            FROM tb_forum_post p
-            JOIN tb_user u ON p.id_user = u.id_user
-            {$where_sql}
+            SELECT * FROM (
+                SELECT p.*,
+                       u.username, u.role as user_role,
+                       COALESCE((SELECT SUM(CASE WHEN v.tipe_vote = 'up' THEN 1 WHEN v.tipe_vote = 'down' THEN -1 ELSE 0 END) FROM tb_forum_vote v WHERE v.id_post = p.id_post), 0) as vote_count,
+                       (SELECT COUNT(*) FROM tb_forum_jawaban j WHERE j.id_post = p.id_post) as jawaban_count
+                FROM tb_forum_post p
+                JOIN tb_user u ON p.id_user = u.id_user
+                {$where_sql}
+            ) AS forum_feed
             {$order_sql}
             LIMIT {$per_page} OFFSET {$offset}
         ";
@@ -140,48 +144,59 @@ class ForumController extends Controller
             $posts[] = $p;
         }
 
-        $allTagsRows = DB::select("
-            SELECT t.id_tag, t.nama_tag, t.warna, t.icon, COUNT(pt.id_post) as post_count 
-            FROM tb_forum_tag t 
-            LEFT JOIN tb_forum_post_tag pt ON t.id_tag = pt.id_tag 
-            GROUP BY t.id_tag, t.nama_tag, t.warna, t.icon 
-            ORDER BY post_count DESC 
-            LIMIT 10
-        ");
-        $allTags = array_map(fn($r) => (array) $r, $allTagsRows);
+        $sidebar = Cache::remember('forum.sidebar_stats.v1', 45, function () {
+            $allTagsRows = DB::select("
+                SELECT t.id_tag, t.nama_tag, t.warna, t.icon, COUNT(pt.id_post) as post_count
+                FROM tb_forum_tag t
+                LEFT JOIN tb_forum_post_tag pt ON t.id_tag = pt.id_tag
+                GROUP BY t.id_tag, t.nama_tag, t.warna, t.icon
+                ORDER BY post_count DESC
+                LIMIT 10
+            ");
 
-        $annRows = DB::select("
-            SELECT p.*, u.username 
-            FROM tb_forum_post p 
-            JOIN tb_user u ON p.id_user = u.id_user 
-            WHERE p.is_announcement = 1 
-            ORDER BY p.tgl_post DESC 
-            LIMIT 3
-        ");
-        $announcements = array_map(fn($r) => (array) $r, $annRows);
+            $annRows = DB::select("
+                SELECT p.*, u.username
+                FROM tb_forum_post p
+                JOIN tb_user u ON p.id_user = u.id_user
+                WHERE p.is_announcement = 1
+                ORDER BY p.tgl_post DESC
+                LIMIT 3
+            ");
 
-        $totalMembers = User::count();
-        $totalSolved = ForumPost::where('status', 'solved')->count();
-        $totalForumPosts = ForumPost::count();
+            $topContribRows = DB::select("
+                SELECT username, role, total_score FROM (
+                    SELECT u.username, u.role,
+                        (SELECT COALESCE(SUM(CASE WHEN v.tipe_vote = 'up' THEN 1 ELSE 0 END), 0)
+                         FROM tb_forum_vote v
+                         JOIN tb_forum_post p2 ON v.id_post = p2.id_post
+                         WHERE p2.id_user = u.id_user) +
+                        (SELECT COALESCE(SUM(CASE WHEN v2.tipe_vote = 'up' THEN 1 ELSE 0 END), 0)
+                         FROM tb_forum_vote v2
+                         JOIN tb_forum_jawaban j2 ON v2.id_jawaban = j2.id_jawaban
+                         WHERE j2.id_user = u.id_user) AS total_score
+                    FROM tb_user u
+                ) AS contrib
+                WHERE total_score > 0
+                ORDER BY total_score DESC
+                LIMIT 5
+            ");
 
-        $topContribRows = DB::select("
-            SELECT username, role, total_score FROM (
-                SELECT u.username, u.role,
-                    (SELECT COALESCE(SUM(CASE WHEN v.tipe_vote = 'up' THEN 1 ELSE 0 END), 0)
-                     FROM tb_forum_vote v 
-                     JOIN tb_forum_post p2 ON v.id_post = p2.id_post 
-                     WHERE p2.id_user = u.id_user) +
-                    (SELECT COALESCE(SUM(CASE WHEN v2.tipe_vote = 'up' THEN 1 ELSE 0 END), 0)
-                     FROM tb_forum_vote v2 
-                     JOIN tb_forum_jawaban j2 ON v2.id_jawaban = j2.id_jawaban 
-                     WHERE j2.id_user = u.id_user) AS total_score
-                FROM tb_user u
-            ) AS contrib
-            WHERE total_score > 0
-            ORDER BY total_score DESC
-            LIMIT 5
-        ");
-        $topContributors = array_map(fn($r) => (array) $r, $topContribRows);
+            return [
+                'allTags' => array_map(fn($r) => (array) $r, $allTagsRows),
+                'announcements' => array_map(fn($r) => (array) $r, $annRows),
+                'totalMembers' => User::count(),
+                'totalSolved' => ForumPost::where('status', 'solved')->count(),
+                'totalForumPosts' => ForumPost::count(),
+                'topContributors' => array_map(fn($r) => (array) $r, $topContribRows),
+            ];
+        });
+
+        $allTags = $sidebar['allTags'];
+        $announcements = $sidebar['announcements'];
+        $totalMembers = $sidebar['totalMembers'];
+        $totalSolved = $sidebar['totalSolved'];
+        $totalForumPosts = $sidebar['totalForumPosts'];
+        $topContributors = $sidebar['topContributors'];
 
         return view('forum.index', compact(
             'is_logged_in',
@@ -280,6 +295,7 @@ class ForumController extends Controller
             }
 
             DB::commit();
+            $this->flushForumCaches();
 
             return redirect()->route('forum.show', ['id' => $post->id_post, 'new' => 1]);
         } catch (\Exception $e) {
@@ -407,7 +423,7 @@ class ForumController extends Controller
             ]);
 
             if ((int) $post->id_user !== (int) $id_user) {
-                $pesan_notif = "{$username} menjawab postingan Anda: \"" . substr($post->judul, 0, 30) . "...\"";
+                $pesan_notif = "{$username} menjawab postingan Anda: \"" . mb_substr((string) $post->judul, 0, 30) . "...\"";
                 $link_notif = route('forum.show', ['id' => $id_post], false);
 
                 Notifikasi::create([
@@ -417,6 +433,8 @@ class ForumController extends Controller
                     'link' => $link_notif,
                 ]);
             }
+
+            $this->flushForumCaches();
 
             return redirect()->to(route('forum.show', ['id' => $id_post]) . '#answers');
         }
@@ -442,6 +460,7 @@ class ForumController extends Controller
                     $post->save();
 
                     DB::commit();
+                    $this->flushForumCaches();
                     return redirect()->route('forum.show', ['id' => $id_post]);
                 } catch (\Exception $e) {
                     DB::rollBack();
@@ -499,6 +518,7 @@ class ForumController extends Controller
         }
 
         $post->delete();
+        $this->flushForumCaches();
 
         return redirect()->route('forum.index');
     }
@@ -547,6 +567,7 @@ class ForumController extends Controller
         if ($wasSolution) {
             $post->update(['status' => 'open']);
         }
+        $this->flushForumCaches();
 
         return redirect()->route('forum.show', ['id' => $post->id_post])
             ->with('msg', 'Jawaban berhasil dihapus.')
@@ -575,6 +596,16 @@ class ForumController extends Controller
         }
 
         $col = $type === 'post' ? 'id_post' : 'id_jawaban';
+        $targetExists = $type === 'post'
+            ? ForumPost::where('id_post', $id)->exists()
+            : ForumJawaban::where('id_jawaban', $id)->exists();
+
+        if (!$targetExists) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Target voting tidak ditemukan.',
+            ], 404);
+        }
 
         try {
             $existing = ForumVote::where('id_user', $id_user)->where($col, $id)->first();
@@ -603,6 +634,7 @@ class ForumController extends Controller
                 FROM tb_forum_vote WHERE {$col} = ?
             ", [$id]);
             $new_count = $scoreRow ? (int) $scoreRow->score : 0;
+            Cache::forget('forum.sidebar_stats.v1');
 
             return response()->json([
                 'status' => 'success',
@@ -636,6 +668,13 @@ class ForumController extends Controller
             ]);
         }
 
+        if (!ForumPost::where('id_post', $id_post)->exists()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Postingan tidak ditemukan.',
+            ], 404);
+        }
+
         try {
             $exists = ForumSimpan::where('id_user', $id_user)
                 ->where('id_post', $id_post)
@@ -665,5 +704,11 @@ class ForumController extends Controller
                 'message' => 'Database error.',
             ]);
         }
+    }
+
+    private function flushForumCaches(): void
+    {
+        Cache::forget('forum.sidebar_stats.v1');
+        Cache::forget('home.public_payload.v1');
     }
 }

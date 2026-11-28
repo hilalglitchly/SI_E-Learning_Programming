@@ -124,7 +124,7 @@ if (!function_exists('timeAgo')) {
 if (!function_exists('getInitial')) {
     function getInitial($username)
     {
-        return strtoupper(substr((string) $username, 0, 2));
+        return strtoupper(mb_substr((string) $username, 0, 2));
     }
 }
 
@@ -140,10 +140,18 @@ if (!function_exists('getTextPreview')) {
 if (!function_exists('extractCodeBlock')) {
     function extractCodeBlock($html)
     {
-        if (preg_match('/<pre><code(?:\s+class="language-(\w+)")?>(.*?)<\/code><\/pre>/s', (string) $html, $matches)) {
+        $source = (string) $html;
+        if (preg_match('/<pre><code(?:\s+class="language-(\w+)")?>(.*?)<\/code><\/pre>/s', $source, $matches)) {
             return [
                 'lang' => $matches[1] ?? 'code',
-                'code' => html_entity_decode($matches[2], ENT_QUOTES, 'UTF-8')
+                'code' => html_entity_decode(strip_tags($matches[2]), ENT_QUOTES, 'UTF-8'),
+            ];
+        }
+        // Quill.js emits <pre class="ql-syntax"> without nested <code>
+        if (preg_match('/<pre[^>]*class="[^"]*ql-syntax[^"]*"[^>]*>(.*?)<\/pre>/s', $source, $matches)) {
+            return [
+                'lang' => 'code',
+                'code' => html_entity_decode(strip_tags($matches[1]), ENT_QUOTES, 'UTF-8'),
             ];
         }
         return null;

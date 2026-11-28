@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\ForumPost;
 use App\Models\Kelas;
 use App\Models\Murid;
+use App\Models\Pengajar;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -121,5 +122,48 @@ class PwaMobileTest extends TestCase
             ->assertStatus(200)
             ->assertSee('forum-mobile-vote-pill', false)
             ->assertSee('Uji Layout Forum Mobile Reddit');
+
+        // User-scoped notification cache key prevents cross-account leakage
+        $this->actingAs($user)->get(route('dashboard'))
+            ->assertSee('eforvm_notif_cache_v2_' . $user->id_user, false);
+
+        // Forum API rejects non-existent targets cleanly with 404
+        $this->actingAs($user)->postJson(route('api.forum.vote'), ['id' => 999999, 'type' => 'post', 'vote' => 'up'])
+            ->assertStatus(404);
+        $this->actingAs($user)->postJson(route('api.forum.simpan'), ['id_post' => 999999])
+            ->assertStatus(404);
+
+        // Login page displays clear alert when redirected with msg=login_required
+        auth()->logout();
+        $this->get(route('login', ['msg' => 'login_required']))
+            ->assertStatus(200)
+            ->assertSee('Silakan masuk terlebih dahulu untuk mengakses fitur tersebut.');
+
+        // Cross-table duplicate email is blocked during registration
+        $pengajarUser = User::create([
+            'username' => 'dsn_unique',
+            'password' => Hash::make('StrongPass123!'),
+            'role' => 'Pengajar',
+        ]);
+        Pengajar::create([
+            'nidn' => 'DSN991',
+            'nama_pengajar' => 'Dosen Unik',
+            'email' => 'dosen.unik@eforvm.test',
+            'id_user' => $pengajarUser->id_user,
+        ]);
+
+        $this->post('/register', [
+            'nama_lengkap' => 'Murid Duplikat',
+            'email' => 'dosen.unik@eforvm.test',
+            'username' => 'mrd_dup_email',
+            'password' => 'StrongPass123!',
+            'konfirmasi_password' => 'StrongPass123!',
+        ])->assertRedirect(route('register'))
+            ->assertSessionHas('auth_error');
+
+        // Quill.js <pre class="ql-syntax"> code block preview extraction works
+        $codeBlock = extractCodeBlock('<p>Halo</p><pre class="ql-syntax">echo "ok";</pre>');
+        $this->assertNotNull($codeBlock);
+        $this->assertSame('echo "ok";', $codeBlock['code']);
     }
 }

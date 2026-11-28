@@ -6,6 +6,7 @@ use App\Models\Murid;
 use App\Models\Pengajar;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 
 class ProfilController extends Controller
@@ -122,6 +123,20 @@ class ProfilController extends Controller
 
         $oldEmail = strtolower(trim((string) $user->getEmailAddress()));
 
+        // Prevent cross-table duplicate emails so password reset lookup stays unambiguous
+        $emailUsedByOther = Murid::whereRaw('LOWER(email) = ?', [$email])
+            ->where('id_user', '!=', $user->id_user)
+            ->exists()
+            || Pengajar::whereRaw('LOWER(email) = ?', [$email])
+                ->where('id_user', '!=', $user->id_user)
+                ->exists();
+
+        if ($emailUsedByOther) {
+            return redirect()->route('profil.index')
+                ->with('pesan', 'Gagal: Alamat email sudah digunakan oleh akun lain.')
+                ->with('tipe_pesan', 'error');
+        }
+
         try {
             if ($user->isMurid()) {
                 Murid::where('id_user', $user->id_user)->update([
@@ -133,6 +148,10 @@ class ProfilController extends Controller
                     'nama_pengajar' => $nama,
                     'email' => $email,
                 ]);
+                Cache::forget('admin.pengajar_options.v1');
+                Cache::forget('kelas.catalog.v1');
+                Cache::forget('home.public_payload.v1');
+                Cache::forget('dashboard.pimpinan_stats.v1');
             }
 
             session(['display_name' => $nama]);

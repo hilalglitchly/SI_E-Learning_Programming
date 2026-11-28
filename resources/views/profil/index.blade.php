@@ -156,7 +156,7 @@
                         <i class='bx bx-chevron-right account-menu-chevron' aria-hidden="true"></i>
                     </button>
 
-                    <form method="POST" action="{{ route('logout') }}" onsubmit="event.preventDefault(); NeoConfirm('Konfirmasi Keluar', 'Apakah Anda yakin ingin keluar dari akun E-FORVM?', () => this.submit());" style="margin: 0;">
+                    <form method="POST" action="{{ route('logout') }}" onsubmit="event.preventDefault(); NeoConfirm('Konfirmasi Keluar', 'Apakah Anda yakin ingin keluar dari akun E-FORVM?', () => { if (window.clearNotifCache) window.clearNotifCache(); this.submit(); });" style="margin: 0;">
                         @csrf
                         <button type="submit" class="account-menu-row account-menu-row--danger">
                             <span class="account-menu-icon account-menu-icon--danger"><i class='bx bx-log-out' aria-hidden="true"></i></span>

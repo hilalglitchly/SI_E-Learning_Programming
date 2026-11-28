@@ -319,13 +319,31 @@ $initials = strtoupper(mb_substr(preg_replace('/[^a-zA-Z0-9]/', '', $displayName
         const notifMenu = document.getElementById('notif-menu');
         const notifList = document.getElementById('notif-list');
         const notifBadge = document.getElementById('notif-badge');
-        const NOTIF_CACHE_KEY = 'eforvm_notif_cache_v1';
+        const NOTIF_CACHE_KEY = 'eforvm_notif_cache_v2_{{ (int) ($user->id_user ?? 0) }}';
         const NOTIF_TTL_MS = 25000;
 
+        window.clearNotifCache = () => {
+            try { sessionStorage.removeItem(NOTIF_CACHE_KEY); } catch (e) {}
+        };
+
         if (notifMenu && (notifBtn || mobileNotifBtn)) {
+            const positionNotifMenu = (triggerBtn) => {
+                if (window.innerWidth > 768 && triggerBtn) {
+                    const rect = triggerBtn.getBoundingClientRect();
+                    notifMenu.style.top = `${Math.round(rect.bottom + 8)}px`;
+                    notifMenu.style.right = `${Math.max(12, Math.round(window.innerWidth - rect.right))}px`;
+                } else {
+                    notifMenu.style.top = '';
+                    notifMenu.style.right = '';
+                }
+            };
+
             const toggleNotifMenu = (e) => {
                 e.stopPropagation();
                 const isVisible = notifMenu.style.display === 'block';
+                if (!isVisible) {
+                    positionNotifMenu(e.currentTarget);
+                }
                 notifMenu.style.display = isVisible ? 'none' : 'block';
                 if (!isVisible) {
                     loadNotifikasi(true);
@@ -497,6 +515,7 @@ $initials = strtoupper(mb_substr(preg_replace('/[^a-zA-Z0-9]/', '', $displayName
             logoutForm.addEventListener("submit", function(e) {
                 e.preventDefault();
                 NeoConfirm("Konfirmasi Keluar", "Apakah Anda yakin ingin keluar dari sistem?", () => {
+                    if (window.clearNotifCache) window.clearNotifCache();
                     logoutForm.submit();
                 });
             });
