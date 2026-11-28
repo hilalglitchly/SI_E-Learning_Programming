@@ -1,0 +1,40 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  phpunit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: mbstring, pdo_sqlite, sqlite3, bcmath, intl, gd, zip
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Prepare test environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Verify Blade views & routes compile
+        run: |
+          php artisan view:cache
+          php artisan route:cache
+          php artisan view:clear
+          php artisan route:clear
+
+      - name: Run PHPUnit suite
+        run: vendor/bin/phpunit

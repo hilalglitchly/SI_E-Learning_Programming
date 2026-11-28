@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 360" width="1280" height="360" role="img" aria-label="E-FORVM — Mobile-First Neo-Brutalist E-Learning and Programming Forum">
+  <defs>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M 32 0 L 0 0 0 32" fill="none" stroke="#27272A" stroke-width="1"/>
+    </pattern>
+    <linearGradient id="accentGlow" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FFD700"/>
+      <stop offset="55%" stop-color="#FFD700"/>
+      <stop offset="55%" stop-color="#DC2626"/>
+      <stop offset="100%" stop-color="#DC2626"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Base Obsidian Canvas -->
+  <rect width="1280" height="360" fill="#111113"/>
+  <rect width="1280" height="360" fill="url(#grid)"/>
+
+  <!-- Top & Bottom Accent Bars -->
+  <rect x="0" y="0" width="1280" height="8" fill="url(#accentGlow)"/>
+  <rect x="0" y="352" width="1280" height="8" fill="url(#accentGlow)"/>
+
+  <!-- Decorative Neo-Brutalist Corner Blocks -->
+  <rect x="36" y="34" width="16" height="16" fill="#FFD700" stroke="#000000" stroke-width="3"/>
+  <rect x="60" y="34" width="16" height="16" fill="#DC2626" stroke="#000000" stroke-width="3"/>
+  <rect x="84" y="34" width="16" height="16" fill="#F4F4F5" stroke="#000000" stroke-width="3"/>
+  <text x="116" y="47" fill="#A1A1AA" font-family="'Space Grotesk', 'Segoe UI', system-ui, -apple-system, sans-serif" font-size="13" font-weight="800" letter-spacing="3">SI E-LEARNING PROGRAMMING  //  LARAVEL 12 MVC</text>
+
+  <!-- Right Top Status Pill -->
+  <rect x="1084" y="31" width="160" height="28" fill="#18181B" stroke="#FFD700" stroke-width="2.5"/>
+  <circle cx="1102" cy="45" r="5" fill="#22C55E"/>
+  <text x="1116" y="50" fill="#F4F4F5" font-family="'Space Grotesk', 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="800" letter-spacing="1.5">PWA • LIVE v2.0</text>
+
+  <!-- Main Neo-Brutalist Hero Card Shadow & Body -->
+  <rect x="52" y="92" width="1188" height="164" fill="#DC2626"/>
+  <rect x="44" y="84" width="1188" height="164" fill="#FFD700" stroke="#000000" stroke-width="5"/>
+
+  <!-- Left Code Emblem Box -->
+  <rect x="74" y="114" width="108" height="104" fill="#111113" stroke="#000000" stroke-width="4"/>
+  <rect x="70" y="110" width="108" height="104" fill="#18181B" stroke="#000000" stroke-width="4"/>
+  <text x="124" y="177" text-anchor="middle" fill="#FFD700" font-family="ui-monospace, 'Cascadia Code', Consolas, monospace" font-size="44" font-weight="900">&lt;/&gt;</text>
+
+  <!-- Brand Wordmark -->
+  <text x="208" y="170" fill="#000000" font-family="'Space Grotesk', 'Segoe UI', Arial, sans-serif" font-size="76" font-weight="900" letter-spacing="3">E-FORVM</text>
+
+  <!-- Subtitle Ribbon -->
+  <rect x="208" y="186" width="540" height="34" fill="#111113"/>
+  <text x="224" y="209" fill="#FFFFFF" font-family="'Space Grotesk', 'Segoe UI', system-ui, sans-serif" font-size="16" font-weight="800" letter-spacing="2.2">MOBILE-FIRST E-LEARNING &amp; CODING FORUM</text>
+
+  <!-- Right Side Feature Stamp -->
+  <rect x="936" y="114" width="268" height="104" fill="#000000"/>
+  <rect x="930" y="108" width="268" height="104" fill="#FFFFFF" stroke="#000000" stroke-width="4"/>
+  <text x="950" y="138" fill="#DC2626" font-family="'Space Grotesk', 'Segoe UI', sans-serif" font-size="13" font-weight="900" letter-spacing="1.5">FULL-STACK EDITION</text>
+  <text x="950" y="164" fill="#000000" font-family="'Space Grotesk', 'Segoe UI', sans-serif" font-size="20" font-weight="900">30+ KELAS KODING</text>
+  <text x="950" y="190" fill="#3F3F46" font-family="'Space Grotesk', 'Segoe UI', sans-serif" font-size="13" font-weight="700">LMS • Forum Reddit UX • Pro</text>
+
+  <!-- Bottom Tech Stack Strip -->
+  <g font-family="'Space Grotesk', 'Segoe UI', system-ui, sans-serif" font-size="13" font-weight="800" letter-spacing="1.2">
+    <rect x="44" y="284" width="154" height="36" fill="#18181B" stroke="#FFD700" stroke-width="2.5"/>
+    <text x="121" y="307" text-anchor="middle" fill="#FFD700">LARAVEL 12</text>
+
+    <rect x="212" y="284" width="128" height="36" fill="#18181B" stroke="#F4F4F5" stroke-width="2.5"/>
+    <text x="276" y="307" text-anchor="middle" fill="#F4F4F5">PHP 8.3+</text>
+
+    <rect x="354" y="284" width="194" height="36" fill="#18181B" stroke="#38BDF8" stroke-width="2.5"/>
+    <text x="451" y="307" text-anchor="middle" fill="#38BDF8">MIDTRANS SNAP</text>
+
+    <rect x="562" y="284" width="174" height="36" fill="#18181B" stroke="#22C55E" stroke-width="2.5"/>
+    <text x="649" y="307" text-anchor="middle" fill="#22C55E">PWA MOBILE</text>
+
+    <rect x="750" y="284" width="214" height="36" fill="#18181B" stroke="#FB923C" stroke-width="2.5"/>
+    <text x="857" y="307" text-anchor="middle" fill="#FB923C">TIDB CLOUD + MYSQL</text>
+
+    <rect x="978" y="284" width="254" height="36" fill="#DC2626" stroke="#000000" stroke-width="2.5"/>
+    <text x="1105" y="307" text-anchor="middle" fill="#FFFFFF">NEO-BRUTALISM UI</text>
+  </g>
+</svg>
